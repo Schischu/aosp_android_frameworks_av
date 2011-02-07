@@ -459,8 +459,8 @@ APacketSource::APacketSource(
 
         int32_t width, height;
         if (!sessionDesc->getDimensions(index, PT, &width, &height)) {
-            mInitCheck = ERROR_UNSUPPORTED;
-            return;
+            width = 0;
+            height = 0;
         }
 
         mFormat->setInt32(kKeyWidth, width);
