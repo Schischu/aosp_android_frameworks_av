@@ -29,6 +29,7 @@
 
 #include <utils/RefBase.h>
 #include <utils/Errors.h>
+#include <utils/threads.h>
 #include <binder/IInterface.h>
 
 
@@ -450,6 +451,7 @@ private:
     sp<IMemory>             mCblkMemory;        // shared memory for deferred parameter setting
     effect_param_cblk_t*    mCblk;              // control block for deferred parameter setting
     pid_t                   mClientPid;
+    Mutex                   mShutdownLock;      // Protects IEffect during destruction
 };
 
 

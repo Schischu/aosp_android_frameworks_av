@@ -167,6 +167,8 @@ AudioEffect::~AudioEffect()
 {
     ALOGV("Destructor %p", this);
 
+    Mutex::Autolock autolock(mShutdownLock);
+
     if (mStatus == NO_ERROR || mStatus == ALREADY_EXISTS) {
         if (mSessionId > AUDIO_SESSION_OUTPUT_MIX) {
             AudioSystem::releaseAudioSessionId(mSessionId, mClientPid);
@@ -180,6 +182,7 @@ AudioEffect::~AudioEffect()
     mIEffect.clear();
     mIEffectClient.clear();
     mCblkMemory.clear();
+    mCbf = NULL;
 }
 
 
@@ -347,6 +350,7 @@ status_t AudioEffect::getParameter(effect_param_t *param)
 void AudioEffect::binderDied()
 {
     ALOGW("IEffect died");
+    Mutex::Autolock autolock(mShutdownLock);
     mStatus = DEAD_OBJECT;
     if (mCbf != NULL) {
         status_t status = DEAD_OBJECT;
