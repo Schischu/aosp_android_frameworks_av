@@ -420,7 +420,7 @@ APacketSource::APacketSource(
     if (sessionDesc->getDurationUs(&durationUs)) {
         mFormat->setInt64(kKeyDuration, durationUs);
     } else {
-        mFormat->setInt64(kKeyDuration, 60 * 60 * 1000000ll);
+        mFormat->setInt64(kKeyDuration, 0);
     }
 
     mInitCheck = OK;
