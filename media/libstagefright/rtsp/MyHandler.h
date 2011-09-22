@@ -1422,11 +1422,10 @@ struct MyHandler : public AHandler {
         AString val;
         CHECK(GetAttribute(range.c_str(), "npt", &val));
 
-        float npt1, npt2;
-        if (!ASessionDescription::parseNTPRange(val.c_str(), &npt1, &npt2)) {
-            // This is a live stream and therefore not seekable.
-
-            ALOGI("This is a live stream");
+        const float kInvalidNPT = -1;
+        float npt1 = kInvalidNPT, npt2;
+        if (!ASessionDescription::parseNTPRange(val.c_str(), &npt1, &npt2) && npt1 == kInvalidNPT) {
+            // No ntp range provided, stop the parsing of Play Response
             return;
         }
 
