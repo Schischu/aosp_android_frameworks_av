@@ -1452,18 +1452,28 @@ struct MyHandler : public AHandler {
             }
             CHECK_LT(trackIndex, mTracks.size());
 
-            CHECK(GetAttribute((*it).c_str(), "seq", &val));
-
             char *end;
-            unsigned long seq = strtoul(val.c_str(), &end, 10);
+            unsigned long seq = 0;
+            if (GetAttribute((*it).c_str(), "seq", &val)) {
+                seq = strtoul(val.c_str(), &end, 10);
+            } else {
+                CHECK(GetAttribute((*it).c_str(), "rtptime", &val));
+            }
 
             TrackInfo *info = &mTracks.editItemAt(trackIndex);
             info->mFirstSeqNumInSegment = seq;
             info->mNewSegment = true;
 
-            CHECK(GetAttribute((*it).c_str(), "rtptime", &val));
 
-            uint32_t rtpTime = strtoul(val.c_str(), &end, 10);
+            uint32_t rtpTime = 0;
+            if (GetAttribute((*it).c_str(), "rtptime", &val)) {
+                rtpTime = strtoul(val.c_str(), &end, 10);
+                ALOGV("track #%d: rtpTime=%u <=> npt=%.2f", n, rtpTime, npt1);
+            } else {
+                ALOGV("no rtptime in play response: track #%d: rtpTime=%u <=> npt=%.2f", n,
+                        rtpTime, npt1);
+                CHECK(GetAttribute((*it).c_str(), "seq", &val));
+            }
 
             ALOGV("track #%d: rtpTime=%u <=> npt=%.2f", n, rtpTime, npt1);
 
