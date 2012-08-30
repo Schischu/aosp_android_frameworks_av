@@ -102,6 +102,7 @@ static bool GetSampleRateIndex(int32_t sampleRate, size_t *tableIndex) {
         }
     }
 
+    ALOGW("%d is a non-standarad sample rate.", sampleRate);
     return false;
 }
 
@@ -191,7 +192,9 @@ AMPEG4ElementaryAssembler::AMPEG4ElementaryAssembler(
                 desc.c_str(), &sampleRate, &numChannels);
 
         mChannelConfig = numChannels;
-        CHECK(GetSampleRateIndex(sampleRate, &mSampleRateIndex));
+        // CHECK removed here as SR is recalculated in codec from stream data.
+        // Feng server sets 90k SR default. This removal is necessary then.
+        GetSampleRateIndex(sampleRate, &mSampleRateIndex);
     }
 }
 
