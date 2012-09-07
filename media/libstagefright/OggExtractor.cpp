@@ -456,7 +456,7 @@ status_t MyVorbisExtractor::readNextPacket(MediaBuffer **out) {
     *out = NULL;
 
     MediaBuffer *buffer = NULL;
-    int64_t timeUs = -1;
+    int64_t timeUs = -1ll;
 
     for (;;) {
         size_t i;
@@ -494,7 +494,7 @@ status_t MyVorbisExtractor::readNextPacket(MediaBuffer **out) {
                 // this packet, we also stamp every packet in this page
                 // with the same time. This needs fixing later.
 
-                if (mVi.rate) {
+                if (mVi.rate && ((int64_t)mCurrentPage.mGranulePosition >= 0)) {
                     // Rate may not have been initialized yet if we're currently
                     // reading the configuration packets...
                     // Fortunately, the timestamp doesn't matter for those.
@@ -503,6 +503,16 @@ status_t MyVorbisExtractor::readNextPacket(MediaBuffer **out) {
                 tmp->set_range(0, 0);
             }
             buffer = tmp;
+
+            if (timeUs > 0) {
+                int64_t durationUs = 0;
+                if (mMeta->findInt64(kKeyDuration, &durationUs)) {
+                    if (durationUs < timeUs) {
+                        ALOGV("Reached End of File");
+                        return ERROR_END_OF_STREAM;
+                    }
+                }
+            }
 
             ssize_t n = mSource->readAt(
                     dataOffset,
