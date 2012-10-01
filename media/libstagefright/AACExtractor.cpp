@@ -288,8 +288,15 @@ status_t AACSource::read(
     *out = NULL;
 
     int64_t seekTimeUs;
+    int64_t durationUs = 0;
     ReadOptions::SeekMode mode;
     if (options && options->getSeekTo(&seekTimeUs, &mode)) {
+        mMeta->findInt64(kKeyDuration, &durationUs);
+        if (durationUs > 0 && durationUs <= seekTimeUs) {
+            ALOGE("seekTime more than the total duration of File");
+            return ERROR_END_OF_STREAM;
+        }
+
         if (mFrameDurationUs > 0) {
             int64_t seekFrame = seekTimeUs / mFrameDurationUs;
             mCurrentTimeUs = seekFrame * mFrameDurationUs;
