@@ -326,11 +326,6 @@ status_t AudioTrack::set(
     mFlags = flags;
     mCbf = cbf;
 
-    if (cbf != NULL) {
-        mAudioTrackThread = new AudioTrackThread(*this, threadCanCallJava);
-        mAudioTrackThread->run("AudioTrack", ANDROID_PRIORITY_AUDIO, 0 /*stack*/);
-    }
-
     // create the IAudioTrack
     status_t status = createTrack_l(streamType,
                                   sampleRate,
@@ -352,6 +347,11 @@ status_t AudioTrack::set(
         // we need to release it.
         AudioSystem::releaseOutput(output);
         return status;
+    }
+
+    if (cbf != NULL) {
+        mAudioTrackThread = new AudioTrackThread(*this, threadCanCallJava);
+        mAudioTrackThread->run("AudioTrack", ANDROID_PRIORITY_AUDIO, 0 /*stack*/);
     }
 
     mStatus = NO_ERROR;
