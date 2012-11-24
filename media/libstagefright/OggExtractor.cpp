@@ -275,6 +275,11 @@ status_t MyVorbisExtractor::findPrevGranulePosition(
         ALOGV("backing up %lld bytes", pageOffset - prevGuess);
 
         status_t err = findNextPage(prevGuess, &prevPageOffset);
+        // If reaches EOF, try to find again.
+        if (prevGuess != 0 && err == ERROR_END_OF_STREAM) {
+            continue;
+        }
+        // Some unknown error. So break the loop.
         if (err != OK) {
             return err;
         }
