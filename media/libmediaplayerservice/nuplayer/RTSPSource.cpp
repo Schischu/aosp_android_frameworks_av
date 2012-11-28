@@ -115,6 +115,11 @@ void NuPlayer::RTSPSource::stop() {
     if (mLooper == NULL) {
         return;
     }
+    if (mState == DISCONNECTED) {
+        ALOGI("already disconnected.");
+        return;
+    }
+
     sp<AMessage> msg = new AMessage(kWhatDisconnect, mReflector->id());
 
     sp<AMessage> dummy;
