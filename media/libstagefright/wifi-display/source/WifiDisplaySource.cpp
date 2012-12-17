@@ -440,7 +440,7 @@ void WifiDisplaySource::onMessageReceived(const sp<AMessage> &msg) {
             } else if (what == PlaybackSession::kWhatSessionDestroyed) {
                 disconnectClient2();
             } else {
-                CHECK_EQ(what, PlaybackSession::kWhatBinaryData);
+                CHECK_EQ(what, (status_t)PlaybackSession::kWhatBinaryData);
 
                 int32_t channel;
                 CHECK(msg->findInt32("channel", &channel));

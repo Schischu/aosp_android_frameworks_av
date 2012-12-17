@@ -505,7 +505,7 @@ void WifiDisplaySource::PlaybackSession::onMessageReceived(
                 }
                 break;
             } else if (what == Converter::kWhatEOS) {
-                CHECK_EQ(what, Converter::kWhatEOS);
+                CHECK_EQ(what, (status_t)Converter::kWhatEOS);
 
                 ALOGI("output EOS on track %d", trackIndex);
 
@@ -522,7 +522,7 @@ void WifiDisplaySource::PlaybackSession::onMessageReceived(
                     ALOGI("Reached EOS");
                 }
             } else if (what != Converter::kWhatShutdownCompleted) {
-                CHECK_EQ(what, Converter::kWhatError);
+                CHECK_EQ(what, (status_t)Converter::kWhatError);
 
                 status_t err;
                 CHECK(msg->findInt32("err", &err));

@@ -340,7 +340,7 @@ void Converter::onMessageReceived(const sp<AMessage> &msg) {
 
                 scheduleDoMoreWork();
             } else {
-                CHECK_EQ(what, MediaPuller::kWhatAccessUnit);
+                CHECK_EQ(what, (status_t)MediaPuller::kWhatAccessUnit);
 
                 sp<ABuffer> accessUnit;
                 CHECK(msg->findBuffer("accessUnit", &accessUnit));
