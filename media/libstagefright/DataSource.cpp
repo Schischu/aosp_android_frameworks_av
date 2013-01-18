@@ -231,6 +231,9 @@ sp<DataSource> DataSource::CreateFromURI(
     }
 
     if (source == NULL || source->initCheck() != OK) {
+        if (source != NULL) {
+            source.clear();
+        }
         return NULL;
     }
 
