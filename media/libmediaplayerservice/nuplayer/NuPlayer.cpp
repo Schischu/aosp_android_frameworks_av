@@ -165,6 +165,7 @@ NuPlayer::NuPlayer()
       mTimeDiscontinuityPending(false),
       mFlushingAudio(NONE),
       mFlushingVideo(NONE),
+      mVideoSkipToIFrame(false),
       mSkipRenderingAudioUntilMediaTimeUs(-1ll),
       mSkipRenderingVideoUntilMediaTimeUs(-1ll),
       mNumFramesTotal(0ll),
@@ -1157,6 +1158,7 @@ status_t NuPlayer::instantiateDecoder(bool audio, sp<Decoder> *decoder) {
         AString mime;
         CHECK(format->findString("mime", &mime));
         mVideoIsAVC = !strcasecmp(MEDIA_MIMETYPE_VIDEO_AVC, mime.c_str());
+        mVideoSkipToIFrame = mVideoIsAVC;
 
         sp<AMessage> ccNotify = new AMessage(kWhatClosedCaptionNotify, id());
         mCCDecoder = new CCDecoder(ccNotify);
@@ -1359,6 +1361,13 @@ status_t NuPlayer::feedDecoderInputData(bool audio, const sp<AMessage> &msg) {
                 && !IsAVCReferenceFrame(accessUnit)) {
             dropAccessUnit = true;
             ++mNumFramesDropped;
+        } else if (!audio
+                   && !(mSourceFlags & Source::FLAG_SECURE)
+                   && mVideoSkipToIFrame
+                   && !IsIDR(accessUnit)
+                   && !IsSPS(accessUnit)) {
+            ALOGV("Dropping non I-frame or SPS access unit after seek");
+            dropAccessUnit = true;
         }
 
         size_t smallSize = accessUnit->size();
@@ -1418,6 +1427,7 @@ status_t NuPlayer::feedDecoderInputData(bool audio, const sp<AMessage> &msg) {
 
     if (!audio) {
         mCCDecoder->decode(accessUnit);
+        mVideoSkipToIFrame = false;
     }
 
     if (doBufferAggregation && (mAggregateBuffer != NULL)) {
@@ -1428,7 +1438,6 @@ status_t NuPlayer::feedDecoderInputData(bool audio, const sp<AMessage> &msg) {
     } else {
         reply->setBuffer("buffer", accessUnit);
     }
-
     reply->post();
 
     return OK;
@@ -1598,6 +1607,7 @@ void NuPlayer::flushDecoder(
         ALOGE_IF(mFlushingVideo != NONE,
                 "video flushDecoder() is called in state %d", mFlushingVideo);
         mFlushingVideo = newStatus;
+        mVideoSkipToIFrame = mVideoIsAVC;
 
         if (mCCDecoder != NULL) {
             mCCDecoder->flush();
