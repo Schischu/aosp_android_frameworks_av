@@ -37,6 +37,7 @@ public:
     static const int TYPE_UNREGISTRATION_INFO = 2;
     static const int TYPE_RIGHTS_ACQUISITION_INFO = 3;
     static const int TYPE_RIGHTS_ACQUISITION_PROGRESS_INFO = 4;
+    static const int TYPE_VENDOR_SPECIFIC_INFO = 5;
 
     /**
      * Key to pass the unique id for the account or the user

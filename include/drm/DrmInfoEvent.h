@@ -47,6 +47,8 @@ public:
     static const int TYPE_ACCOUNT_ALREADY_REGISTERED = 5;
     //! TYPE_RIGHTS_REMOVED, when the rights has been removed.
     static const int TYPE_RIGHTS_REMOVED = 6;
+    //! TYPE_VENDOR_SPECIFIC, when the vendor specific event has occured.
+    static const int TYPE_VENDOR_SPECIFIC = 7;
 
     /**
      * The following constant values should be in sync with DrmErrorEvent.java
