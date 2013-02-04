@@ -199,6 +199,13 @@ status_t MidiFile::prepareAsync()
     } else {
         sendEvent(MEDIA_ERROR, MEDIA_ERROR_UNKNOWN, ret);
     }
+    int duration;
+    // mDuration is obtained before the start() call, so that when
+    // playback is started without calling getDuration, it remains updated.
+    // mDuration is updated when getDuration() is called for the first time.
+    if (getDuration(&duration) == NO_ERROR) {
+       ALOGV("Updated mDuration inside getDuration method");
+    }
     return ret;
 }
 
