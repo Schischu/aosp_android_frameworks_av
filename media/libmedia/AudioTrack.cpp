@@ -834,6 +834,7 @@ status_t AudioTrack::createTrack_l(
         size_t epoch)
 {
     status_t status;
+
     const sp<IAudioFlinger>& audioFlinger = AudioSystem::get_audio_flinger();
     if (audioFlinger == 0) {
         ALOGE("Could not get audioflinger");
@@ -932,14 +933,20 @@ status_t AudioTrack::createTrack_l(
         // FIXME move these calculations and associated checks to server
 
         // Ensure that buffer depth covers at least audio hardware latency
-        uint32_t minBufCount = afLatency / ((1000 * afFrameCount)/afSampleRate);
+        uint32_t minBufCount = 0;
+        if(( afFrameCount != 0) && (afSampleRate != 0)) {
+            minBufCount = afLatency / ((1000 * afFrameCount)/afSampleRate);
+        }
         ALOGV("afFrameCount=%d, minBufCount=%d, afSampleRate=%u, afLatency=%d",
                 afFrameCount, minBufCount, afSampleRate, afLatency);
         if (minBufCount <= nBuffering) {
             minBufCount = nBuffering;
         }
 
-        size_t minFrameCount = (afFrameCount*sampleRate*minBufCount)/afSampleRate;
+        size_t minFrameCount = 0;
+        if (afSampleRate != 0) {
+            minFrameCount = (afFrameCount*sampleRate*minBufCount)/afSampleRate;
+        }
         ALOGV("minFrameCount: %u, afFrameCount=%d, minBufCount=%d, sampleRate=%u, afSampleRate=%u"
                 ", afLatency=%d",
                 minFrameCount, afFrameCount, minBufCount, sampleRate, afSampleRate, afLatency);
