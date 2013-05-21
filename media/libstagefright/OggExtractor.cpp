@@ -716,7 +716,12 @@ status_t MyVorbisExtractor::verifyHeader(
     switch (type) {
         case 1:
         {
-            CHECK_EQ(0, _vorbis_unpack_info(&mVi, &bits));
+            int retval  = _vorbis_unpack_info(&mVi, &bits);
+            CHECK_NE(OV_EFAULT, retval);
+
+            if (retval == OV_EBADHEADER || retval == OV_EVERSION) {
+                return ERROR_MALFORMED;
+            }
 
             mMeta->setData(kKeyVorbisInfo, 0, data, size);
             mMeta->setInt32(kKeySampleRate, mVi.rate);
