@@ -761,6 +761,8 @@ bool MtpDevice::readObject(MtpObjectHandle handle, const char* destPath, int gro
 
 fail:
     ::close(fd);
+    if (!result)
+        unlink(destPath);
     return result;
 }
 
