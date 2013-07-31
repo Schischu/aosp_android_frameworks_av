@@ -64,6 +64,9 @@ static int64_t kDefaultKeepAliveTimeoutUs = 60000000ll;
 
 static int64_t kPauseDelayUs = 3000000ll;
 
+// Timeout if no response to TEARDOWN is received within 5 secs.
+static int64_t kTeardownTimeoutUs = 5000000ll;
+
 namespace android {
 
 static bool GetAttribute(const char *s, const char *key, AString *value) {
@@ -133,6 +136,7 @@ struct MyHandler : public AHandler {
           mTryFakeRTCP(false),
           mReceivedFirstRTCPPacket(false),
           mReceivedFirstRTPPacket(false),
+          mTeardownGeneration(0),
           mSeekable(true),
           mKeepAliveTimeoutUs(kDefaultKeepAliveTimeoutUs),
           mKeepAliveGeneration(0),
@@ -895,8 +899,10 @@ struct MyHandler : public AHandler {
                 mSeekable = true;
 
                 sp<AMessage> reply = new AMessage('tear', id());
+                ++mTeardownGeneration;
+                reply->setInt32("generation", mTeardownGeneration);
 
-                int32_t reconnect;
+                int32_t reconnect = false;
                 if (msg->findInt32("reconnect", &reconnect) && reconnect) {
                     reply->setInt32("reconnect", true);
                 }
@@ -915,6 +921,15 @@ struct MyHandler : public AHandler {
                 request.append("\r\n");
 
                 mConn->sendRequest(request.c_str(), reply);
+
+                sp<AMessage> timeout = new AMessage('tear', id());
+                timeout->setInt32("result", TIMED_OUT);
+                timeout->setInt32("generation", mTeardownGeneration);
+                if (reconnect) {
+                    timeout->setInt32("reconnect", true);
+                }
+                timeout->post(kTeardownTimeoutUs);
+
                 break;
             }
 
@@ -922,6 +937,16 @@ struct MyHandler : public AHandler {
             {
                 int32_t result;
                 CHECK(msg->findInt32("result", &result));
+
+                int32_t generation;
+                CHECK(msg->findInt32("generation", &generation));
+
+                if (mTeardownGeneration != generation) {
+                    ALOGW("already received teardown reply, ignore this");
+                    break;
+                }
+
+                ++mTeardownGeneration;
 
                 ALOGI("TEARDOWN completed with result %d (%s)",
                      result, strerror(-result));
@@ -1549,6 +1574,7 @@ private:
     bool mTryFakeRTCP;
     bool mReceivedFirstRTCPPacket;
     bool mReceivedFirstRTPPacket;
+    int32_t mTeardownGeneration;
     bool mSeekable;
     int64_t mKeepAliveTimeoutUs;
     int32_t mKeepAliveGeneration;
