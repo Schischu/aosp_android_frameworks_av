@@ -712,6 +712,12 @@ status_t PlaylistFetcher::refreshPlaylist() {
             }
         }
 
+        if (mPlaylist->size() == 0) {
+            ALOGE("Playlist did not contain any segments");
+            notifyError(ERROR_MALFORMED);
+            return ERROR_MALFORMED;
+        }
+
         mLastPlaylistFetchTimeUs = ALooper::GetNowUs();
     }
     return OK;
