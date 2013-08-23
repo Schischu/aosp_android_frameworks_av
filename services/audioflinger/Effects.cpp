@@ -902,7 +902,8 @@ AudioFlinger::EffectHandle::EffectHandle(const sp<EffectModule>& effect,
                                         int32_t priority)
     : BnEffect(),
     mEffect(effect), mEffectClient(effectClient), mClient(client), mCblk(NULL),
-    mPriority(priority), mHasControl(false), mEnabled(false), mDestroyed(false)
+    mBuffer(NULL), mPriority(priority), mHasControl(false), mEnabled(false),
+    mDestroyed(false)
 {
     ALOGV("constructor %p", this);
 

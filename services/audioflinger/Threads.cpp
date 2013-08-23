@@ -2869,7 +2869,10 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::MixerThread::prepareTrac
             int j = track->mFastIndex;
             ALOG_ASSERT(0 < j && j < (int)FastMixerState::kMaxFastTracks);
             ALOG_ASSERT(!(mFastTrackAvailMask & (1 << j)));
-            FastTrack *fastTrack = &state->mFastTracks[j];
+            FastTrack *fastTrack;
+            if ( state != NULL ) {
+                fastTrack = &state->mFastTracks[j];
+            }
 
             // Determine whether the track is currently in underrun condition,
             // and whether it had a recent underrun.
@@ -2971,7 +2974,7 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::MixerThread::prepareTrac
 
             if (isActive) {
                 // was it previously inactive?
-                if (!(state->mTrackMask & (1 << j))) {
+                if ((state != NULL ) && (!(state->mTrackMask & (1 << j)))) {
                     ExtendedAudioBufferProvider *eabp = track;
                     VolumeProvider *vp = track;
                     fastTrack->mBufferProvider = eabp;
@@ -2988,7 +2991,7 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::MixerThread::prepareTrac
                 ++fastTracks;
             } else {
                 // was it previously active?
-                if (state->mTrackMask & (1 << j)) {
+                if ((state != NULL) && (state->mTrackMask & (1 << j))) {
                     fastTrack->mBufferProvider = NULL;
                     fastTrack->mGeneration++;
                     state->mTrackMask &= ~(1 << j);
