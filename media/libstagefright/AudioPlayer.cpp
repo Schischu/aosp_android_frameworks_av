@@ -756,7 +756,10 @@ int64_t AudioPlayer::getMediaTimeUs() {
         if (mSeeking) {
             return mSeekTimeUs;
         }
-        mPositionTimeRealUs = getOutputPlayPositionUs_l();
+        if (!mReachedEOS) {
+            ALOGV("getMediaTimeUs EOS reached returning without calling getOutputPlayPositionUs_l");
+            mPositionTimeRealUs = getOutputPlayPositionUs_l();
+        }
         ALOGV("getMediaTimeUs getOutputPlayPositionUs_l() mPositionTimeRealUs %lld",
               mPositionTimeRealUs);
         return mPositionTimeRealUs;
