@@ -1470,14 +1470,17 @@ nsecs_t AudioTrack::processAudioBuffer(const sp<AudioTrackThread>& thread)
 
         mLock.unlock();
         status_t status = mProxy->waitStreamEndDone(&timeout);
+        // staus returns DEAD_OBJECT because of cbkl flag set to CBLK_INVALID.
+        // This is because of invalidating the tracks because of HDMI connected
+        // or effects getting enabled. In this case Don't post EVENT_STREAM_END.
         mLock.lock();
         switch (status) {
         case NO_ERROR:
-        case DEAD_OBJECT:
         case TIMED_OUT:
             mLock.unlock();
             mCbf(EVENT_STREAM_END, mUserData, NULL);
             mLock.lock();
+        case DEAD_OBJECT:
             if (mState == STATE_STOPPING) {
                 mState = STATE_STOPPED;
                 if (status != DEAD_OBJECT) {
