@@ -4008,8 +4008,10 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::OffloadThread::prepareTr
                 track->mFillingUpStatus = Track::FS_ACTIVE;
                 // make sure processVolume_l() will apply new volume even if 0
                 mLeftVolFloat = mRightVolFloat = -1.0;
-                if (track->mState == TrackBase::RESUMING) {
-                    track->mState = TrackBase::ACTIVE;
+                if ((track->mState == TrackBase::RESUMING) ||
+                    (track->mState == TrackBase::STOPPING_1)) {
+                    track->mState = (track->mState == TrackBase::RESUMING) ?
+                            (TrackBase::ACTIVE) : (TrackBase::STOPPING_1);
                     if (last) {
                         if (mPausedBytesRemaining) {
                             // Need to continue write that was interrupted
@@ -4063,6 +4065,22 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::OffloadThread::prepareTr
         } else {
             ALOGVV("OffloadThread: track %d s=%08x [NOT READY]", track->name(), cblk->mServer);
             if (track->isStopping_1()) {
+                if (last) {
+                    if (mPausedBytesRemaining) {
+                        // Need to continue write that was interrupted
+                        mCurrentWriteLength = mPausedWriteLength;
+                        mBytesRemaining = mPausedBytesRemaining;
+                        mPausedBytesRemaining = 0;
+                    }
+                    if (mHwPaused) {
+                        doHwResume = true;
+                        mHwPaused = false;
+                        // threadLoop_mix() will handle the case that we need to
+                        // resume an interrupted write
+                    }
+                    // enable write to audio HAL
+                    sleepTime = 0;
+                }
                 // Hardware buffer can hold a large amount of audio so we must
                 // wait for all current track's data to drain before we say
                 // that the track is stopped.
