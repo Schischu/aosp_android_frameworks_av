@@ -556,7 +556,10 @@ bool AudioFlinger::PlaybackThread::Track::isReady() const {
         return true;
     }
 
-    if (framesReady() >= mFrameCount ||
+    //For offloaded track since the buffer size is larger, at eos
+    //the frameReady() might be less than mFrameCount, in order to
+    //continue writing buffers to HAL, check for STOPPING_1.
+    if (framesReady() >= mFrameCount || isStopping_1() ||
             (mCblk->mFlags & CBLK_FORCEREADY)) {
         mFillingUpStatus = FS_FILLED;
         android_atomic_and(~CBLK_FORCEREADY, &mCblk->mFlags);
