@@ -215,6 +215,10 @@ private:
     // returned by resumeThreshold.
     int64_t resumeThreshold(const sp<AMessage> &msg);
 
+    bool synchronizeSeqNumber(int64_t timeUs);
+    bool isStopTimeReached(const sp<AnotherPacketSource> &packetSource, int64_t unitTimeUs);
+    bool isOldTimestamp(int64_t unitTimeUs);
+
     DISALLOW_EVIL_CONSTRUCTORS(PlaylistFetcher);
 };
 

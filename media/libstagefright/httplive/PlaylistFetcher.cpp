@@ -1488,33 +1488,62 @@ status_t PlaylistFetcher::extractAndQueueAccessUnits(
         mPacketSources.valueFor(LiveSession::STREAMTYPE_AUDIO);
 
     if (packetSource->getFormat() == NULL && buffer->size() >= 7) {
-        ABitReader bits(buffer->data(), buffer->size());
+        const uint32_t header = U32_AT(buffer->data());
 
-        // adts_fixed_header
+        size_t frameSize;
+        int sampleRate, channels;
+        if (GetMPEGAudioFrameSize(header, &frameSize, &sampleRate,
+                &channels, NULL, NULL)) {
+            sp<MetaData> meta = new MetaData;
 
-        CHECK_EQ(bits.getBits(12), 0xfffu);
-        bits.skipBits(3);  // ID, layer
-        bool protection_absent __unused = bits.getBits(1) != 0;
+            unsigned layer = 4 - ((header >> 17) & 3);
 
-        unsigned profile = bits.getBits(2);
-        CHECK_NE(profile, 3u);
-        unsigned sampling_freq_index = bits.getBits(4);
-        bits.getBits(1);  // private_bit
-        unsigned channel_configuration = bits.getBits(3);
-        CHECK_NE(channel_configuration, 0u);
-        bits.skipBits(2);  // original_copy, home
+            switch (layer) {
+            case 1:
+                meta->setCString(
+                        kKeyMIMEType, MEDIA_MIMETYPE_AUDIO_MPEG_LAYER_I);
+                break;
+            case 2:
+                meta->setCString(
+                        kKeyMIMEType, MEDIA_MIMETYPE_AUDIO_MPEG_LAYER_II);
+                break;
+            case 3:
+                meta->setCString(
+                        kKeyMIMEType, MEDIA_MIMETYPE_AUDIO_MPEG);
+                break;
+            default:
+                TRESPASS();
+            }
 
-        sp<MetaData> meta = MakeAACCodecSpecificData(
-                profile, sampling_freq_index, channel_configuration);
+            meta->setInt32(kKeySampleRate, sampleRate);
+            meta->setInt32(kKeyChannelCount, channels);
 
-        meta->setInt32(kKeyIsADTS, true);
+            packetSource->setFormat(meta);
+        } else {
+            ABitReader bits(buffer->data(), buffer->size());
 
-        packetSource->setFormat(meta);
+            // adts_fixed_header
+
+            CHECK_EQ(bits.getBits(12), 0xfffu);
+            bits.skipBits(3);  // ID, layer
+            bool protection_absent = bits.getBits(1) != 0;
+
+            unsigned profile = bits.getBits(2);
+            CHECK_NE(profile, 3u);
+            unsigned sampling_freq_index = bits.getBits(4);
+            bits.getBits(1);  // private_bit
+            unsigned channel_configuration = bits.getBits(3);
+            CHECK_NE(channel_configuration, 0u);
+            bits.skipBits(2);  // original_copy, home
+
+            sp<MetaData> meta = MakeAACCodecSpecificData(
+                    profile, sampling_freq_index, channel_configuration);
+
+            meta->setInt32(kKeyIsADTS, true);
+
+            packetSource->setFormat(meta);
+        }
     }
-
-    int64_t numSamples = 0ll;
-    int32_t sampleRate;
-    CHECK(packetSource->getFormat()->findInt32(kKeySampleRate, &sampleRate));
 
     int64_t timeUs = (PTS * 100ll) / 9ll;
     if (!mFirstPTSValid) {
@@ -1522,94 +1551,106 @@ status_t PlaylistFetcher::extractAndQueueAccessUnits(
         mFirstTimeUs = timeUs;
     }
 
-    size_t offset = 0;
-    while (offset < buffer->size()) {
-        const uint8_t *adtsHeader = buffer->data() + offset;
-        CHECK_LT(offset + 5, buffer->size());
+    const char *mime;
+    CHECK(packetSource->getFormat()->findCString(kKeyMIMEType, &mime));
+    if (strcmp(mime, MEDIA_MIMETYPE_AUDIO_AAC) == 0) {
+        int64_t numSamples = 0ll;
+        int32_t sampleRate;
+        CHECK(packetSource->getFormat()->findInt32(kKeySampleRate, &sampleRate));
 
-        unsigned aac_frame_length =
-            ((adtsHeader[3] & 3) << 11)
-            | (adtsHeader[4] << 3)
-            | (adtsHeader[5] >> 5);
+        size_t offset = 0;
+        while (offset < buffer->size()) {
+            const uint8_t *adtsHeader = buffer->data() + offset;
+            CHECK_LT(offset + 5, buffer->size());
 
-        if (aac_frame_length == 0) {
-            const uint8_t *id3Header = adtsHeader;
-            if (!memcmp(id3Header, "ID3", 3)) {
-                ID3 id3(id3Header, buffer->size() - offset, true);
-                if (id3.isValid()) {
-                    offset += id3.rawSize();
-                    continue;
-                };
-            }
-            return ERROR_MALFORMED;
-        }
+            unsigned aac_frame_length =
+                ((adtsHeader[3] & 3) << 11)
+                | (adtsHeader[4] << 3)
+                | (adtsHeader[5] >> 5);
 
-        CHECK_LE(offset + aac_frame_length, buffer->size());
-
-        int64_t unitTimeUs = timeUs + numSamples * 1000000ll / sampleRate;
-        offset += aac_frame_length;
-
-        // Each AAC frame encodes 1024 samples.
-        numSamples += 1024;
-
-        if (mStartup) {
-            int64_t startTimeUs = unitTimeUs;
-            if (mStartTimeUsRelative) {
-                startTimeUs -= mFirstTimeUs;
-                if (startTimeUs  < 0) {
-                    startTimeUs = 0;
+            if (aac_frame_length == 0) {
+                const uint8_t *id3Header = adtsHeader;
+                if (!memcmp(id3Header, "ID3", 3)) {
+                    ID3 id3(id3Header, buffer->size() - offset, true);
+                    if (id3.isValid()) {
+                        offset += id3.rawSize();
+                        continue;
+                    };
                 }
-            }
-            if (startTimeUs < mStartTimeUs) {
-                continue;
+                return ERROR_MALFORMED;
             }
 
-            if (mStartTimeUsNotify != NULL) {
-                int32_t targetDurationSecs;
-                CHECK(mPlaylist->meta()->findInt32("target-duration", &targetDurationSecs));
-                int64_t targetDurationUs = targetDurationSecs * 1000000ll;
+            CHECK_LE(offset + aac_frame_length, buffer->size());
 
-                // Duplicated logic from how we handle .ts playlists.
-                if (mStartup && mSegmentStartTimeUs >= 0
-                        && timeUs - mStartTimeUs > targetDurationUs) {
-                    int32_t newSeqNumber = getSeqNumberWithAnchorTime(timeUs);
-                    if (newSeqNumber >= mSeqNumber) {
-                        --mSeqNumber;
-                    } else {
-                        mSeqNumber = newSeqNumber;
-                    }
+            int64_t unitTimeUs = timeUs + numSamples * 1000000ll / sampleRate;
+            offset += aac_frame_length;
+
+            // Each AAC frame encodes 1024 samples.
+            numSamples += 1024;
+
+            if (mStartup) {
+                if (isOldTimestamp(unitTimeUs)) {
+                    continue;
+                }
+                if (!synchronizeSeqNumber(timeUs)) {
                     return -EAGAIN;
                 }
-
-                mStartTimeUsNotify->setInt64("timeUsAudio", timeUs);
-                mStartTimeUsNotify->setInt32("discontinuitySeq", mDiscontinuitySeq);
-                mStartTimeUsNotify->setInt32("streamMask", LiveSession::STREAMTYPE_AUDIO);
-                mStartTimeUsNotify->post();
-                mStartTimeUsNotify.clear();
             }
-        }
 
-        if (mStopParams != NULL) {
-            // Queue discontinuity in original stream.
-            int32_t discontinuitySeq;
-            int64_t stopTimeUs;
-            if (!mStopParams->findInt32("discontinuitySeq", &discontinuitySeq)
-                    || discontinuitySeq > mDiscontinuitySeq
-                    || !mStopParams->findInt64("timeUsAudio", &stopTimeUs)
-                    || (discontinuitySeq == mDiscontinuitySeq && unitTimeUs >= stopTimeUs)) {
-                packetSource->queueAccessUnit(mSession->createFormatChangeBuffer());
-                mStreamTypeMask = 0;
-                mPacketSources.clear();
+            if (isStopTimeReached(packetSource, unitTimeUs)) {
                 return ERROR_OUT_OF_RANGE;
             }
+
+            sp<ABuffer> unit = new ABuffer(aac_frame_length);
+            memcpy(unit->data(), adtsHeader, aac_frame_length);
+
+            unit->meta()->setInt64("timeUs", unitTimeUs);
+            setAccessUnitProperties(unit, packetSource);
+            packetSource->queueAccessUnit(unit);
         }
+    } else {
+        int64_t numSamples = 0ll;
+        size_t offset = 0;
+        while (offset < buffer->size()) {
+            CHECK_LT(offset + 4, buffer->size());
+            const uint32_t mpegHeader = U32_AT(buffer->data() + offset);
 
-        sp<ABuffer> unit = new ABuffer(aac_frame_length);
-        memcpy(unit->data(), adtsHeader, aac_frame_length);
+            size_t frameSize;
+            int sampleRate, samplesInFrame;
+            if (!GetMPEGAudioFrameSize(mpegHeader, &frameSize, &sampleRate,
+                    NULL, NULL, &samplesInFrame) || frameSize == 0) {
+                return ERROR_MALFORMED;
+            }
 
-        unit->meta()->setInt64("timeUs", unitTimeUs);
-        setAccessUnitProperties(unit, packetSource);
-        packetSource->queueAccessUnit(unit);
+            CHECK_LE(offset + frameSize, buffer->size());
+
+            int64_t unitTimeUs = timeUs + numSamples * 1000000ll / sampleRate;
+
+            numSamples += samplesInFrame;
+
+            if (mStartup) {
+                if (isOldTimestamp(unitTimeUs)) {
+                    offset += frameSize;
+                    continue;
+                }
+                if (!synchronizeSeqNumber(timeUs)) {
+                    return -EAGAIN;
+                }
+            }
+
+            if (isStopTimeReached(packetSource, unitTimeUs)) {
+                return ERROR_OUT_OF_RANGE;
+            }
+
+            sp<ABuffer> unit = new ABuffer(frameSize);
+            memcpy(unit->data(), buffer->data() + offset, frameSize);
+
+            unit->meta()->setInt64("timeUs", unitTimeUs);
+            setAccessUnitProperties(unit, packetSource);
+            packetSource->queueAccessUnit(unit);
+
+            offset += frameSize;
+        }
     }
 
     return OK;
@@ -1661,6 +1702,68 @@ int64_t PlaylistFetcher::resumeThreshold(const sp<AMessage> &msg) {
     }
 
     return 500000ll;
+}
+
+bool PlaylistFetcher::isOldTimestamp(int64_t unitTimeUs) {
+    int64_t startTimeUs = unitTimeUs;
+    if (mStartTimeUsRelative) {
+        startTimeUs -= mFirstTimeUs;
+        if (startTimeUs  < 0) {
+            startTimeUs = 0;
+        }
+    }
+    return startTimeUs < mStartTimeUs;
+}
+
+bool PlaylistFetcher::synchronizeSeqNumber(int64_t timeUs) {
+    if (mStartTimeUsNotify == NULL) {
+        return true;
+    }
+
+    int32_t targetDurationSecs;
+    CHECK(mPlaylist->meta()->findInt32("target-duration", &targetDurationSecs));
+    int64_t targetDurationUs = targetDurationSecs * 1000000ll;
+
+    // Duplicated logic from how we handle .ts playlists.
+    if (mSegmentStartTimeUs >= 0 && timeUs - mStartTimeUs > targetDurationUs) {
+        int32_t newSeqNumber = getSeqNumberWithAnchorTime(timeUs);
+        if (newSeqNumber >= mSeqNumber) {
+            --mSeqNumber;
+        } else {
+            mSeqNumber = newSeqNumber;
+        }
+        return false;
+    }
+
+    mStartTimeUsNotify->setInt64("timeUsAudio", timeUs);
+    mStartTimeUsNotify->setInt32("discontinuitySeq", mDiscontinuitySeq);
+    mStartTimeUsNotify->setInt32("streamMask", LiveSession::STREAMTYPE_AUDIO);
+    mStartTimeUsNotify->post();
+    mStartTimeUsNotify.clear();
+
+    return true;
+}
+
+bool PlaylistFetcher::isStopTimeReached(const sp<AnotherPacketSource> &packetSource,
+        int64_t unitTimeUs) {
+    if (mStopParams == NULL) {
+        return false;
+    }
+
+    // Queue discontinuity in original stream.
+    int32_t discontinuitySeq;
+    int64_t stopTimeUs;
+    if (!mStopParams->findInt32("discontinuitySeq", &discontinuitySeq)
+            || discontinuitySeq > mDiscontinuitySeq
+            || !mStopParams->findInt64("timeUsAudio", &stopTimeUs)
+            || (discontinuitySeq == mDiscontinuitySeq && unitTimeUs >= stopTimeUs)) {
+        packetSource->queueAccessUnit(mSession->createFormatChangeBuffer());
+        mStreamTypeMask = 0;
+        mPacketSources.clear();
+        return true;
+    }
+
+    return false;
 }
 
 }  // namespace android
