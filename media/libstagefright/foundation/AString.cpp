@@ -202,14 +202,22 @@ void AString::append(unsigned x) {
 }
 
 void AString::append(long x) {
+#if defined (__LP64__)
+    char s[32];
+#else
     char s[16];
+#endif
     sprintf(s, "%ld", x);
 
     append(s);
 }
 
 void AString::append(unsigned long x) {
+#if defined (__LP64__)
+    char s[32];
+#else
     char s[16];
+#endif
     sprintf(s, "%lu", x);
 
     append(s);
@@ -244,7 +252,11 @@ void AString::append(double x) {
 }
 
 void AString::append(void *x) {
+#if defined (__LP64__)
+    char s[32];
+#else
     char s[16];
+#endif
     sprintf(s, "%p", x);
 
     append(s);
