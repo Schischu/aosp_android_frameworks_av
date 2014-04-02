@@ -500,7 +500,7 @@ void MediaProfiles::checkAndAddRequiredProfilesIfNecessary() {
 
     initRequiredProfileRefs(mCameraIds);
 
-    for (size_t i = 0, n = mCamcorderProfiles.size(); i < n; ++i) {
+    for (size_t i = 0, nn = mCamcorderProfiles.size(); i < nn; ++i) {
         int product = mCamcorderProfiles[i]->mVideoCodec->mFrameWidth *
                       mCamcorderProfiles[i]->mVideoCodec->mFrameHeight;
 

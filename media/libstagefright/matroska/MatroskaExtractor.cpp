@@ -931,8 +931,8 @@ void MatroskaExtractor::addTracks() {
 }
 
 void MatroskaExtractor::findThumbnails() {
-    for (size_t i = 0; i < mTracks.size(); ++i) {
-        TrackInfo *info = &mTracks.editItemAt(i);
+    for (size_t ii = 0; ii < mTracks.size(); ++ii) {
+        TrackInfo *info = &mTracks.editItemAt(ii);
 
         const char *mime;
         CHECK(info->mMeta->findCString(kKeyMIMEType, &mime));
