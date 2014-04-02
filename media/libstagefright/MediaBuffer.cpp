@@ -27,7 +27,7 @@
 #include <media/stagefright/MetaData.h>
 
 #include <ui/GraphicBuffer.h>
-#include <sys/atomics.h>
+#include <utils/Atomic.h>
 
 namespace android {
 
@@ -92,7 +92,7 @@ void MediaBuffer::release() {
         return;
     }
 
-    int prevCount = __atomic_dec(&mRefCount);
+    int prevCount = android_atomic_dec(&mRefCount);
     if (prevCount == 1) {
         if (mObserver == NULL) {
             delete this;
@@ -112,7 +112,7 @@ void MediaBuffer::claim() {
 }
 
 void MediaBuffer::add_ref() {
-    (void) __atomic_inc(&mRefCount);
+    (void) android_atomic_inc(&mRefCount);
 }
 
 void *MediaBuffer::data() const {
