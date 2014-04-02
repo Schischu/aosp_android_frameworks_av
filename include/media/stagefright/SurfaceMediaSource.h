@@ -228,7 +228,7 @@ private:
     Condition mMediaBuffersAvailableCondition;
 
     // Avoid copying and equating and default constructor
-    DISALLOW_IMPLICIT_CONSTRUCTORS(SurfaceMediaSource);
+    DISALLOW_EVIL_CONSTRUCTORS(SurfaceMediaSource);
 };
 
 // ----------------------------------------------------------------------------
