@@ -23,10 +23,10 @@
 
 #include <arpa/inet.h>
 #include <fcntl.h>
-#include <linux/tcp.h>
 #include <net/if.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 
