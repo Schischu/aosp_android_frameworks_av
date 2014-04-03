@@ -642,11 +642,13 @@ status_t Camera3Device::createZslStream(
         return INVALID_OPERATION;
     }
 
-    sp<Camera3ZslStream> newStream = new Camera3ZslStream(mNextStreamId,
+    *id = getStreamId();
+
+    sp<Camera3ZslStream> newStream = new Camera3ZslStream(*id,
                 width, height, depth);
     newStream->setStatusTracker(mStatusTracker);
 
-    res = mOutputStreams.add(mNextStreamId, newStream);
+    res = mOutputStreams.add(*id, newStream);
     if (res < 0) {
         ALOGE("%s: Can't add new stream to set: %s (%d)",
                 __FUNCTION__, strerror(-res), res);
@@ -654,7 +656,6 @@ status_t Camera3Device::createZslStream(
     }
     mInputStream = newStream;
 
-    *id = mNextStreamId++;
     *zslStream = newStream;
 
     // Continue captures if active at start
@@ -710,23 +711,24 @@ status_t Camera3Device::createStream(sp<ANativeWindow> consumer,
     }
     assert(mStatus != STATUS_ACTIVE);
 
+    *id = getStreamId();
+
     sp<Camera3OutputStream> newStream;
     if (format == HAL_PIXEL_FORMAT_BLOB) {
-        newStream = new Camera3OutputStream(mNextStreamId, consumer,
+        newStream = new Camera3OutputStream(*id, consumer,
                 width, height, size, format);
     } else {
-        newStream = new Camera3OutputStream(mNextStreamId, consumer,
+        newStream = new Camera3OutputStream(*id, consumer,
                 width, height, format);
     }
     newStream->setStatusTracker(mStatusTracker);
 
-    res = mOutputStreams.add(mNextStreamId, newStream);
+    res = mOutputStreams.add(*id, newStream);
     if (res < 0) {
         SET_ERR_L("Can't add new stream to set: %s (%d)", strerror(-res), res);
         return res;
     }
 
-    *id = mNextStreamId++;
     mNeedConfig = true;
 
     // Continue captures if active at start
@@ -742,6 +744,35 @@ status_t Camera3Device::createStream(sp<ANativeWindow> consumer,
     }
     ALOGV("Camera %d: Created new stream", mId);
     return OK;
+}
+
+int Camera3Device::getStreamId(){
+    ATRACE_CALL();
+
+    int mStreamCount = 0;
+    int id;
+    bool wasFound = false;
+
+    mStreamCount = (int) mCurrentStreamId.size();
+
+    for(int i = 0; i < mStreamCount; i++)
+    {
+        if(mCurrentStreamId[i] == 0)
+        {
+            id = i;
+            mCurrentStreamId.editItemAt(id) = 1;
+            wasFound = true;
+            break;
+        }
+    }
+
+    if(!wasFound)
+    {
+        id = mStreamCount;
+        mCurrentStreamId.push_back(1);
+    }
+
+    return id;
 }
 
 status_t Camera3Device::createReprocessStreamFromStream(int outputId, int *id) {
@@ -858,9 +889,27 @@ status_t Camera3Device::deleteStream(int id) {
         // fall through since we want to still list the stream as deleted.
     }
     mDeletedStreams.add(deletedStream);
+
+    res = deleteStreamId(id);
+    if(res != OK){
+        ALOGW("%s: Invalid Id requested to be deleted", __FUNCTION__);
+    }
+
     mNeedConfig = true;
 
     return res;
+}
+
+status_t Camera3Device::deleteStreamId(int id){
+    ATRACE_CALL();
+
+    if(id < (int) mCurrentStreamId.size()){
+        mCurrentStreamId.editItemAt(id) = 0;
+        return OK;
+    }
+    else{
+        return BAD_INDEX;
+    }
 }
 
 status_t Camera3Device::deleteReprocessStream(int id) {

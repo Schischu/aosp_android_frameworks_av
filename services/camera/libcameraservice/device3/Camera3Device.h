@@ -101,6 +101,9 @@ class Camera3Device :
             sp<camera3::Camera3ZslStream>* zslStream);
     virtual status_t createReprocessStreamFromStream(int outputId, int *id);
 
+    virtual int getStreamId();
+    virtual status_t deleteStreamId(int id);
+
     virtual status_t getStreamInfo(int id,
             uint32_t *width, uint32_t *height, uint32_t *format);
     virtual status_t setStreamTransform(int id, int transform);
@@ -190,6 +193,9 @@ class Camera3Device :
 
     // Whether quirk ANDROID_QUIRKS_USE_PARTIAL_RESULT is enabled
     bool                       mUsePartialResultQuirk;
+
+    // Need to hold the id's of the stream that have been created
+    Vector<int> mCurrentStreamId;
 
     /**** End scope for mLock ****/
 
