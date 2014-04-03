@@ -2669,8 +2669,10 @@ ssize_t AudioFlinger::MixerThread::threadLoop_write()
 #endif
             }
             state->mCommand = FastMixerState::MIX_WRITE;
+#ifdef FAST_MIXER_STATISTICS
             mFastMixerDumpState.increaseSamplingN(mAudioFlinger->isLowRamDevice() ?
                     FastMixerDumpState::kSamplingNforLowRamDevice : FastMixerDumpState::kSamplingN);
+#endif
             sq->end();
             sq->push(FastMixerStateQueue::BLOCK_UNTIL_PUSHED);
             if (kUseFastMixer == FastMixer_Dynamic) {
