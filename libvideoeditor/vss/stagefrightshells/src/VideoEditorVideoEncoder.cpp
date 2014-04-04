@@ -130,7 +130,7 @@ VideoEditorVideoEncoderSource::~VideoEditorVideoEncoderSource() {
     }
 }
 
-status_t VideoEditorVideoEncoderSource::start(MetaData *meta) {
+status_t VideoEditorVideoEncoderSource::start(MetaData* /*meta*/) {
     status_t err = OK;
 
     ALOGV("VideoEditorVideoEncoderSource::start() begin");
@@ -181,7 +181,7 @@ sp<MetaData> VideoEditorVideoEncoderSource::getFormat() {
 }
 
 status_t VideoEditorVideoEncoderSource::read(MediaBuffer **buffer,
-        const ReadOptions *options) {
+        const ReadOptions* /*options*/) {
     Mutex::Autolock autolock(mLock);
     MediaSource::ReadOptions readOptions;
     status_t err = OK;
@@ -434,7 +434,7 @@ M4OSA_ERR VideoEditorVideoEncoder_init(M4ENCODER_Format format,
         M4ENCODER_Context* pContext,
         M4WRITER_DataInterface* pWriterDataInterface,
         M4VPP_apply_fct* pVPPfct, M4VPP_Context pVPPctxt,
-        M4OSA_Void* pExternalAPI, M4OSA_Void* pUserData) {
+        M4OSA_Void* /*pExternalAPI*/, M4OSA_Void* /*pUserData*/) {
 
     M4OSA_ERR err = M4NO_ERROR;
     VideoEditorVideoEncoder_Context* pEncoderContext = M4OSA_NULL;
@@ -1139,7 +1139,7 @@ cleanUp:
     return err;
 }
 
-M4OSA_ERR VideoEditorVideoEncoder_regulBitRate(M4ENCODER_Context pContext) {
+M4OSA_ERR VideoEditorVideoEncoder_regulBitRate(M4ENCODER_Context /*pContext*/) {
     ALOGW("regulBitRate is not implemented");
     return M4NO_ERROR;
 }

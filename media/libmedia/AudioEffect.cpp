@@ -380,9 +380,9 @@ void AudioEffect::enableStatusChanged(bool enabled)
 }
 
 void AudioEffect::commandExecuted(uint32_t cmdCode,
-                                  uint32_t cmdSize,
+                                  uint32_t /*cmdSize*/,
                                   void *cmdData,
-                                  uint32_t replySize,
+                                  uint32_t /*replySize*/,
                                   void *replyData)
 {
     if (cmdData == NULL || replyData == NULL) {

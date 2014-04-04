@@ -138,7 +138,7 @@ int main(int argc, char** argv)
     //  ...___|_____
     //        |     \|
     //        | ____/|\____
-    //        |/alias|     \
+    //        |/alias|     \ 
     //  ------/------+------\---------> KHz
     //       20     24     28
 
@@ -243,7 +243,7 @@ int main(int argc, char** argv)
             }
         }
     } else {
-        for (int j=0 ; j<polyN ; j++) {
+        for (unsigned int j=0 ; j<polyN ; j++) {
             // calculate the phase
             double p = ((polyM*j) % polyN) / double(polyN);
             if (!debug) printf("\n    ");

@@ -151,7 +151,7 @@ sp<MetaData> OggSource::getFormat() {
     return mExtractor->mImpl->getFormat();
 }
 
-status_t OggSource::start(MetaData *params) {
+status_t OggSource::start(MetaData* /*params*/) {
     if (mStarted) {
         return INVALID_OPERATION;
     }
@@ -998,7 +998,7 @@ sp<MediaSource> OggExtractor::getTrack(size_t index) {
 }
 
 sp<MetaData> OggExtractor::getTrackMetaData(
-        size_t index, uint32_t flags) {
+        size_t index, uint32_t /*flags*/) {
     if (index >= 1) {
         return NULL;
     }
