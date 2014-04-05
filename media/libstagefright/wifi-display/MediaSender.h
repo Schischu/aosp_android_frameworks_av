@@ -54,6 +54,7 @@ struct MediaSender : public AHandler {
 
     enum FlagBits {
         FLAG_MANUALLY_PREPEND_SPS_PPS = 1,
+        FLAG_ENCODER_HDCP_ENCRYPTION  = 2,
     };
     ssize_t addTrack(const sp<AMessage> &format, uint32_t flags);
 

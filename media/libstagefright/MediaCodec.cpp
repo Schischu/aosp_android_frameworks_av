@@ -37,6 +37,8 @@
 #include <media/stagefright/MetaData.h>
 #include <media/stagefright/NativeWindowWrapper.h>
 
+#include <media/hardware/HardwareAPI.h>
+
 #include "include/avc_utils.h"
 
 namespace android {
@@ -498,6 +500,20 @@ bool MediaCodec::handleDequeueOutputBuffer(uint32_t replyID, bool newRequest) {
         }
         if (omxFlags & OMX_BUFFERFLAG_EOS) {
             flags |= BUFFER_FLAG_EOS;
+        }
+        if (omxFlags & OMX_BUFFERFLAG_EXTRADATA ) {
+            OMX_OTHER_EXTRADATATYPE *pExtra;
+            OMX_U8 *pTmp = buffer->base() + buffer->offset()
+                + buffer->size() + 3;  // 4 bytes aligned according to OpenMax spec
+
+            pExtra = (OMX_OTHER_EXTRADATATYPE *) (((OMX_U32) pTmp) & ~3);
+            if (pExtra && pExtra->eType == ((OMX_EXTRADATATYPE)OMX_ExtraDataHDCPIV)) {
+                // Extra HDCP IV data detected.
+                OMX_HDCP_IVDATA* pIVData = (OMX_HDCP_IVDATA*)(&pExtra->data[0]);
+                // pIVData cannot be NULL.
+                ALOGV("input counter for HDCP encryption is 0x%llx", pIVData->qwInitializationVector);
+                buffer->meta()->setInt64("inputCtr", pIVData->qwInitializationVector);
+            }
         }
 
         response->setInt32("flags", flags);

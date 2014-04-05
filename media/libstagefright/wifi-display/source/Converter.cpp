@@ -53,6 +53,7 @@ Converter::Converter(
       mIsH264(false),
       mIsPCMAudio(false),
       mNeedToManuallyPrependSPSPPS(false),
+      mEncoderHDCPEncryption(false),
       mDoMoreWorkPending(false)
 #if ENABLE_SILENCE_DETECTION
       ,mFirstSilentFrameUs(-1ll)
@@ -147,6 +148,10 @@ bool Converter::needToManuallyPrependSPSPPS() const {
     return mNeedToManuallyPrependSPSPPS;
 }
 
+bool Converter::isEncoderHDCPEncrypting() const {
+    return mEncoderHDCPEncryption;
+}
+
 // static
 int32_t Converter::GetInt32Property(
         const char *propName, int32_t defaultValue) {
@@ -222,8 +227,12 @@ status_t Converter::initEncoder() {
     status_t err = NO_INIT;
 
     if (!isAudio) {
+        int32_t enableHDCPEncryption;
         sp<AMessage> tmp = mOutputFormat->dup();
         tmp->setInt32("prepend-sps-pps-to-idr-frames", 1);
+        if (!tmp->findInt32("enable-hdcp-encryption", &enableHDCPEncryption)) {
+            enableHDCPEncryption = 0;
+        }
 
         err = mEncoder->configure(
                 tmp,
@@ -233,12 +242,31 @@ status_t Converter::initEncoder() {
 
         if (err == OK) {
             // Encoder supported prepending SPS/PPS, we don't need to emulate
-            // it.
+            // it. HDCP encryption is also enabled, if requested.
             mOutputFormat = tmp;
+            mEncoderHDCPEncryption = enableHDCPEncryption;
         } else {
-            mNeedToManuallyPrependSPSPPS = true;
+            if (enableHDCPEncryption) {
+                // Try without HDCP encryption, but with prepend SPS/PPS.
+                tmp->setInt32("enable-hdcp-encryption", 0);
+                err = mEncoder->configure(
+                        tmp,
+                        NULL /* nativeWindow */,
+                        NULL /* crypto */,
+                        MediaCodec::CONFIGURE_FLAG_ENCODE);
 
-            ALOGI("We going to manually prepend SPS and PPS to IDR frames.");
+                if (err == OK) {
+                    // Encoder supported prepending SPS/PPS,
+                    // but not HDCP encryption.
+                    mOutputFormat = tmp;
+                } else {
+                    mNeedToManuallyPrependSPSPPS = true;
+                    ALOGI("We going to manually prepend SPS and PPS to IDR frames.");
+                }
+            } else {
+                mNeedToManuallyPrependSPSPPS = true;
+                ALOGI("We going to manually prepend SPS and PPS to IDR frames.");
+            }
         }
     }
 
@@ -774,6 +802,13 @@ status_t Converter::doMoreWork() {
                   mIsVideo ? "video" : "audio", timeUs, timeUs / 1E6);
 
             memcpy(buffer->data(), outbuf->base() + offset, size);
+
+            int64_t inputCtr;
+            if (outbuf->meta()->findInt64("inputCtr", &inputCtr))
+            {
+                // Used when encoder also performs HDCP encyption.
+                buffer->meta()->setInt64("inputCtr", inputCtr);
+            }
 
             if (flags & MediaCodec::BUFFER_FLAG_CODECCONFIG) {
                 if (!handle) {

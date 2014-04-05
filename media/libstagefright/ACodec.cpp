@@ -1098,6 +1098,33 @@ status_t ACodec::configureCodec(
         }
     }
 
+    // Extension for HDCP2 encryption.
+    int32_t enableHDCPEncryption = 0;
+    if (encoder && video
+            && msg->findInt32("enable-hdcp-encryption", &enableHDCPEncryption)
+            && enableHDCPEncryption != 0) {
+        OMX_INDEXTYPE index;
+
+        err = mOMX->getExtensionIndex(
+                mNode,
+                "OMX.google.android.index.enableHDCPEncryption",
+                &index);
+
+        if (err == OK) {
+            EnableHDCPEncryptionParams params;
+            InitOMXParams(&params);
+            params.bEnable = OMX_TRUE;
+
+            err = mOMX->setParameter(
+                    mNode, index, &params, sizeof(params));
+        }
+
+        if (err != OK) {
+            ALOGE("Encoder could not be configured to perform HDCP encryption "
+                  "(err %d)", err);
+            return err;
+        }
+    }
     // Always try to enable dynamic output buffers on native surface
     sp<RefBase> obj;
     int32_t haveNativeWindow = msg->findObject("native-window", &obj) &&

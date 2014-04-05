@@ -405,6 +405,12 @@ status_t MediaSender::packetizeAccessUnit(
     if (mHDCP != NULL && !info.mIsAudio) {
         isHDCPEncrypted = true;
 
+    if (info.mFlags & FLAG_ENCODER_HDCP_ENCRYPTION) {
+        // Encoder also performs HDCP encryption. Just read InputCtr
+        // from accessUnit
+        accessUnit->meta()->findInt64("inputCtr", (int64_t *)&inputCTR);
+        ALOGV("input counter = 0x%llx", inputCTR);
+    } else {
         if (manuallyPrependSPSPPS) {
             accessUnit = mTSPacketizer->prependCSD(
                     info.mPacketizerTrackIndex, accessUnit);
@@ -447,6 +453,7 @@ status_t MediaSender::packetizeAccessUnit(
 
             return err;
         }
+    }
 
         HDCP_private_data[0] = 0x00;
 
