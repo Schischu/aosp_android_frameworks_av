@@ -939,8 +939,20 @@ status_t WifiDisplaySource::PlaybackSession::addSource(
     if (isVideo) {
         format->setString("mime", MEDIA_MIMETYPE_VIDEO_AVC);
         format->setInt32("store-metadata-in-buffers", true);
-        format->setInt32("store-metadata-in-buffers-output", (mHDCP != NULL)
-                && (mHDCP->getCaps() & HDCPModule::HDCP_CAPS_ENCRYPT_NATIVE));
+        if (mHDCP != NULL) {
+            if (mHDCP->getCaps() & HDCPModule::HDCP_CAPS_ENCRYPT_NATIVE) {
+                format->setInt32("store-metadata-in-buffers-output", true);
+                format->setInt32("enable-hdcp-encryption", false);
+            } else {
+                // If encryptNative is not supported, request the encoder to make
+                // encryption (which may or may not support it).
+                format->setInt32("store-metadata-in-buffers-output", false);
+                format->setInt32("enable-hdcp-encryption", true);
+            }
+        } else {
+            format->setInt32("store-metadata-in-buffers-output", false);
+            format->setInt32("enable-hdcp-encryption", false);
+        }
         format->setInt32(
                 "color-format", OMX_COLOR_FormatAndroidOpaque);
         format->setInt32("profile-idc", profileIdc);
@@ -999,6 +1011,10 @@ status_t WifiDisplaySource::PlaybackSession::addSource(
     uint32_t flags = 0;
     if (converter->needToManuallyPrependSPSPPS()) {
         flags |= MediaSender::FLAG_MANUALLY_PREPEND_SPS_PPS;
+    }
+
+    if (converter->isEncoderHDCPEncrypting()) {
+        flags |= MediaSender::FLAG_ENCODER_HDCP_ENCRYPTION;
     }
 
     ssize_t mediaSenderTrackIndex =

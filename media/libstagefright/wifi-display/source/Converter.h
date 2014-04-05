@@ -56,6 +56,7 @@ struct Converter : public AHandler {
 
     sp<AMessage> getOutputFormat() const;
     bool needToManuallyPrependSPSPPS() const;
+    bool isEncoderHDCPEncrypting() const;
 
     void feedAccessUnit(const sp<ABuffer> &accessUnit);
     void signalEOS();
@@ -100,6 +101,7 @@ private:
     bool mIsH264;
     bool mIsPCMAudio;
     bool mNeedToManuallyPrependSPSPPS;
+    bool mEncoderHDCPEncryption;
 
     sp<MediaCodec> mEncoder;
     sp<AMessage> mEncoderActivityNotify;
