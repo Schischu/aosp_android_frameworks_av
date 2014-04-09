@@ -1182,7 +1182,7 @@ int PreProcessingFx_Process(effect_handle_t     self,
 //    ALOGV("PreProcessingFx_Process In %d frames enabledMsk %08x processedMsk %08x",
 //         inBuffer->frameCount, session->enabledMsk, session->processedMsk);
 
-    if ((session->processedMsk & session->enabledMsk) == session->enabledMsk) {
+    if (session->enabledMsk != 0 && ((session->processedMsk & session->enabledMsk) == session->enabledMsk)) {
         effect->session->processedMsk = 0;
         size_t framesRq = outBuffer->frameCount;
         size_t framesWr = 0;
@@ -1733,7 +1733,7 @@ int PreProcessingFx_ProcessReverse(effect_handle_t     self,
 //         inBuffer->frameCount, session->revEnabledMsk, session->revProcessedMsk);
 
 
-    if ((session->revProcessedMsk & session->revEnabledMsk) == session->revEnabledMsk) {
+    if (session->revEnabledMsk != 0 && ((session->revProcessedMsk & session->revEnabledMsk) == session->revEnabledMsk)) {
         effect->session->revProcessedMsk = 0;
         if (session->revResampler != NULL) {
             size_t fr = session->frameCount - session->framesRev;
