@@ -241,7 +241,7 @@ bool FragmentedMP4Parser::StaticTrackFragment::complete() const {
 }
 
 status_t FragmentedMP4Parser::StaticTrackFragment::parseSampleSizes(
-        FragmentedMP4Parser *parser, uint32_t type, size_t offset, uint64_t size) {
+        FragmentedMP4Parser *parser, uint32_t /*type*/, size_t offset, uint64_t size) {
     if (offset + 12 > size) {
         return ERROR_MALFORMED;
     }
@@ -265,7 +265,7 @@ status_t FragmentedMP4Parser::StaticTrackFragment::parseSampleSizes(
 }
 
 status_t FragmentedMP4Parser::StaticTrackFragment::parseCompactSampleSizes(
-        FragmentedMP4Parser *parser, uint32_t type, size_t offset, uint64_t size) {
+        FragmentedMP4Parser *parser, uint32_t /*type*/, size_t offset, uint64_t size) {
     if (offset + 12 > size) {
         return ERROR_MALFORMED;
     }
@@ -294,7 +294,7 @@ status_t FragmentedMP4Parser::StaticTrackFragment::parseCompactSampleSizes(
 }
 
 status_t FragmentedMP4Parser::StaticTrackFragment::parseSampleToChunk(
-        FragmentedMP4Parser *parser, uint32_t type, size_t offset, uint64_t size) {
+        FragmentedMP4Parser *parser, uint32_t /*type*/, size_t offset, uint64_t size) {
     if (offset + 8 > size) {
         return ERROR_MALFORMED;
     }
@@ -319,7 +319,7 @@ status_t FragmentedMP4Parser::StaticTrackFragment::parseSampleToChunk(
 }
 
 status_t FragmentedMP4Parser::StaticTrackFragment::parseChunkOffsets(
-        FragmentedMP4Parser *parser, uint32_t type, size_t offset, uint64_t size) {
+        FragmentedMP4Parser *parser, uint32_t /*type*/, size_t offset, uint64_t size) {
     if (offset + 8 > size) {
         return ERROR_MALFORMED;
     }
@@ -340,7 +340,7 @@ status_t FragmentedMP4Parser::StaticTrackFragment::parseChunkOffsets(
 }
 
 status_t FragmentedMP4Parser::StaticTrackFragment::parseChunkOffsets64(
-        FragmentedMP4Parser *parser, uint32_t type, size_t offset, uint64_t size) {
+        FragmentedMP4Parser *parser, uint32_t /*type*/, size_t offset, uint64_t size) {
     if (offset + 8 > size) {
         return ERROR_MALFORMED;
     }

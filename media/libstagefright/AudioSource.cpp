@@ -208,7 +208,7 @@ void AudioSource::rampVolume(
 }
 
 status_t AudioSource::read(
-        MediaBuffer **out, const ReadOptions *options) {
+        MediaBuffer **out, const ReadOptions* /*options*/) {
     Mutex::Autolock autoLock(mLock);
     *out = NULL;
 

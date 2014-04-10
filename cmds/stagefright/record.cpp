@@ -296,7 +296,7 @@ int main(int argc, char **argv) {
 }
 #else
 
-int main(int argc, char **argv) {
+int main(int, char **) {
     android::ProcessState::self()->startThreadPool();
 
     OMXClient client;

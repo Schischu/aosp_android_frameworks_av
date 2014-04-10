@@ -199,7 +199,7 @@ int main(int argc, char* argv[]) {
             buffer->i16 = mAddr;
             return NO_ERROR;
         }
-        virtual void releaseBuffer(Buffer* buffer) {
+        virtual void releaseBuffer(Buffer* /*buffer*/) {
         }
     } provider(input_vaddr, input_size, channels);
 

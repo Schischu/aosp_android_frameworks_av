@@ -189,7 +189,7 @@ sp<MediaSource> AMRExtractor::getTrack(size_t index) {
             mOffsetTable, mOffsetTableLength);
 }
 
-sp<MetaData> AMRExtractor::getTrackMetaData(size_t index, uint32_t flags) {
+sp<MetaData> AMRExtractor::getTrackMetaData(size_t index, uint32_t /*flags*/) {
     if (mInitCheck != OK || index != 0) {
         return NULL;
     }
@@ -221,7 +221,7 @@ AMRSource::~AMRSource() {
     }
 }
 
-status_t AMRSource::start(MetaData *params) {
+status_t AMRSource::start(MetaData* /*params*/) {
     CHECK(!mStarted);
 
     mOffset = mIsWide ? 9 : 6;

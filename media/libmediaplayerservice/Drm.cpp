@@ -589,7 +589,7 @@ status_t Drm::verify(Vector<uint8_t> const &sessionId,
     return mPlugin->verify(sessionId, keyId, message, signature, match);
 }
 
-void Drm::binderDied(const wp<IBinder> &the_late_who)
+void Drm::binderDied(const wp<IBinder> &/*the_late_who*/)
 {
     delete mPlugin;
     mPlugin = NULL;

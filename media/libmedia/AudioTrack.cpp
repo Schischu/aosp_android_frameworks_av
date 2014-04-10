@@ -1350,7 +1350,7 @@ status_t TimedAudioTrack::setMediaTimeTransform(const LinearTransform& xform,
 
 // -------------------------------------------------------------------------
 
-nsecs_t AudioTrack::processAudioBuffer(const sp<AudioTrackThread>& thread)
+nsecs_t AudioTrack::processAudioBuffer(const sp<AudioTrackThread>& /*thread*/)
 {
     // Currently the AudioTrack thread is not created if there are no callbacks.
     // Would it ever make sense to run the thread, even without callbacks?
@@ -1776,7 +1776,7 @@ String8 AudioTrack::getParameters(const String8& keys)
     }
 }
 
-status_t AudioTrack::dump(int fd, const Vector<String16>& args) const
+status_t AudioTrack::dump(int fd, const Vector<String16>& /*args*/) const
 {
 
     const size_t SIZE = 256;
@@ -1806,7 +1806,7 @@ uint32_t AudioTrack::getUnderrunFrames() const
 
 // =========================================================================
 
-void AudioTrack::DeathNotifier::binderDied(const wp<IBinder>& who)
+void AudioTrack::DeathNotifier::binderDied(const wp<IBinder>& /*who*/)
 {
     sp<AudioTrack> audioTrack = mAudioTrack.promote();
     if (audioTrack != 0) {

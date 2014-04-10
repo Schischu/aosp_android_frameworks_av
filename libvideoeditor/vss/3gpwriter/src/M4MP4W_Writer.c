@@ -420,7 +420,7 @@ static M4OSA_UInt32 M4MP4W_CHUNK_AUDIO_ALLOC_NB;
 
 /*******************************************************************************/
 
-M4OSA_ERR M4MP4W_initializeAllocationParameters(M4MP4W_Mp4FileData *Ptr )
+M4OSA_ERR M4MP4W_initializeAllocationParameters(M4MP4W_Mp4FileData *Ptr)
 /*******************************************************************************/
 {
 #ifdef _M4MP4W_OPTIMIZE_FOR_PHONE
@@ -531,7 +531,7 @@ M4OSA_ERR M4MP4W_openWrite(M4OSA_Context *contextPtr,
                            void *outputFileDescriptor,
                            M4OSA_FileWriterPointer *fileWriterFunction,
                            void *tempFileDescriptor,
-                           M4OSA_FileReadPointer *fileReaderFunction )
+                           M4OSA_FileReadPointer *fileReaderFunction)
 /*******************************************************************************/
 {
     M4OSA_ERR err = M4NO_ERROR;

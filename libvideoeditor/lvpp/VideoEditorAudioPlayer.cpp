@@ -575,7 +575,7 @@ void VideoEditorAudioPlayer::reset() {
 }
 
 size_t VideoEditorAudioPlayer::AudioSinkCallback(
-        MediaPlayerBase::AudioSink *audioSink,
+        MediaPlayerBase::AudioSink* /*audioSink*/,
         void *buffer, size_t size, void *cookie,
         MediaPlayerBase::AudioSink::cb_event_t event) {
     VideoEditorAudioPlayer *me = (VideoEditorAudioPlayer *)cookie;

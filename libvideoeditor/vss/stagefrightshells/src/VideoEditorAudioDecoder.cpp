@@ -132,7 +132,7 @@ VideoEditorAudioDecoderSource::~VideoEditorAudioDecoderSource() {
     }
 }
 
-status_t VideoEditorAudioDecoderSource::start(MetaData *meta) {
+status_t VideoEditorAudioDecoderSource::start(MetaData* /*meta*/) {
     status_t err = OK;
 
     if( CREATED != mState ) {
@@ -205,7 +205,7 @@ static MediaBuffer* readBufferFromReader(
 }
 
 status_t VideoEditorAudioDecoderSource::read(MediaBuffer **buffer,
-        const ReadOptions *options) {
+        const ReadOptions* /*options*/) {
     Mutex::Autolock autolock(mLock);
     MediaSource::ReadOptions readOptions;
 
@@ -712,7 +712,7 @@ cleanUp:
 
 M4OSA_ERR VideoEditorAudioDecoder_step(M4AD_Context pContext,
         M4AD_Buffer* pInputBuffer, M4AD_Buffer* pOutputBuffer,
-        M4OSA_Bool bJump) {
+        M4OSA_Bool /*bJump*/) {
     M4OSA_ERR err = M4NO_ERROR;
     VideoEditorAudioDecoder_Context* pDecoderContext = M4OSA_NULL;
     status_t result = OK;

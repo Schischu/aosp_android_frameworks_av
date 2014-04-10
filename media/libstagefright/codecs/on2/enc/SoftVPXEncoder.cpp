@@ -711,7 +711,7 @@ OMX_ERRORTYPE SoftVPXEncoder::internalSetBitrateParams(
 }
 
 
-void SoftVPXEncoder::onQueueFilled(OMX_U32 portIndex) {
+void SoftVPXEncoder::onQueueFilled(OMX_U32 /*portIndex*/) {
     // Initialize encoder if not already
     if (mCodecContext == NULL) {
         if (OK != initEncoder()) {

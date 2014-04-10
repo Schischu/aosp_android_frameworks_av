@@ -226,8 +226,8 @@ int Visualizer_init(VisualizerContext *pContext)
 //
 
 int VisualizerLib_Create(const effect_uuid_t *uuid,
-                         int32_t sessionId,
-                         int32_t ioId,
+                         int32_t /*sessionId*/,
+                         int32_t /*ioId*/,
                          effect_handle_t *pHandle) {
     int ret;
     int i;
