@@ -1375,8 +1375,8 @@ void VideoEditorPreviewController::setVideoEffectType(
 
 
 M4OSA_ERR VideoEditorPreviewController::applyVideoEffect(
-    M4OSA_Void * dataPtr, M4OSA_UInt32 colorFormat, M4OSA_UInt32 videoWidth,
-    M4OSA_UInt32 videoHeight, M4OSA_UInt32 timeMs, M4OSA_Void* outPtr) {
+    M4OSA_Void * dataPtr, M4OSA_UInt32 /*colorFormat*/, M4OSA_UInt32 videoWidth,
+    M4OSA_UInt32 videoHeight, M4OSA_UInt32 timeMs, M4OSA_Void* /*outPtr*/) {
 
     M4OSA_ERR err = M4NO_ERROR;
     vePostProcessParams postProcessParams;
@@ -1424,8 +1424,8 @@ status_t VideoEditorPreviewController::setPreviewFrameRenderingMode(
 }
 
 M4OSA_ERR VideoEditorPreviewController::doImageRenderingMode(
-    M4OSA_Void * dataPtr, M4OSA_UInt32 colorFormat, M4OSA_UInt32 videoWidth,
-    M4OSA_UInt32 videoHeight, M4OSA_Void* outPtr) {
+    M4OSA_Void * dataPtr, M4OSA_UInt32 /*colorFormat*/, M4OSA_UInt32 videoWidth,
+    M4OSA_UInt32 videoHeight, M4OSA_Void* /*outPtr*/) {
 
     M4OSA_ERR err = M4NO_ERROR;
     M4VIFI_ImagePlane planeIn[3], planeOut[3];

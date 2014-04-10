@@ -162,12 +162,12 @@ status_t VideoEditorPlayer::setLooping(int loop) {
     return mPlayer->setLooping(loop);
 }
 
-status_t VideoEditorPlayer::setParameter(int key, const Parcel &request) {
+status_t VideoEditorPlayer::setParameter(int /*key*/, const Parcel &/*request*/) {
     ALOGE("setParameter not implemented");
     return INVALID_OPERATION;
 }
 
-status_t VideoEditorPlayer::getParameter(int key, Parcel *reply) {
+status_t VideoEditorPlayer::getParameter(int /*key*/, Parcel* /*reply*/) {
     ALOGE("getParameter not implemented");
     return INVALID_OPERATION;
 }
@@ -187,7 +187,7 @@ void VideoEditorPlayer::releaseLock() {
     mPlayer->releaseLock();
 }
 
-status_t VideoEditorPlayer::invoke(const Parcel &request, Parcel *reply) {
+status_t VideoEditorPlayer::invoke(const Parcel &/*request*/, Parcel* /*reply*/) {
     return INVALID_OPERATION;
 }
 
@@ -198,7 +198,7 @@ void VideoEditorPlayer::setAudioSink(const sp<AudioSink> &audioSink) {
 }
 
 status_t VideoEditorPlayer::getMetadata(
-        const media::Metadata::Filter& ids, Parcel *records) {
+        const media::Metadata::Filter& /*ids*/, Parcel *records) {
     using media::Metadata;
 
     uint32_t flags = mPlayer->getSourceSeekFlags();
@@ -392,7 +392,7 @@ status_t VideoEditorPlayer::VeAudioOutput::open(
         uint32_t sampleRate, int channelCount, audio_channel_mask_t channelMask,
         audio_format_t format, int bufferCount,
         AudioCallback cb, void *cookie, audio_output_flags_t flags,
-        const audio_offload_info_t *offloadInfo) {
+        const audio_offload_info_t* /*offloadInfo*/) {
 
     mCallback = cb;
     mCallbackCookie = cookie;
@@ -483,7 +483,7 @@ status_t VideoEditorPlayer::VeAudioOutput::start() {
 }
 
 void VideoEditorPlayer::VeAudioOutput::snoopWrite(
-    const void* buffer, size_t size) {
+    const void* /*buffer*/, size_t /*size*/) {
     // Visualization buffers not supported
     return;
 

@@ -63,7 +63,7 @@ struct PreviewPlayerEvent : public TimedEventQueue::Event {
 protected:
     virtual ~PreviewPlayerEvent() {}
 
-    virtual void fire(TimedEventQueue *queue, int64_t /* now_us */) {
+    virtual void fire(TimedEventQueue* /*queue*/, int64_t /*now_us*/) {
         (mPlayer->*mMethod)();
     }
 
@@ -1559,7 +1559,7 @@ void PreviewPlayer::setListener(const wp<MediaPlayerBase> &listener) {
     mListener = listener;
 }
 
-status_t PreviewPlayer::setDataSource(const sp<IStreamSource> &source) {
+status_t PreviewPlayer::setDataSource(const sp<IStreamSource> &/*source*/) {
     return INVALID_OPERATION;
 }
 

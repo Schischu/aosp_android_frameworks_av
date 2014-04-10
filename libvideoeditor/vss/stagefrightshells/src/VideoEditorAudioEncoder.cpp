@@ -108,7 +108,7 @@ VideoEditorAudioEncoderSource::~VideoEditorAudioEncoderSource() {
     }
 }
 
-status_t VideoEditorAudioEncoderSource::start(MetaData *meta) {
+status_t VideoEditorAudioEncoderSource::start(MetaData* /*meta*/) {
     status_t err = OK;
 
     ALOGV("VideoEditorAudioEncoderSource::start");
@@ -161,7 +161,7 @@ sp<MetaData> VideoEditorAudioEncoderSource::getFormat() {
 }
 
 status_t VideoEditorAudioEncoderSource::read(MediaBuffer **buffer,
-        const ReadOptions *options) {
+        const ReadOptions* /*options*/) {
     MediaSource::ReadOptions readOptions;
     status_t err = OK;
     MediaBufferChain* tmpLink = NULL;
@@ -260,7 +260,7 @@ cleanUp:
 }
 
 M4OSA_ERR VideoEditorAudioEncoder_init(M4ENCODER_AudioFormat format,
-        M4OSA_Context* pContext, M4OSA_Void* pUserData) {
+        M4OSA_Context* pContext, M4OSA_Void* /*pUserData*/) {
 
     M4OSA_ERR err = M4NO_ERROR;
     VideoEditorAudioEncoder_Context* pEncoderContext = M4OSA_NULL;
@@ -340,7 +340,7 @@ cleanUp:
 
 M4OSA_ERR VideoEditorAudioEncoder_open(M4OSA_Context pContext,
         M4ENCODER_AudioParams *pParams, M4ENCODER_AudioDecSpecificInfo *pDSI,
-        M4OSA_Context pGrabberContext) {
+        M4OSA_Context /*pGrabberContext*/) {
 
     M4OSA_ERR err = M4NO_ERROR;
     VideoEditorAudioEncoder_Context* pEncoderContext = M4OSA_NULL;
@@ -642,7 +642,7 @@ cleanUp:
 }
 
 M4OSA_ERR VideoEditorAudioEncoder_getOption(M4OSA_Context pContext,
-        M4OSA_OptionID optionID, M4OSA_DataOption* optionValue) {
+        M4OSA_OptionID optionID, M4OSA_DataOption* /*optionValue*/) {
     M4OSA_ERR err = M4NO_ERROR;
     VideoEditorAudioEncoder_Context* pEncoderContext = M4OSA_NULL;
 
