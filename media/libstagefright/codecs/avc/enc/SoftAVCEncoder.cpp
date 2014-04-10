@@ -136,14 +136,14 @@ inline static void ConvertYUV420SemiPlanarToYUV420Planar(
 }
 
 static void* MallocWrapper(
-        void *userData, int32_t size, int32_t attrs) {
+        void * /* userData */, int32_t size, int32_t /* attrs */) {
     void *ptr = malloc(size);
     if (ptr)
         memset(ptr, 0, size);
     return ptr;
 }
 
-static void FreeWrapper(void *userData, void* ptr) {
+static void FreeWrapper(void * /* userData */, void* ptr) {
     free(ptr);
 }
 
@@ -722,7 +722,7 @@ OMX_ERRORTYPE SoftAVCEncoder::internalSetParameter(
     }
 }
 
-void SoftAVCEncoder::onQueueFilled(OMX_U32 portIndex) {
+void SoftAVCEncoder::onQueueFilled(OMX_U32 /* portIndex */) {
     if (mSignalledError || mSawInputEOS) {
         return;
     }

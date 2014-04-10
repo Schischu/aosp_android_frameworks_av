@@ -65,7 +65,7 @@ DummyVideoSource::~DummyVideoSource() {
 
 
 
-status_t DummyVideoSource::start(MetaData *params) {
+status_t DummyVideoSource::start(MetaData* /*params*/) {
     ALOGV("start: E");
 
     // Get the frame buffer from the rgb file, mUri,
