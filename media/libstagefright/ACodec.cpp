@@ -2868,7 +2868,8 @@ ACodec::BaseState::BaseState(ACodec *codec, const sp<AState> &parentState)
       mCodec(codec) {
 }
 
-ACodec::BaseState::PortMode ACodec::BaseState::getPortMode(OMX_U32 portIndex) {
+ACodec::BaseState::PortMode ACodec::BaseState::getPortMode(
+        OMX_U32 /* portIndex */) {
     return KEEP_BUFFERS;
 }
 
@@ -3277,8 +3278,8 @@ bool ACodec::BaseState::onOMXFillBufferDone(
         size_t rangeOffset, size_t rangeLength,
         OMX_U32 flags,
         int64_t timeUs,
-        void *platformPrivate,
-        void *dataPtr) {
+        void * /* platformPrivate */,
+        void * /* dataPtr */) {
     ALOGV("[%s] onOMXFillBufferDone %p time %lld us, flags = 0x%08lx",
          mCodec->mComponentName.c_str(), bufferID, timeUs, flags);
 
@@ -3810,7 +3811,7 @@ bool ACodec::LoadedState::onConfigureComponent(
 }
 
 void ACodec::LoadedState::onCreateInputSurface(
-        const sp<AMessage> &msg) {
+        const sp<AMessage> & /* msg */) {
     ALOGV("onCreateInputSurface");
 
     sp<AMessage> notify = mCodec->mNotify->dup();
@@ -4021,7 +4022,7 @@ ACodec::ExecutingState::ExecutingState(ACodec *codec)
 }
 
 ACodec::BaseState::PortMode ACodec::ExecutingState::getPortMode(
-        OMX_U32 portIndex) {
+        OMX_U32 /* portIndex */) {
     return RESUBMIT_BUFFERS;
 }
 

@@ -465,7 +465,7 @@ void CameraParameters::dump() const
     }
 }
 
-status_t CameraParameters::dump(int fd, const Vector<String16>& args) const
+status_t CameraParameters::dump(int fd, const Vector<String16>& /*args*/) const
 {
     const size_t SIZE = 256;
     char buffer[SIZE];

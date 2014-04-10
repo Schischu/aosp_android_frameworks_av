@@ -53,7 +53,7 @@ struct VideoEditorResampler : public AudioBufferProvider {
 
 #define MAX_SAMPLEDURATION_FOR_CONVERTION 40 //ms
 
-status_t VideoEditorResampler::getNextBuffer(AudioBufferProvider::Buffer *pBuffer, int64_t pts) {
+status_t VideoEditorResampler::getNextBuffer(AudioBufferProvider::Buffer *pBuffer, int64_t /*pts*/) {
 
     uint32_t dataSize = pBuffer->frameCount * this->nbChannels * sizeof(int16_t);
     mTmpInBuffer = (int16_t*)malloc(dataSize);
@@ -76,7 +76,7 @@ void VideoEditorResampler::releaseBuffer(AudioBufferProvider::Buffer *pBuffer) {
 extern "C" {
 
 M4OSA_Context  LVAudioResamplerCreate(M4OSA_Int32 bitDepth, M4OSA_Int32 inChannelCount,
-                                     M4OSA_Int32 sampleRate, M4OSA_Int32 quality) {
+                                     M4OSA_Int32 sampleRate, M4OSA_Int32 /*quality*/) {
 
     VideoEditorResampler *context = new VideoEditorResampler();
     context->mResampler = AudioResampler::create(

@@ -77,7 +77,7 @@ void DummyAudioSource::setDuration(int64_t audioDurationUs) {
     mAudioDurationUs += audioDurationUs;
 }
 
-status_t DummyAudioSource::start(MetaData *params) {
+status_t DummyAudioSource::start(MetaData* /*params*/) {
     ALOGV("start: E");
     status_t err = OK;
 
