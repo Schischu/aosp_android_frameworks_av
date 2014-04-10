@@ -267,7 +267,7 @@ const M4VIFI_UInt16  *M4VIFI_DivTable_zero
 const M4VIFI_UInt8   *M4VIFI_ClipTable_zero
  = &M4VIFI_ClipTable[500];
 
-M4VIFI_UInt8 M4VIFI_YUV420PlanarToYUV420Semiplanar(void *user_data,
+M4VIFI_UInt8 M4VIFI_YUV420PlanarToYUV420Semiplanar(void* /*user_data*/,
     M4VIFI_ImagePlane *PlaneIn, M4VIFI_ImagePlane *PlaneOut ) {
 
     M4VIFI_UInt32 i;
@@ -297,7 +297,7 @@ M4VIFI_UInt8 M4VIFI_YUV420PlanarToYUV420Semiplanar(void *user_data,
     return return_code;
 }
 
-M4VIFI_UInt8 M4VIFI_SemiplanarYUV420toYUV420(void *user_data,
+M4VIFI_UInt8 M4VIFI_SemiplanarYUV420toYUV420(void* /*user_data*/,
     M4VIFI_ImagePlane *PlaneIn, M4VIFI_ImagePlane *PlaneOut ) {
 
      M4VIFI_UInt32 i;
@@ -350,7 +350,7 @@ M4VIFI_UInt8 M4VIFI_SemiplanarYUV420toYUV420(void *user_data,
 */
 M4OSA_ERR M4VSS3GPP_externalVideoEffectColor(M4OSA_Void *pFunctionContext,
             M4VIFI_ImagePlane *PlaneIn, M4VIFI_ImagePlane *PlaneOut,
-            M4VSS3GPP_ExternalProgress *pProgress, M4OSA_UInt32 uiEffectKind) {
+            M4VSS3GPP_ExternalProgress* /*pProgress*/, M4OSA_UInt32 /*uiEffectKind*/) {
 
     M4VIFI_Int32 plane_number;
     M4VIFI_UInt32 i,j;
@@ -512,7 +512,7 @@ M4OSA_ERR M4VSS3GPP_externalVideoEffectColor(M4OSA_Void *pFunctionContext,
 M4OSA_ERR M4VSS3GPP_externalVideoEffectFraming(
             M4OSA_Void *userData, M4VIFI_ImagePlane PlaneIn[3],
             M4VIFI_ImagePlane *PlaneOut, M4VSS3GPP_ExternalProgress *pProgress,
-            M4OSA_UInt32 uiEffectKind ) {
+            M4OSA_UInt32 /*uiEffectKind*/) {
 
     M4VIFI_UInt32 x,y;
 
@@ -737,7 +737,7 @@ M4OSA_ERR M4VSS3GPP_externalVideoEffectFraming(
 M4OSA_ERR M4VSS3GPP_externalVideoEffectFifties(
     M4OSA_Void *pUserData, M4VIFI_ImagePlane *pPlaneIn,
     M4VIFI_ImagePlane *pPlaneOut, M4VSS3GPP_ExternalProgress *pProgress,
-    M4OSA_UInt32 uiEffectKind )
+    M4OSA_UInt32 /*uiEffectKind*/)
 {
     M4VIFI_UInt32 x, y, xShift;
     M4VIFI_UInt8 *pInY = pPlaneIn[0].pac_data;
@@ -833,7 +833,7 @@ M4OSA_ERR M4VSS3GPP_externalVideoEffectFifties(
 unsigned char M4VFL_modifyLumaWithScale(M4ViComImagePlane *plane_in,
                                         M4ViComImagePlane *plane_out,
                                         unsigned long lum_factor,
-                                        void *user_data)
+                                        void* /*user_data*/)
 {
     unsigned short *p_src, *p_dest, *p_src_line, *p_dest_line;
     unsigned char *p_csrc, *p_cdest, *p_csrc_line, *p_cdest_line;
@@ -1079,7 +1079,7 @@ M4OSA_ERR M4xVSS_internalConvertRGB888toYUV(M4xVSS_FramingStruct* framingCtx)
  * @return  M4VIFI_ILLEGAL_FRAME_WIDTH:  YUV Plane width is ODD
  ******************************************************************************
 */
-M4VIFI_UInt8    M4VIFI_xVSS_RGB565toYUV420(void *pUserData, M4VIFI_ImagePlane *pPlaneIn,
+M4VIFI_UInt8    M4VIFI_xVSS_RGB565toYUV420(void* /*pUserData*/, M4VIFI_ImagePlane *pPlaneIn,
                                                       M4VIFI_ImagePlane *pPlaneOut)
 {
     M4VIFI_UInt32   u32_width, u32_height;
@@ -1260,7 +1260,7 @@ InOut:      none
 Out:        array of 3 M4VIFI_ImagePlane structures
 Modified:   ML: RGB function modified to BGR.
 ***************************************************************************/
-M4VIFI_UInt8 M4VIFI_RGB888toYUV420(void *pUserData, M4VIFI_ImagePlane *PlaneIn, M4VIFI_ImagePlane PlaneOut[3])
+M4VIFI_UInt8 M4VIFI_RGB888toYUV420(void* /*pUserData*/, M4VIFI_ImagePlane *PlaneIn, M4VIFI_ImagePlane PlaneOut[3])
 {
 
     M4VIFI_UInt32   u32_width, u32_height;
@@ -1391,7 +1391,7 @@ M4VIFI_UInt8 M4VIFI_RGB888toYUV420(void *pUserData, M4VIFI_ImagePlane *PlaneIn, 
  *******************************************************************************************
  */
 
-M4VIFI_UInt8 M4VIFI_YUV420toYUV420(void *user_data, M4VIFI_ImagePlane PlaneIn[3], M4VIFI_ImagePlane *PlaneOut )
+M4VIFI_UInt8 M4VIFI_YUV420toYUV420(void* /*user_data*/, M4VIFI_ImagePlane PlaneIn[3], M4VIFI_ImagePlane *PlaneOut )
 {
     M4VIFI_Int32 plane_number;
     M4VIFI_UInt32 i;
@@ -3673,7 +3673,7 @@ android::status_t getVideoSizeByResolution(
     return android::OK;
 }
 
-M4VIFI_UInt8 M4VIFI_Rotate90LeftYUV420toYUV420(void* pUserData,
+M4VIFI_UInt8 M4VIFI_Rotate90LeftYUV420toYUV420(void* /*pUserData*/,
     M4VIFI_ImagePlane *pPlaneIn, M4VIFI_ImagePlane *pPlaneOut) {
 
     M4VIFI_Int32 plane_number;
@@ -3710,7 +3710,7 @@ M4VIFI_UInt8 M4VIFI_Rotate90LeftYUV420toYUV420(void* pUserData,
     return M4VIFI_OK;
 }
 
-M4VIFI_UInt8 M4VIFI_Rotate90RightYUV420toYUV420(void* pUserData,
+M4VIFI_UInt8 M4VIFI_Rotate90RightYUV420toYUV420(void* /*pUserData*/,
     M4VIFI_ImagePlane *pPlaneIn, M4VIFI_ImagePlane *pPlaneOut) {
 
     M4VIFI_Int32 plane_number;
@@ -3747,7 +3747,7 @@ M4VIFI_UInt8 M4VIFI_Rotate90RightYUV420toYUV420(void* pUserData,
     return M4VIFI_OK;
 }
 
-M4VIFI_UInt8 M4VIFI_Rotate180YUV420toYUV420(void* pUserData,
+M4VIFI_UInt8 M4VIFI_Rotate180YUV420toYUV420(void* /*pUserData*/,
     M4VIFI_ImagePlane *pPlaneIn, M4VIFI_ImagePlane *pPlaneOut) {
     M4VIFI_Int32 plane_number;
     M4VIFI_UInt32 i,j;

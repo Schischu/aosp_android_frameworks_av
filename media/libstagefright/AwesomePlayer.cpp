@@ -83,7 +83,7 @@ struct AwesomeEvent : public TimedEventQueue::Event {
 protected:
     virtual ~AwesomeEvent() {}
 
-    virtual void fire(TimedEventQueue *queue, int64_t /* now_us */) {
+    virtual void fire(TimedEventQueue* /*queue*/, int64_t /*now_us*/) {
         (mPlayer->*mMethod)();
     }
 
@@ -342,7 +342,7 @@ status_t AwesomePlayer::setDataSource(
     return setDataSource_l(dataSource);
 }
 
-status_t AwesomePlayer::setDataSource(const sp<IStreamSource> &source) {
+status_t AwesomePlayer::setDataSource(const sp<IStreamSource> &/*source*/) {
     return INVALID_OPERATION;
 }
 
@@ -2804,7 +2804,7 @@ bool AwesomePlayer::isStreamingHTTP() const {
     return mCachedSource != NULL || mWVMExtractor != NULL;
 }
 
-status_t AwesomePlayer::dump(int fd, const Vector<String16> &args) const {
+status_t AwesomePlayer::dump(int fd, const Vector<String16> &/*args*/) const {
     Mutex::Autolock autoLock(mStatsLock);
 
     FILE *out = fdopen(dup(fd), "w");

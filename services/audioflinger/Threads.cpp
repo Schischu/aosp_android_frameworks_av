@@ -405,7 +405,7 @@ void AudioFlinger::ThreadBase::processConfigEvents()
     mLock.unlock();
 }
 
-void AudioFlinger::ThreadBase::dumpBase(int fd, const Vector<String16>& args)
+void AudioFlinger::ThreadBase::dumpBase(int fd, const Vector<String16>& /*args*/)
 {
     const size_t SIZE = 256;
     char buffer[SIZE];
@@ -586,7 +586,7 @@ void AudioFlinger::ThreadBase::clearPowerManager()
     mPowerManager.clear();
 }
 
-void AudioFlinger::ThreadBase::PMDeathRecipient::binderDied(const wp<IBinder>& who)
+void AudioFlinger::ThreadBase::PMDeathRecipient::binderDied(const wp<IBinder>& /*who*/)
 {
     sp<ThreadBase> thread = mThread.promote();
     if (thread != 0) {
@@ -1070,7 +1070,7 @@ void AudioFlinger::PlaybackThread::dump(int fd, const Vector<String16>& args)
     dumpEffectChains(fd, args);
 }
 
-void AudioFlinger::PlaybackThread::dumpTracks(int fd, const Vector<String16>& args)
+void AudioFlinger::PlaybackThread::dumpTracks(int fd, const Vector<String16>& /*args*/)
 {
     const size_t SIZE = 256;
     char buffer[SIZE];
@@ -1600,7 +1600,7 @@ void AudioFlinger::PlaybackThread::resetDraining(uint32_t sequence)
 
 // static
 int AudioFlinger::PlaybackThread::asyncCallback(stream_callback_event_t event,
-                                                void *param,
+                                                void* /*param*/,
                                                 void *cookie)
 {
     AudioFlinger::PlaybackThread *me = (AudioFlinger::PlaybackThread *)cookie;
@@ -3723,14 +3723,14 @@ void AudioFlinger::DirectOutputThread::threadLoop_sleepTime()
 }
 
 // getTrackName_l() must be called with ThreadBase::mLock held
-int AudioFlinger::DirectOutputThread::getTrackName_l(audio_channel_mask_t channelMask,
-        int sessionId)
+int AudioFlinger::DirectOutputThread::getTrackName_l(
+        audio_channel_mask_t /*channelMask*/, int /*sessionId*/)
 {
     return 0;
 }
 
 // deleteTrackName_l() must be called with ThreadBase::mLock held
-void AudioFlinger::DirectOutputThread::deleteTrackName_l(int name)
+void AudioFlinger::DirectOutputThread::deleteTrackName_l(int /*name*/)
 {
 }
 
@@ -4895,7 +4895,7 @@ bool AudioFlinger::RecordThread::stop(RecordThread::RecordTrack* recordTrack) {
     return false;
 }
 
-bool AudioFlinger::RecordThread::isValidSyncEvent(const sp<SyncEvent>& event) const
+bool AudioFlinger::RecordThread::isValidSyncEvent(const sp<SyncEvent>& /*event*/) const
 {
     return false;
 }
@@ -4978,7 +4978,7 @@ void AudioFlinger::RecordThread::dumpInternals(int fd, const Vector<String16>& a
     dumpBase(fd, args);
 }
 
-void AudioFlinger::RecordThread::dumpTracks(int fd, const Vector<String16>& args)
+void AudioFlinger::RecordThread::dumpTracks(int fd, const Vector<String16>& /*args*/)
 {
     const size_t SIZE = 256;
     char buffer[SIZE];
@@ -5007,7 +5007,7 @@ void AudioFlinger::RecordThread::dumpTracks(int fd, const Vector<String16>& args
 }
 
 // AudioBufferProvider interface
-status_t AudioFlinger::RecordThread::getNextBuffer(AudioBufferProvider::Buffer* buffer, int64_t pts)
+status_t AudioFlinger::RecordThread::getNextBuffer(AudioBufferProvider::Buffer* buffer, int64_t /*pts*/)
 {
     size_t framesReq = buffer->frameCount;
     size_t framesReady = mFrameCount - mRsmpInIndex;
@@ -5178,7 +5178,7 @@ String8 AudioFlinger::RecordThread::getParameters(const String8& keys)
     return out_s8;
 }
 
-void AudioFlinger::RecordThread::audioConfigChanged_l(int event, int param) {
+void AudioFlinger::RecordThread::audioConfigChanged_l(int event, int /*param*/) {
     AudioSystem::OutputDescriptor desc;
     void *param2 = NULL;
 

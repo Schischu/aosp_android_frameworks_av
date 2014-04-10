@@ -178,7 +178,7 @@ struct MyHandler : public AHandler {
         mConn->connect(mOriginalSessionURL.c_str(), reply);
     }
 
-    AString getControlURL(sp<ASessionDescription> desc) {
+    AString getControlURL(sp<ASessionDescription> /*desc*/) {
         AString sessionLevelControlURL;
         if (mSessionDesc->findAttribute(
                 0,

@@ -87,7 +87,7 @@ AudioRecord::AudioRecord(
         int notificationFrames,
         int sessionId,
         transfer_type transferType,
-        audio_input_flags_t flags)
+        audio_input_flags_t /*flags*/)
     : mStatus(NO_INIT), mSessionId(0),
       mPreviousPriority(ANDROID_PRIORITY_NORMAL),
       mPreviousSchedulingGroup(SP_DEFAULT),
@@ -692,7 +692,7 @@ ssize_t AudioRecord::read(void* buffer, size_t userSize)
 
 // -------------------------------------------------------------------------
 
-nsecs_t AudioRecord::processAudioBuffer(const sp<AudioRecordThread>& thread)
+nsecs_t AudioRecord::processAudioBuffer(const sp<AudioRecordThread>& /*thread*/)
 {
     mLock.lock();
     if (mAwaitBoost) {
@@ -954,7 +954,7 @@ status_t AudioRecord::restoreRecord_l(const char *from)
 
 // =========================================================================
 
-void AudioRecord::DeathNotifier::binderDied(const wp<IBinder>& who)
+void AudioRecord::DeathNotifier::binderDied(const wp<IBinder>& /*who*/)
 {
     sp<AudioRecord> audioRecord = mAudioRecord.promote();
     if (audioRecord != 0) {

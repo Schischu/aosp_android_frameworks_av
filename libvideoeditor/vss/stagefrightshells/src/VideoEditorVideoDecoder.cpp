@@ -96,7 +96,7 @@ VideoEditorVideoDecoderSource::~VideoEditorVideoDecoderSource() {
 }
 
 status_t VideoEditorVideoDecoderSource::start(
-        MetaData *params) {
+        MetaData* /*params*/) {
 
     if (!mStarted) {
         if (mFormat->findInt32(kKeyMaxInputSize, &mMaxAUSize) == false) {
@@ -600,7 +600,7 @@ M4OSA_ERR VideoEditorVideoDecoder_internalParseVideoDSI(M4OSA_UInt8* pVol,
     return M4NO_ERROR;
 }
 
-M4VIFI_UInt8 M4VIFI_SemiplanarYVU420toYUV420(void *user_data,
+M4VIFI_UInt8 M4VIFI_SemiplanarYVU420toYUV420(void* /*user_data*/,
         M4VIFI_UInt8 *inyuv, M4VIFI_ImagePlane *PlaneOut ) {
     M4VIFI_UInt8 return_code = M4VIFI_OK;
     M4VIFI_UInt8 *outyuv =
@@ -921,7 +921,7 @@ M4OSA_ERR VideoEditorVideoDecoder_create(M4OSA_Context *pContext,
         M4_StreamHandler *pStreamHandler,
         M4READER_GlobalInterface *pReaderGlobalInterface,
         M4READER_DataInterface *pReaderDataInterface,
-        M4_AccessUnit *pAccessUnit, M4OSA_Void *pUserData) {
+        M4_AccessUnit *pAccessUnit, M4OSA_Void* /*pUserData*/) {
     M4OSA_ERR err = M4NO_ERROR;
     VideoEditorVideoDecoder_Context* pDecShellContext = M4OSA_NULL;
     status_t status = OK;
@@ -1089,7 +1089,7 @@ M4OSA_ERR VideoEditorVideoSoftwareDecoder_create(M4OSA_Context *pContext,
         M4_StreamHandler *pStreamHandler,
         M4READER_GlobalInterface *pReaderGlobalInterface,
         M4READER_DataInterface *pReaderDataInterface,
-        M4_AccessUnit *pAccessUnit, M4OSA_Void *pUserData) {
+        M4_AccessUnit *pAccessUnit, M4OSA_Void* /*pUserData*/) {
     M4OSA_ERR err = M4NO_ERROR;
     VideoEditorVideoDecoder_Context* pDecShellContext = M4OSA_NULL;
     status_t status = OK;
