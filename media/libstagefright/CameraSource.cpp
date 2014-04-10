@@ -811,7 +811,7 @@ status_t CameraSource::read(
 }
 
 void CameraSource::dataCallbackTimestamp(int64_t timestampUs,
-        int32_t msgType, const sp<IMemory> &data) {
+        int32_t /*msgType*/, const sp<IMemory> &data) {
     ALOGV("dataCallbackTimestamp: timestamp %lld us", timestampUs);
     Mutex::Autolock autoLock(mLock);
     if (!mStarted || (mNumFramesReceived == 0 && timestampUs < mStartTimeUs)) {
@@ -873,7 +873,7 @@ void CameraSource::ProxyListener::dataCallbackTimestamp(
     mSource->dataCallbackTimestamp(timestamp / 1000, msgType, dataPtr);
 }
 
-void CameraSource::DeathNotifier::binderDied(const wp<IBinder>& who) {
+void CameraSource::DeathNotifier::binderDied(const wp<IBinder>& /*who*/) {
     ALOGI("Camera recording proxy died");
 }
 

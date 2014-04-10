@@ -339,7 +339,7 @@ DrmManagerClientImpl::DeathNotifier::~DeathNotifier() {
     }
 }
 
-void DrmManagerClientImpl::DeathNotifier::binderDied(const wp<IBinder>& who) {
+void DrmManagerClientImpl::DeathNotifier::binderDied(const wp<IBinder>& /*who*/) {
     Mutex::Autolock lock(sMutex);
     DrmManagerClientImpl::sDrmManagerService.clear();
     ALOGW("DrmManager server died!");

@@ -73,7 +73,7 @@ public:
         return meta;
     }
 
-    virtual status_t start(MetaData *params) {
+    virtual status_t start(MetaData* /*params*/) {
         mNumFramesOutput = 0;
         return OK;
     }
@@ -83,7 +83,7 @@ public:
     }
 
     virtual status_t read(
-            MediaBuffer **buffer, const MediaSource::ReadOptions *options) {
+            MediaBuffer **buffer, const MediaSource::ReadOptions* /*options*/) {
 
         if (mNumFramesOutput % 10 == 0) {
             fprintf(stderr, ".");

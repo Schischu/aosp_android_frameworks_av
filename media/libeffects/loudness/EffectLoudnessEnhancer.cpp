@@ -189,8 +189,8 @@ int LE_init(LoudnessEnhancerContext *pContext)
 //
 
 int LELib_Create(const effect_uuid_t *uuid,
-                         int32_t sessionId,
-                         int32_t ioId,
+                         int32_t /*sessionId*/,
+                         int32_t /*ioId*/,
                          effect_handle_t *pHandle) {
     ALOGV("LELib_Create()");
     int ret;

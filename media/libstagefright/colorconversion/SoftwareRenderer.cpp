@@ -138,7 +138,7 @@ static int ALIGN(int x, int y) {
 }
 
 void SoftwareRenderer::render(
-        const void *data, size_t size, void *platformPrivate) {
+        const void *data, size_t /*size*/, void* /*platformPrivate*/) {
     ANativeWindowBuffer *buf;
     int err;
     if ((err = native_window_dequeue_buffer_and_wait(mNativeWindow.get(),

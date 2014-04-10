@@ -342,7 +342,7 @@ status_t AwesomePlayer::setDataSource(
     return setDataSource_l(dataSource);
 }
 
-status_t AwesomePlayer::setDataSource(const sp<IStreamSource> &source) {
+status_t AwesomePlayer::setDataSource(const sp<IStreamSource> &/*source*/) {
     return INVALID_OPERATION;
 }
 

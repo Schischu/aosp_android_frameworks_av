@@ -567,7 +567,7 @@ status_t SimplePlayer::onDoMoreStuff() {
 }
 
 status_t SimplePlayer::onOutputFormatChanged(
-        size_t trackIndex, CodecState *state) {
+        size_t /*trackIndex*/, CodecState *state) {
     sp<AMessage> format;
     status_t err = state->mCodec->getOutputFormat(&format);
 
