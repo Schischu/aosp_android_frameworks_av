@@ -25,6 +25,9 @@
 
 #include <binder/IServiceManager.h>
 #include <gui/IGraphicBufferProducer.h>
+#include <gui/ISurfaceComposer.h>
+#include <gui/SurfaceComposerClient.h>
+#include <ui/DisplayInfo.h>
 #include <media/IHDCP.h>
 #include <media/IMediaPlayerService.h>
 #include <media/IRemoteDisplayClient.h>
@@ -68,15 +71,30 @@ WifiDisplaySource::WifiDisplaySource(
     if (path != NULL) {
         mMediaPath.setTo(path);
     }
+    DisplayInfo mainDpyInfo;
+    VideoFormats::ResolutionType type;
+    size_t err = 0;
+    size_t index;
+    sp<IBinder> mainDpy = SurfaceComposerClient::getBuiltInDisplay(
+            ISurfaceComposer::eDisplayIdMain);
+    err = SurfaceComposerClient::getDisplayInfo(mainDpy, &mainDpyInfo);
+    if (err != NO_ERROR) {
+        ALOGE("ERROR: unable to get display characteristics\n");
+        return;
+    }
+    mSupportedSourceVideoFormats.ConvertDpyInfo2Resolution(mainDpyInfo, type, index);
+    ALOGI("Main display is %dx%d @%.2ffps, so pick best resolution type=%d, index=%d\n",
+            mainDpyInfo.w, mainDpyInfo.h, mainDpyInfo.fps,
+            type, index);
 
     mSupportedSourceVideoFormats.disableAll();
 
     mSupportedSourceVideoFormats.setNativeResolution(
-            VideoFormats::RESOLUTION_CEA, 5);  // 1280x720 p30
+            type, index);
 
-    // Enable all resolutions up to 1280x720p30
+    // Enable all resolutions up to native resolution
     mSupportedSourceVideoFormats.enableResolutionUpto(
-            VideoFormats::RESOLUTION_CEA, 5,
+            type, index,
             VideoFormats::PROFILE_CHP,  // Constrained High Profile
             VideoFormats::LEVEL_32);    // Level 3.2
 }
