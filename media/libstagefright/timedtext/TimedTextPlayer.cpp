@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <inttypes.h>
+
 //#define LOG_NDEBUG 0
 #define LOG_TAG "TimedTextPlayer"
 #include <utils/Log.h>
@@ -271,7 +273,7 @@ int64_t TimedTextPlayer::delayUsFromCurrentTime(int64_t fireTimeUs) {
     sp<MediaPlayerBase> listener = mListener.promote();
     if (listener == NULL) {
         // TODO: it may be better to return kInvalidTimeUs
-        ALOGE("%s: Listener is NULL. (fireTimeUs = %lld)",
+        ALOGE("%s: Listener is NULL. (fireTimeUs = %" PRId64 ")",
               __FUNCTION__, fireTimeUs);
         return 0;
     }
