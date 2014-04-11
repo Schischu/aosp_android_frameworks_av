@@ -185,7 +185,7 @@ MatroskaSource::MatroskaSource(
         CHECK_GE(avccSize, 5u);
 
         mNALSizeLen = 1 + (avcc[4] & 3);
-        ALOGV("mNALSizeLen = %d", mNALSizeLen);
+        ALOGV("mNALSizeLen = %zd", mNALSizeLen);
     } else if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_AAC)) {
         mType = AAC;
     }
@@ -290,7 +290,7 @@ void BlockIterator::advance_l() {
         CHECK(mBlockEntry->GetBlock() != NULL);
         ++mBlockEntryIndex;
 
-        if (mBlockEntry->GetBlock()->GetTrackNumber() == mTrackNum) {
+        if (mBlockEntry->GetBlock()->GetTrackNumber() == (long long) mTrackNum) {
             break;
         }
     }
@@ -305,7 +305,7 @@ void BlockIterator::reset() {
 
     do {
         advance_l();
-    } while (!eos() && block()->GetTrackNumber() != mTrackNum);
+    } while (!eos() && block()->GetTrackNumber() != (long long) mTrackNum);
 }
 
 void BlockIterator::seek(
@@ -327,7 +327,7 @@ void BlockIterator::seek(
         mBlockEntryIndex = 0;
         do {
             advance_l();
-        } while (!eos() && block()->GetTrackNumber() != mTrackNum);
+        } while (!eos() && block()->GetTrackNumber() != (long long) mTrackNum);
         return;
     }
 
