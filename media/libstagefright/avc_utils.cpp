@@ -253,7 +253,7 @@ status_t getNextNALUnit(
 
 static sp<ABuffer> FindNAL(
         const uint8_t *data, size_t size, unsigned nalType,
-        size_t *stopOffset) {
+        size_t* /*stopOffset*/) {
     const uint8_t *nalStart;
     size_t nalSize;
     while (getNextNALUnit(&data, &size, &nalStart, &nalSize, true) == OK) {

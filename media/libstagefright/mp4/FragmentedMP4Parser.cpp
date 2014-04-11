@@ -1137,7 +1137,7 @@ void FragmentedMP4Parser::skip(off_t distance) {
 }
 
 status_t FragmentedMP4Parser::parseTrackHeader(
-        uint32_t type, size_t offset, uint64_t size) {
+        uint32_t /*type*/, size_t offset, uint64_t size) {
     if (offset + 4 > size) {
         return -EINVAL;
     }
@@ -1188,7 +1188,7 @@ status_t FragmentedMP4Parser::parseTrackHeader(
 }
 
 status_t FragmentedMP4Parser::parseMediaHeader(
-        uint32_t type, size_t offset, uint64_t size) {
+        uint32_t /*type*/, size_t offset, uint64_t size) {
     if (offset + 4 > size) {
         return -EINVAL;
     }
@@ -1221,7 +1221,7 @@ status_t FragmentedMP4Parser::parseMediaHeader(
 }
 
 status_t FragmentedMP4Parser::parseMediaHandler(
-        uint32_t type, size_t offset, uint64_t size) {
+        uint32_t /*type*/, size_t offset, uint64_t size) {
     if (offset + 12 > size) {
         return -EINVAL;
     }
@@ -1388,7 +1388,7 @@ status_t FragmentedMP4Parser::parseChunkOffsets64(
 }
 
 status_t FragmentedMP4Parser::parseAVCCodecSpecificData(
-        uint32_t type, size_t offset, uint64_t size) {
+        uint32_t /*type*/, size_t offset, uint64_t size) {
     TrackInfo *trackInfo = editTrack(mCurrentTrackID);
 
     SampleDescription *sampleDesc =
@@ -1471,7 +1471,7 @@ status_t FragmentedMP4Parser::parseAVCCodecSpecificData(
 }
 
 status_t FragmentedMP4Parser::parseESDSCodecSpecificData(
-        uint32_t type, size_t offset, uint64_t size) {
+        uint32_t /*type*/, size_t offset, uint64_t size) {
     TrackInfo *trackInfo = editTrack(mCurrentTrackID);
 
     SampleDescription *sampleDesc =
@@ -1576,7 +1576,7 @@ status_t FragmentedMP4Parser::parseESDSCodecSpecificData(
 }
 
 status_t FragmentedMP4Parser::parseMediaData(
-        uint32_t type, size_t offset, uint64_t size) {
+        uint32_t /*type*/, size_t offset, uint64_t size) {
     ALOGV("skipping 'mdat' chunk at offsets 0x%08lx-0x%08llx.",
           mBufferPos + offset, mBufferPos + size);
 
@@ -1684,7 +1684,7 @@ status_t FragmentedMP4Parser::parseSegmentIndex(
 }
 
 status_t FragmentedMP4Parser::parseTrackExtends(
-        uint32_t type, size_t offset, uint64_t size) {
+        uint32_t /*type*/, size_t offset, uint64_t size) {
     if (offset + 24 > size) {
         return -EINVAL;
     }
@@ -1735,7 +1735,7 @@ FragmentedMP4Parser::TrackInfo *FragmentedMP4Parser::editTrack(
 }
 
 status_t FragmentedMP4Parser::parseTrackFragmentHeader(
-        uint32_t type, size_t offset, uint64_t size) {
+        uint32_t /*type*/, size_t offset, uint64_t size) {
     if (offset + 8 > size) {
         return -EINVAL;
     }
@@ -1825,7 +1825,7 @@ status_t FragmentedMP4Parser::parseTrackFragmentHeader(
 }
 
 status_t FragmentedMP4Parser::parseTrackFragmentRun(
-        uint32_t type, size_t offset, uint64_t size) {
+        uint32_t /*type*/, size_t offset, uint64_t size) {
     if (offset + 8 > size) {
         return -EINVAL;
     }

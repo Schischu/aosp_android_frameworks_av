@@ -606,7 +606,7 @@ status_t AudioPolicyService::dumpInternals(int fd)
     return NO_ERROR;
 }
 
-status_t AudioPolicyService::dump(int fd, const Vector<String16>& args)
+status_t AudioPolicyService::dump(int fd, const Vector<String16>& /*args*/)
 {
     if (!dumpAllowed()) {
         dumpPermissionDenial(fd);
@@ -1452,7 +1452,7 @@ status_t AudioPolicyService::loadPreProcessorConfig(const char *path)
 extern "C" {
 
 
-static audio_module_handle_t aps_load_hw_module(void *service,
+static audio_module_handle_t aps_load_hw_module(void* /*service*/,
                                              const char *name)
 {
     sp<IAudioFlinger> af = AudioSystem::get_audio_flinger();
@@ -1465,7 +1465,7 @@ static audio_module_handle_t aps_load_hw_module(void *service,
 }
 
 // deprecated: replaced by aps_open_output_on_module()
-static audio_io_handle_t aps_open_output(void *service,
+static audio_io_handle_t aps_open_output(void* /*service*/,
                                          audio_devices_t *pDevices,
                                          uint32_t *pSamplingRate,
                                          audio_format_t *pFormat,
@@ -1483,7 +1483,7 @@ static audio_io_handle_t aps_open_output(void *service,
                           pLatencyMs, flags);
 }
 
-static audio_io_handle_t aps_open_output_on_module(void *service,
+static audio_io_handle_t aps_open_output_on_module(void* /*service*/,
                                                    audio_module_handle_t module,
                                                    audio_devices_t *pDevices,
                                                    uint32_t *pSamplingRate,
@@ -1502,7 +1502,7 @@ static audio_io_handle_t aps_open_output_on_module(void *service,
                           pLatencyMs, flags, offloadInfo);
 }
 
-static audio_io_handle_t aps_open_dup_output(void *service,
+static audio_io_handle_t aps_open_dup_output(void* /*service*/,
                                                  audio_io_handle_t output1,
                                                  audio_io_handle_t output2)
 {
@@ -1514,7 +1514,7 @@ static audio_io_handle_t aps_open_dup_output(void *service,
     return af->openDuplicateOutput(output1, output2);
 }
 
-static int aps_close_output(void *service, audio_io_handle_t output)
+static int aps_close_output(void* /*service*/, audio_io_handle_t output)
 {
     sp<IAudioFlinger> af = AudioSystem::get_audio_flinger();
     if (af == 0)
@@ -1523,7 +1523,7 @@ static int aps_close_output(void *service, audio_io_handle_t output)
     return af->closeOutput(output);
 }
 
-static int aps_suspend_output(void *service, audio_io_handle_t output)
+static int aps_suspend_output(void* /*service*/, audio_io_handle_t output)
 {
     sp<IAudioFlinger> af = AudioSystem::get_audio_flinger();
     if (af == 0) {
@@ -1534,7 +1534,7 @@ static int aps_suspend_output(void *service, audio_io_handle_t output)
     return af->suspendOutput(output);
 }
 
-static int aps_restore_output(void *service, audio_io_handle_t output)
+static int aps_restore_output(void* /*service*/, audio_io_handle_t output)
 {
     sp<IAudioFlinger> af = AudioSystem::get_audio_flinger();
     if (af == 0) {
@@ -1546,12 +1546,12 @@ static int aps_restore_output(void *service, audio_io_handle_t output)
 }
 
 // deprecated: replaced by aps_open_input_on_module(), and acoustics parameter is ignored
-static audio_io_handle_t aps_open_input(void *service,
+static audio_io_handle_t aps_open_input(void* /*service*/,
                                         audio_devices_t *pDevices,
                                         uint32_t *pSamplingRate,
                                         audio_format_t *pFormat,
                                         audio_channel_mask_t *pChannelMask,
-                                        audio_in_acoustics_t acoustics)
+                                        audio_in_acoustics_t /*acoustics*/)
 {
     sp<IAudioFlinger> af = AudioSystem::get_audio_flinger();
     if (af == 0) {
@@ -1562,7 +1562,7 @@ static audio_io_handle_t aps_open_input(void *service,
     return af->openInput((audio_module_handle_t)0, pDevices, pSamplingRate, pFormat, pChannelMask);
 }
 
-static audio_io_handle_t aps_open_input_on_module(void *service,
+static audio_io_handle_t aps_open_input_on_module(void* /*service*/,
                                                   audio_module_handle_t module,
                                                   audio_devices_t *pDevices,
                                                   uint32_t *pSamplingRate,
@@ -1578,7 +1578,7 @@ static audio_io_handle_t aps_open_input_on_module(void *service,
     return af->openInput(module, pDevices, pSamplingRate, pFormat, pChannelMask);
 }
 
-static int aps_close_input(void *service, audio_io_handle_t input)
+static int aps_close_input(void* /*service*/, audio_io_handle_t input)
 {
     sp<IAudioFlinger> af = AudioSystem::get_audio_flinger();
     if (af == 0)
@@ -1587,7 +1587,7 @@ static int aps_close_input(void *service, audio_io_handle_t input)
     return af->closeInput(input);
 }
 
-static int aps_set_stream_output(void *service, audio_stream_type_t stream,
+static int aps_set_stream_output(void* /*service*/, audio_stream_type_t stream,
                                      audio_io_handle_t output)
 {
     sp<IAudioFlinger> af = AudioSystem::get_audio_flinger();
@@ -1597,7 +1597,7 @@ static int aps_set_stream_output(void *service, audio_stream_type_t stream,
     return af->setStreamOutput(stream, output);
 }
 
-static int aps_move_effects(void *service, int session,
+static int aps_move_effects(void* /*service*/, int session,
                                 audio_io_handle_t src_output,
                                 audio_io_handle_t dst_output)
 {
@@ -1608,14 +1608,14 @@ static int aps_move_effects(void *service, int session,
     return af->moveEffects(session, src_output, dst_output);
 }
 
-static char * aps_get_parameters(void *service, audio_io_handle_t io_handle,
+static char * aps_get_parameters(void* /*service*/, audio_io_handle_t io_handle,
                                      const char *keys)
 {
     String8 result = AudioSystem::getParameters(io_handle, String8(keys));
     return strdup(result.string());
 }
 
-static void aps_set_parameters(void *service, audio_io_handle_t io_handle,
+static void aps_set_parameters(void* service, audio_io_handle_t io_handle,
                                    const char *kv_pairs, int delay_ms)
 {
     AudioPolicyService *audioPolicyService = (AudioPolicyService *)service;
@@ -1623,7 +1623,7 @@ static void aps_set_parameters(void *service, audio_io_handle_t io_handle,
     audioPolicyService->setParameters(io_handle, kv_pairs, delay_ms);
 }
 
-static int aps_set_stream_volume(void *service, audio_stream_type_t stream,
+static int aps_set_stream_volume(void* service, audio_stream_type_t stream,
                                      float volume, audio_io_handle_t output,
                                      int delay_ms)
 {
@@ -1633,7 +1633,7 @@ static int aps_set_stream_volume(void *service, audio_stream_type_t stream,
                                                delay_ms);
 }
 
-static int aps_start_tone(void *service, audio_policy_tone_t tone,
+static int aps_start_tone(void* service, audio_policy_tone_t tone,
                               audio_stream_type_t stream)
 {
     AudioPolicyService *audioPolicyService = (AudioPolicyService *)service;
@@ -1641,14 +1641,14 @@ static int aps_start_tone(void *service, audio_policy_tone_t tone,
     return audioPolicyService->startTone(tone, stream);
 }
 
-static int aps_stop_tone(void *service)
+static int aps_stop_tone(void* service)
 {
     AudioPolicyService *audioPolicyService = (AudioPolicyService *)service;
 
     return audioPolicyService->stopTone();
 }
 
-static int aps_set_voice_volume(void *service, float volume, int delay_ms)
+static int aps_set_voice_volume(void* service, float volume, int delay_ms)
 {
     AudioPolicyService *audioPolicyService = (AudioPolicyService *)service;
 
