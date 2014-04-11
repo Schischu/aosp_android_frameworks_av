@@ -36,6 +36,8 @@
 #include <media/IStreamSource.h>
 #include <utils/KeyedVector.h>
 
+#include <inttypes.h>
+
 namespace android {
 
 // I want the expression "y" evaluated even if verbose logging is off.
@@ -856,7 +858,7 @@ status_t ATSParser::Stream::flush() {
 }
 
 void ATSParser::Stream::onPayloadData(
-        unsigned PTS_DTS_flags, uint64_t PTS, uint64_t DTS,
+        unsigned PTS_DTS_flags, uint64_t PTS, uint64_t /* DTS */,
         const uint8_t *data, size_t size) {
 #if 0
     ALOGI("payload streamType 0x%02x, PTS = 0x%016llx, dPTS = %lld",
@@ -1261,8 +1263,8 @@ bool ATSParser::PTSTimeDeltaEstablished() {
 }
 
 void ATSParser::updatePCR(
-        unsigned PID, uint64_t PCR, size_t byteOffsetFromStart) {
-    ALOGV("PCR 0x%016llx @ %d", PCR, byteOffsetFromStart);
+        unsigned /* PID */, uint64_t PCR, size_t byteOffsetFromStart) {
+    ALOGV("PCR 0x%016" PRIx64 " @ %zu", PCR, byteOffsetFromStart);
 
     if (mNumPCRs == 2) {
         mPCR[0] = mPCR[1];
