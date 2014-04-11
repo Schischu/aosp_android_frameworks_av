@@ -311,7 +311,7 @@ status_t MediaPlayerService::updateProxyConfig(
     return HTTPBase::UpdateProxyConfig(host, port, exclusionList);
 }
 
-status_t MediaPlayerService::AudioCache::dump(int fd, const Vector<String16>& args) const
+status_t MediaPlayerService::AudioCache::dump(int fd, const Vector<String16>& /*args*/) const
 {
     const size_t SIZE = 256;
     char buffer[SIZE];
@@ -804,7 +804,7 @@ status_t MediaPlayerService::Client::setMetadataFilter(const Parcel& filter)
 }
 
 status_t MediaPlayerService::Client::getMetadata(
-        bool update_only, bool apply_filter, Parcel *reply)
+        bool update_only, bool /*apply_filter*/, Parcel *reply)
 {
     sp<MediaPlayerBase> player = getPlayer();
     if (player == 0) return UNKNOWN_ERROR;
@@ -1919,8 +1919,8 @@ bool CallbackThread::threadLoop() {
 status_t MediaPlayerService::AudioCache::open(
         uint32_t sampleRate, int channelCount, audio_channel_mask_t channelMask,
         audio_format_t format, int bufferCount,
-        AudioCallback cb, void *cookie, audio_output_flags_t flags,
-        const audio_offload_info_t *offloadInfo)
+        AudioCallback cb, void *cookie, audio_output_flags_t /*flags*/,
+        const audio_offload_info_t* /*offloadInfo*/)
 {
     ALOGV("open(%u, %d, 0x%x, %d, %d)", sampleRate, channelCount, channelMask, format, bufferCount);
     if (mHeap->getHeapID() < 0) {
@@ -1987,7 +1987,7 @@ status_t MediaPlayerService::AudioCache::wait()
 }
 
 void MediaPlayerService::AudioCache::notify(
-        void* cookie, int msg, int ext1, int ext2, const Parcel *obj)
+        void* cookie, int msg, int ext1, int ext2, const Parcel* /*obj*/)
 {
     ALOGV("notify(%p, %d, %d, %d)", cookie, msg, ext1, ext2);
     AudioCache* p = static_cast<AudioCache*>(cookie);
