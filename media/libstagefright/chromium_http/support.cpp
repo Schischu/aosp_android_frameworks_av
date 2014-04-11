@@ -51,7 +51,7 @@ bool logMessageHandler(
         int severity,
         const char* file,
         int line,
-        size_t message_start,
+        size_t /*message_start*/,
         const std::string& str) {
     int androidSeverity = ANDROID_LOG_VERBOSE;
     switch(severity) {
@@ -134,7 +134,7 @@ void SfNetLog::AddEntry(
         const base::TimeTicks &time,
         const Source &source,
         EventPhase phase,
-        EventParameters *params) {
+        EventParameters* /*params*/) {
 #if 0
     MY_LOGI(StringPrintf(
                 "AddEntry time=%s type=%s source=%s phase=%s\n",
@@ -189,7 +189,7 @@ SfRequestContext::SfRequestContext() {
     set_cookie_store(new net::CookieMonster(NULL, NULL));
 }
 
-const std::string &SfRequestContext::GetUserAgent(const GURL &url) const {
+const std::string &SfRequestContext::GetUserAgent(const GURL &/*url*/) const {
     return mUserAgent;
 }
 
@@ -223,9 +223,9 @@ status_t SfRequestContext::updateProxyConfig(
 SfNetworkLibrary::SfNetworkLibrary() {}
 
 SfNetworkLibrary::VerifyResult SfNetworkLibrary::VerifyX509CertChain(
-        const std::vector<std::string>& cert_chain,
-        const std::string& hostname,
-        const std::string& auth_type) {
+        const std::vector<std::string>& /*cert_chain*/,
+        const std::string& /*hostname*/,
+        const std::string& /*auth_type*/) {
     return VERIFY_OK;
 }
 
@@ -267,7 +267,7 @@ bool SfDelegate::getUID(uid_t *uid) const {
 }
 
 void SfDelegate::OnReceivedRedirect(
-            net::URLRequest *request, const GURL &new_url, bool *defer_redirect) {
+            net::URLRequest* /*request*/, const GURL &new_url, bool* /*defer_redirect*/) {
     MY_LOGV("OnReceivedRedirect");
     mOwner->onRedirect(new_url.spec().c_str());
 }
@@ -293,15 +293,15 @@ void SfDelegate::OnSSLCertificateError(
     inherited::OnSSLCertificateError(request, cert_error, cert);
 }
 
-void SfDelegate::OnGetCookies(net::URLRequest *request, bool blocked_by_policy) {
+void SfDelegate::OnGetCookies(net::URLRequest* /*request*/, bool /*blocked_by_policy*/) {
     MY_LOGV("OnGetCookies");
 }
 
 void SfDelegate::OnSetCookie(
-        net::URLRequest *request,
-        const std::string &cookie_line,
-        const net::CookieOptions &options,
-        bool blocked_by_policy) {
+        net::URLRequest* /*request*/,
+        const std::string &/*cookie_line*/,
+        const net::CookieOptions &/*options*/,
+        bool /*blocked_by_policy*/) {
     MY_LOGV("OnSetCookie");
 }
 
