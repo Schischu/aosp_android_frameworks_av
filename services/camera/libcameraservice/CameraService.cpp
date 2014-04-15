@@ -860,6 +860,29 @@ void CameraService::setCameraFree(int cameraId) {
     ALOGV("setCameraFree cameraId=%d", cameraId);
 }
 
+// Listener class for mediaplayer playback events
+class CameraService::ShutterPlaybackListener: public MediaPlayerListener {
+    public:
+        void notify(int msg, int ext1, int ext2, const Parcel *obj) {
+            if (msg == MEDIA_PLAYBACK_COMPLETE) {
+                ALOGV("%s: ShutterPlaybackListener: message received msg=%d, ext1=%d, ext2=%d",
+                      __FUNCTION__, msg, ext1, ext2);
+                gCameraService->notifyPlaybackComplete(SOUND_SHUTTER);
+            }
+        }
+};
+
+class CameraService::RecordingPlaybackListener: public MediaPlayerListener {
+    public:
+        void notify(int msg, int ext1, int ext2, const Parcel *obj) {
+            if (msg == MEDIA_PLAYBACK_COMPLETE) {
+                ALOGV("%s: RecordingPlaybackListener: message received msg=%d, ext1=%d, ext2=%d",
+                      __FUNCTION__, msg, ext1, ext2);
+                gCameraService->notifyPlaybackComplete(SOUND_RECORDING);
+            }
+        }
+};
+
 // We share the media players for shutter and recording sound for all clients.
 // A reference count is kept to determine when we will actually release the
 // media players.
@@ -883,6 +906,16 @@ void CameraService::loadSound() {
 
     mSoundPlayer[SOUND_SHUTTER] = newMediaPlayer("/system/media/audio/ui/camera_click.ogg");
     mSoundPlayer[SOUND_RECORDING] = newMediaPlayer("/system/media/audio/ui/VideoRecord.ogg");
+
+    //set a listener for shutter sound
+    mShutterPlaybackListener = new ShutterPlaybackListener();
+    mSoundPlayer[SOUND_SHUTTER]->setListener(mShutterPlaybackListener);
+
+    mRecordingPlaybackListener = new RecordingPlaybackListener();
+    mSoundPlayer[SOUND_RECORDING]->setListener(mRecordingPlaybackListener);
+
+    mShutterSoundBusy = false;
+    mRecordingSoundBusy = false;
 }
 
 void CameraService::releaseSound() {
@@ -900,11 +933,79 @@ void CameraService::releaseSound() {
 
 void CameraService::playSound(sound_kind kind) {
     LOG1("playSound(%d)", kind);
+
+    if (kind == SOUND_SHUTTER) {
+        status_t res = OK;
+
+        mShutterLock.lock();
+        if (mShutterSoundBusy) {
+            res = mShutterSoundCondition.waitRelative(
+                          mShutterLock, 500000000 /*500ms*/);
+        }
+        mShutterLock.unlock();
+
+        if (res != OK) {
+            ALOGE("%s: Warning: timed out waiting for shutter sound playback to complete",
+                  __FUNCTION__);
+            return;
+        }
+    }
+    else if (kind == SOUND_RECORDING) {
+        status_t res = OK;
+
+        mRecordingLock.lock();
+        if (mRecordingSoundBusy) {
+            res = mRecordingSoundCondition.waitRelative(
+                          mRecordingLock, 500000000 /*500ms*/);
+        }
+        mRecordingLock.unlock();
+
+        if (res != OK) {
+            ALOGE("%s: Warning: timed out waiting for recording sound playback to complete",
+                  __FUNCTION__);
+            return;
+        }
+    }
+
     Mutex::Autolock lock(mSoundLock);
     sp<MediaPlayer> player = mSoundPlayer[kind];
     if (player != 0) {
         player->seekTo(0);
         player->start();
+    }
+
+    switch(kind) {
+        case SOUND_SHUTTER:
+            mShutterLock.lock();
+            mShutterSoundBusy = true;
+            mShutterLock.unlock();
+        break;
+
+        case SOUND_RECORDING:
+            mRecordingLock.lock();
+            mRecordingSoundBusy = true;
+            mRecordingLock.unlock();
+        break;
+    }
+}
+
+void CameraService::notifyPlaybackComplete(sound_kind kind) {
+    LOG1("notifyPlaybackComplete(%d)", kind);
+
+    switch(kind) {
+        case SOUND_SHUTTER:
+            mShutterLock.lock();
+            mShutterSoundBusy = false;
+            mShutterSoundCondition.signal();
+            mShutterLock.unlock();
+        break;
+
+        case SOUND_RECORDING:
+            mRecordingLock.lock();
+            mRecordingSoundBusy = false;
+            mRecordingSoundCondition.signal();
+            mRecordingLock.unlock();
+        break;
     }
 }
 

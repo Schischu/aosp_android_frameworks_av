@@ -360,6 +360,30 @@ private:
     sp<MediaPlayer>     mSoundPlayer[NUM_SOUNDS];
     int                 mSoundRef;  // reference count (release all MediaPlayer when 0)
 
+    class               ShutterPlaybackListener;
+    class               RecordingPlaybackListener;
+
+    // signal shutter/recording conditions when a playback complete event
+    // is received.
+    // Without a notification logic, cts testPreviewPictureSizesCombination
+    // exposes a deadlock in mediaplayer/awesomeplayer when shuttersound seekTo() event
+    // for the current frame is requested while AwesomePlayer is still in the process of
+    // notifying MEDIA_PLAYBACK_COMPLETE for shutter sound of the previous frame.
+
+    void                notifyPlaybackComplete(sound_kind kind);
+
+    sp<ShutterPlaybackListener>
+                        mShutterPlaybackListener;
+    Condition           mShutterSoundCondition;
+    Mutex               mShutterLock;
+    bool                mShutterSoundBusy;
+
+    sp<RecordingPlaybackListener>
+                        mRecordingPlaybackListener;
+    Condition           mRecordingSoundCondition;
+    Mutex               mRecordingLock;
+    bool                mRecordingSoundBusy;
+
     camera_module_t *mModule;
 
     Vector<sp<ICameraServiceListener> >
