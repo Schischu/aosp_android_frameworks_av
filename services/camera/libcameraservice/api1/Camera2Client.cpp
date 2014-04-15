@@ -873,6 +873,12 @@ void Camera2Client::stopPreviewL() {
                 ALOGE("%s: Camera %d: Can't stop streaming: %s (%d)",
                         __FUNCTION__, mCameraId, strerror(-res), res);
             }
+            // add this to help switch KPI
+            res = mDevice->flush();
+            if (res != OK) {
+                ALOGE("%s: Camera %d: flush failed: %s (%d)",
+                       __FUNCTION__, mCameraId, strerror(-res), res);
+            }
             res = mDevice->waitUntilDrained();
             if (res != OK) {
                 ALOGE("%s: Camera %d: Waiting to stop streaming failed: %s (%d)",
