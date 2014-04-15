@@ -249,6 +249,11 @@ status_t ZslProcessor3::pushToReprocess(int32_t requestId) {
         uint8_t requestType = ANDROID_REQUEST_TYPE_REPROCESS;
         res = request.update(ANDROID_REQUEST_TYPE,
                 &requestType, 1);
+
+        uint8_t intentType = ANDROID_CONTROL_CAPTURE_INTENT_ZERO_SHUTTER_LAG;
+        res = request.update(ANDROID_CONTROL_CAPTURE_INTENT,
+                             &intentType, 1);
+
         int32_t inputStreams[1] =
                 { mZslStreamId };
         if (res == OK) request.update(ANDROID_REQUEST_INPUT_STREAMS,
