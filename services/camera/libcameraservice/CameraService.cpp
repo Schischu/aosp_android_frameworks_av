@@ -896,6 +896,9 @@ void CameraService::releaseSound() {
             mSoundPlayer[i].clear();
         }
     }
+
+    mShutterPlaybackListener.clear();
+    mRecordingPlaybackListener.clear();
 }
 
 void CameraService::playSound(sound_kind kind) {
