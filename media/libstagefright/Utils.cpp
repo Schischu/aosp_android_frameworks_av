@@ -89,12 +89,14 @@ status_t convertMetaDataToMessage(
     }
 
     if (!strncasecmp("video/", mime, 6)) {
-        int32_t width, height;
+        int32_t width, height, frameRate;
         CHECK(meta->findInt32(kKeyWidth, &width));
         CHECK(meta->findInt32(kKeyHeight, &height));
+        CHECK(meta->findInt32(kKeyFrameRate, &frameRate));
 
         msg->setInt32("width", width);
         msg->setInt32("height", height);
+        msg->setInt32("frame-rate", frameRate);
 
         int32_t sarWidth, sarHeight;
         if (meta->findInt32(kKeySARWidth, &sarWidth)

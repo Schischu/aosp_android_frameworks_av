@@ -1036,6 +1036,7 @@ status_t WifiDisplaySource::PlaybackSession::addVideoSource(
     sp<SurfaceMediaSource> source = new SurfaceMediaSource(width, height);
 
     source->setUseAbsoluteTimestamps();
+    source->setFrameRate(framesPerSecond);
 
     sp<RepeaterSource> videoSource =
         new RepeaterSource(source, framesPerSecond);

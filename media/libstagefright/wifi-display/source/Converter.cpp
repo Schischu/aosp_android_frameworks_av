@@ -194,15 +194,15 @@ status_t Converter::initEncoder() {
     } else {
         mOutputFormat->setInt32("bitrate", videoBitrate);
         mOutputFormat->setInt32("bitrate-mode", OMX_Video_ControlRateConstant);
-        mOutputFormat->setInt32("frame-rate", 30);
         mOutputFormat->setInt32("i-frame-interval", 15);  // Iframes every 15 secs
 
         // Configure encoder to use intra macroblock refresh mode
         mOutputFormat->setInt32("intra-refresh-mode", OMX_VIDEO_IntraRefreshCyclic);
 
-        int width, height, mbs;
+        int width, height, mbs, frameRate;
         if (!mOutputFormat->findInt32("width", &width)
-                || !mOutputFormat->findInt32("height", &height)) {
+                || !mOutputFormat->findInt32("height", &height)
+                || !mOutputFormat->findInt32("frame-rate", &frameRate)) {
             return ERROR_UNSUPPORTED;
         }
 
