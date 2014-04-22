@@ -20,6 +20,7 @@ LOCAL_SRC_FILES:=                         \
         FileSource.cpp                    \
         FLACExtractor.cpp                 \
         HTTPBase.cpp                      \
+        Interpolator.cpp                  \
         JPEGSource.cpp                    \
         MP3Extractor.cpp                  \
         MPEG2TSWriter.cpp                 \
