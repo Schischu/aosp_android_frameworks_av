@@ -70,7 +70,7 @@ private:
     bool mIsLiveStreaming;
     bool mIsWebm;
 
-    void addTracks();
+    int addTracks();
     void findThumbnails();
 
     bool isLiveStreaming() const;
