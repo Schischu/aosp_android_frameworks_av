@@ -463,28 +463,37 @@ status_t MatroskaSource::readBlock() {
     }
 
     const mkvparser::Block *block = mBlockIter.block();
-
+    const mkvparser::Tracks *tracks = (mExtractor->mSegment)->GetTracks();
+    const mkvparser::Track *track = tracks->GetTrackByNumber(block->GetTrackNumber());
+    int64_t nextBlkTimeUs, diffTimeUs, frameTimeUs;
     int64_t timeUs = mBlockIter.blockTimeUs();
+    mBlockIter.advance();
+    enum { VIDEO_TRACK = 1, AUDIO_TRACK = 2 };
+    frameTimeUs = timeUs;
+    diffTimeUs = 0;
+    if (track->GetType() == AUDIO_TRACK) {
+        if (!mBlockIter.eos()) {
+            nextBlkTimeUs = mBlockIter.blockTimeUs();
+            diffTimeUs = (nextBlkTimeUs - timeUs) / block->GetFrameCount();
+        }
+    }
 
     for (int i = 0; i < block->GetFrameCount(); ++i) {
         const mkvparser::Block::Frame &frame = block->GetFrame(i);
 
         MediaBuffer *mbuf = new MediaBuffer(frame.len);
-        mbuf->meta_data()->setInt64(kKeyTime, timeUs);
+        mbuf->meta_data()->setInt64(kKeyTime, frameTimeUs);
+        frameTimeUs += diffTimeUs;
         mbuf->meta_data()->setInt32(kKeyIsSyncFrame, block->IsKey());
 
         long n = frame.Read(mExtractor->mReader, (unsigned char *)mbuf->data());
         if (n != 0) {
             mPendingFrames.clear();
-
-            mBlockIter.advance();
             return ERROR_IO;
         }
 
         mPendingFrames.push_back(mbuf);
     }
-
-    mBlockIter.advance();
 
     return OK;
 }
