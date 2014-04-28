@@ -25,6 +25,9 @@
 
 namespace android {
 
+#define WAVE_FORMAT_MPEG (0x0050)
+#define WAVE_FORMAT_MPEGLAYER3 (0x0055)
+
 struct AVIExtractor : public MediaExtractor {
     AVIExtractor(const sp<DataSource> &dataSource);
 

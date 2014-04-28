@@ -703,7 +703,7 @@ status_t AVIExtractor::parseStreamFormat(off64_t offset, size_t size) {
     } else {
         uint32_t format = U16LE_AT(data);
 
-        if (format == 0x55) {
+        if ((format == WAVE_FORMAT_MPEGLAYER3) || (format == WAVE_FORMAT_MPEG)) {
             track->mMeta->setCString(kKeyMIMEType, MEDIA_MIMETYPE_AUDIO_MPEG);
         } else {
             ALOGW("Unsupported audio format = 0x%04x", format);
