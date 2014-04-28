@@ -463,28 +463,32 @@ status_t MatroskaSource::readBlock() {
     }
 
     const mkvparser::Block *block = mBlockIter.block();
-
+    int64_t nextBlkTimeUs, diffTimeUs, frameTimeUs;
     int64_t timeUs = mBlockIter.blockTimeUs();
+    mBlockIter.advance();
+    frameTimeUs = timeUs;
+    diffTimeUs = 0;
+    if (!mBlockIter.eos()) {
+        nextBlkTimeUs = mBlockIter.blockTimeUs();
+        diffTimeUs = (nextBlkTimeUs - timeUs) / block->GetFrameCount();
+    }
 
     for (int i = 0; i < block->GetFrameCount(); ++i) {
         const mkvparser::Block::Frame &frame = block->GetFrame(i);
 
         MediaBuffer *mbuf = new MediaBuffer(frame.len);
-        mbuf->meta_data()->setInt64(kKeyTime, timeUs);
+        mbuf->meta_data()->setInt64(kKeyTime, frameTimeUs);
+        frameTimeUs += diffTimeUs;
         mbuf->meta_data()->setInt32(kKeyIsSyncFrame, block->IsKey());
 
         long n = frame.Read(mExtractor->mReader, (unsigned char *)mbuf->data());
         if (n != 0) {
             mPendingFrames.clear();
-
-            mBlockIter.advance();
             return ERROR_IO;
         }
 
         mPendingFrames.push_back(mbuf);
     }
-
-    mBlockIter.advance();
 
     return OK;
 }
