@@ -69,6 +69,7 @@ private:
     bool mExtractedThumbnails;
     bool mIsLiveStreaming;
     bool mIsWebm;
+    bool canSeek;
 
     int addTracks();
     void findThumbnails();

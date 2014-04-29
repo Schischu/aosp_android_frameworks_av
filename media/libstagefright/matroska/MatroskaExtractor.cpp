@@ -638,6 +638,7 @@ MatroskaExtractor::MatroskaExtractor(const sp<DataSource> &source)
                 | DataSource::kIsCachingDataSource))
         && mDataSource->getSize(&size) != OK;
 
+    canSeek=false;
     mkvparser::EBMLHeader ebmlHeader;
     long long pos;
     if (ebmlHeader.Parse(mReader, pos) < 0) {
@@ -681,6 +682,27 @@ MatroskaExtractor::MatroskaExtractor(const sp<DataSource> &source)
         delete mSegment;
         mSegment = NULL;
         return;
+    }
+
+    const mkvparser::Cues* pCues = mSegment->GetCues();
+    const mkvparser::SeekHead* pSH = mSegment->GetSeekHead();
+    if (!pCues && pSH) {
+        const size_t count = pSH->GetCount();
+        const mkvparser::SeekHead::Entry* pEntry;
+        for (size_t index = 0; index < count; index++) {
+            pEntry = pSH->GetEntry(index);
+            if (pEntry &&pEntry->id == 0x0C53BB6B) { // Cues ID
+                long len; long long pos;
+                mSegment->ParseCues(pEntry->pos, pos, len);
+                pCues = mSegment->GetCues();
+                if(pCues)
+                    break;
+            }
+        }
+    }
+    if(pCues) {
+        ALOGV("Cues found , seekable file");
+        canSeek=true;
     }
 }
 
@@ -987,8 +1009,11 @@ sp<MetaData> MatroskaExtractor::getMetaData() {
 
 uint32_t MatroskaExtractor::flags() const {
     uint32_t x = CAN_PAUSE;
+    //seek is not supported if file does not have cues
     if (!isLiveStreaming()) {
-        x |= CAN_SEEK_BACKWARD | CAN_SEEK_FORWARD | CAN_SEEK;
+        if (canSeek) {
+            x |= CAN_SEEK_BACKWARD | CAN_SEEK_FORWARD | CAN_SEEK;
+        }
     }
 
     return x;
