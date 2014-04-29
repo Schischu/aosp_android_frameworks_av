@@ -100,6 +100,7 @@ struct OMXCodec : public MediaSource,
         kSupportsMultipleFramesPerInputBuffer = 1024,
         kRequiresLargerEncoderOutputBuffer    = 2048,
         kOutputBuffersAreUnreadable           = 4096,
+        kRequiresSampleRate                   = 131072,
     };
 
     struct CodecNameAndQuirks {
@@ -248,7 +249,7 @@ private:
             int32_t numChannels, int32_t sampleRate, int32_t bitRate,
             int32_t aacProfile, bool isADTS);
 
-    void setG711Format(int32_t numChannels);
+    void setG711Format(int32_t numChannels, int32_t sampleRate);
 
     status_t setVideoPortFormatType(
             OMX_U32 portIndex,

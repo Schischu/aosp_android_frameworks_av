@@ -239,6 +239,10 @@ uint32_t OMXCodec::getComponentQuirks(
         const MediaCodecList *list, size_t index) {
     uint32_t quirks = 0;
     if (list->codecHasQuirk(
+                index, "codec-requires-samplerate")) {
+        quirks |= kRequiresSampleRate;
+    }
+    if (list->codecHasQuirk(
                 index, "requires-allocate-on-input-ports")) {
         quirks |= kRequiresAllocateBufferOnInputPorts;
     }
@@ -538,7 +542,10 @@ status_t OMXCodec::configureCodec(const sp<MetaData> &meta) {
         int32_t numChannels;
         CHECK(meta->findInt32(kKeyChannelCount, &numChannels));
 
-        setG711Format(numChannels);
+        int32_t sampleRate;
+        CHECK(meta->findInt32(kKeySampleRate, &sampleRate));
+
+        setG711Format(numChannels, sampleRate);
     } else if (!strcasecmp(MEDIA_MIMETYPE_AUDIO_RAW, mMIME)) {
         CHECK(!mIsEncoder);
 
@@ -3491,9 +3498,9 @@ status_t OMXCodec::setAACFormat(
     return OK;
 }
 
-void OMXCodec::setG711Format(int32_t numChannels) {
+void OMXCodec::setG711Format(int32_t numChannels, int32_t sampleRate) {
     CHECK(!mIsEncoder);
-    setRawAudioFormat(kPortIndexInput, 8000, numChannels);
+    setRawAudioFormat(kPortIndexInput, sampleRate, numChannels);
 }
 
 void OMXCodec::setImageOutputFormat(
@@ -4388,7 +4395,12 @@ void OMXCodec::initOutputFormat(const sp<MetaData> &inputFormat) {
                         (mQuirks & kDecoderLiesAboutNumberOfChannels)
                             ? numChannels : params.nChannels);
 
-                mOutputFormat->setInt32(kKeySampleRate, params.nSamplingRate);
+                // The codec-reported sampleRate is not reliable. It assumes
+                // 8k always...
+                mOutputFormat->setInt32(
+                        kKeySampleRate,
+                        (mQuirks & kRequiresSampleRate)
+                            ? sampleRate : params.nSamplingRate);
             } else if (audio_def->eEncoding == OMX_AUDIO_CodingAMR) {
                 OMX_AUDIO_PARAM_AMRTYPE amr;
                 InitOMXParams(&amr);
