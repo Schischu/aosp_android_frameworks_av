@@ -50,6 +50,8 @@ void convertMessageToMetaData(
 
 AString MakeUserAgent();
 
+// used to set the AAC parameters for offloaded AAC files
+status_t setAACParameters(sp<MetaData> meta, audio_offload_info_t *info);
 // Convert a MIME type to a AudioSystem::audio_format
 status_t mapMimeToAudioFormat(audio_format_t& format, const char* mime);
 

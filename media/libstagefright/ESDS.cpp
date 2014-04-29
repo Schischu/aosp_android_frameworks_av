@@ -195,6 +195,12 @@ status_t ESDS::parseDecoderConfigDescriptor(size_t offset, size_t size) {
 
     mObjectTypeIndication = mData[offset];
 
+    mStreamType = mData[offset+1]>>2;
+    mBitRateMax = (mData[offset+5]<<24)|(mData[offset+6]<<16)|
+                  (mData[offset+7]<<8)|mData[offset+8];
+    mBitRateAvg = (mData[offset+9]<<24)|(mData[offset+10]<<16)|
+                  (mData[offset+11]<<8)|mData[offset+12];
+
     offset += 13;
     size -= 13;
 
@@ -220,6 +226,32 @@ status_t ESDS::parseDecoderConfigDescriptor(size_t offset, size_t size) {
     mDecoderSpecificOffset = sub_offset;
     mDecoderSpecificLength = sub_size;
 
+    return OK;
+}
+
+status_t ESDS::getCodecSpecificOffset(size_t *offset, size_t *size) const {
+    if (mInitCheck != OK) {
+        return mInitCheck;
+    }
+    *offset = mDecoderSpecificOffset;
+    *size = mDecoderSpecificLength;
+    return OK;
+}
+
+status_t ESDS::getBitRate(uint32_t *brateMax, uint32_t *brateAvg) const {
+    if (mInitCheck != OK) {
+        return mInitCheck;
+    }
+    *brateMax = mBitRateMax;
+    *brateAvg = mBitRateAvg;
+    return OK;
+}
+
+status_t ESDS::getStreamType(uint8_t *streamType) const {
+    if (mInitCheck != OK) {
+        return mInitCheck;
+    }
+    *streamType = mStreamType;
     return OK;
 }
 

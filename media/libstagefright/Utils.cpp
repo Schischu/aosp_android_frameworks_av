@@ -32,6 +32,11 @@
 #include <hardware/audio.h>
 #include <media/stagefright/Utils.h>
 #include <media/AudioParameter.h>
+#include <system/audio.h>
+
+#define AOT_SBR 5
+#define AOT_PS 29
+#define AOT_AAC_LC 2
 
 namespace android {
 
@@ -599,12 +604,19 @@ bool canOffloadStream(const sp<MetaData>& meta, bool hasVideo,
     }
     info.duration_us = duration;
 
-    int32_t brate = -1;
-    if (!meta->findInt32(kKeyBitRate, &brate)) {
+    info.bit_rate = -1;
+    if (!meta->findInt32(kKeyBitRate, (int32_t *)&info.bit_rate)) {
         ALOGV("track of type '%s' does not publish bitrate", mime);
      }
-    info.bit_rate = brate;
-
+    if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_AAC)) {
+        ALOGV("initAudioDecoder: MEDIA_MIMETYPE_AUDIO_AAC");
+        if (setAACParameters(meta, &info) != OK) {
+            ALOGV("Failed to set AAC parameters/Unsupported AAC "
+                    "format, use non-offload");
+            return false;
+        }
+    }
+    meta->setInt32(kKeyBitRate, info.bit_rate);
 
     info.stream_type = streamType;
     info.has_video = hasVideo;
@@ -615,5 +627,151 @@ bool canOffloadStream(const sp<MetaData>& meta, bool hasVideo,
     return AudioSystem::isOffloadSupported(info);
 }
 
+status_t setAACParameters(sp<MetaData> meta, audio_offload_info_t *info) {
+
+    // Get ESDS and check its validity
+    const void *ed;    // ESDS query data
+    size_t es;         // ESDS query size
+    uint32_t type;     // meta type info
+    if((!meta->findData(kKeyESDS, &type, &ed, &es)) ||
+       (type != kTypeESDS) || (es < 14) || (es > 256)){
+        ALOGW("setAACParameters: ESDS Info malformed or absent - No offload");
+        return BAD_VALUE;
+    }
+    ESDS esds((uint8_t *)ed, (off_t) es);
+    CHECK_EQ(esds.InitCheck(), (status_t)OK);
+
+    // Get the bit-rate information from ESDS
+    uint32_t maxBitRate;
+    if (esds.getBitRate(&maxBitRate, &(info->bit_rate)) == OK) {
+        ALOGV("setAACParameters: Before set maxBitRate %d, avgBitRate %d",
+                maxBitRate, info->bit_rate);
+        if((info->bit_rate == 0) && maxBitRate)
+            info->bit_rate = maxBitRate;
+    }
+
+    ALOGV("setAACParameters: After set maxBitRate %d, avgBitRate %d",
+            maxBitRate, info->bit_rate);
+    // Get Codec specific information
+    size_t csd_offset;
+    size_t csd_size;
+    if ((esds.getCodecSpecificOffset(&csd_offset, &csd_size) != OK) ||
+        (csd_size < 2) ) {
+        ALOGW("setAACParameters: Codec specific info not found! - No offload");
+        return BAD_VALUE;
+    }
+
+    // Backup the ESD to local array for easy processing to get
+    // further AAC info
+    uint8_t esd[256]= {0};
+    memcpy(esd, ed, es);
+
+    uint8_t *data = esd+csd_offset;
+    off_t size = (off_t)es-csd_offset; // CSD data size
+
+    // Start Parsing the CSD info as per the ISO:14496-Part3 specifications
+    uint32_t AOT = (data[0]>>3);  // First 5 bits
+    uint32_t freqIndex = (data[0] & 7) << 1 | (data[1] >> 7); // Bits 6,7,8,9
+    uint32_t numChannels = 0;
+    uint32_t downSamplingSBR = 0;
+    int      skip=0;
+
+    ALOGV("setAACParameters: AOT %d", AOT);
+    // TODO: Remove when HEv1 & HEv2 is supported by FW or AAC gets stable
+    if (AOT == AOT_SBR || AOT == AOT_PS) {
+        ALOGV("setAACParameters: HEAAC");
+    }
+
+    // Frequency range of 96kHz to 8kHz (MPEG4-Part3-Standard has definition)
+    // supported
+    if (freqIndex > 11) {
+        ALOGW("setAACParameters: Unsupported freqIndex1 %d, no offload",
+                freqIndex);
+        return BAD_VALUE;
+    }
+
+    // If channel info found is invalid, return bad value
+    numChannels = (data[1] >> 3) & 15;  // Bits 10 to 13
+    if ((numChannels == 0) || (numChannels > 8)) {
+        ALOGW("setAACParameters: Channel count invalid, numChannels %d",
+                numChannels);
+        return BAD_VALUE;
+    }
+
+    // For Explicit signalling HEv1 and HEv2, get Extended frequency index
+    if (AOT == AOT_SBR || AOT == AOT_PS) {
+        uint32_t extFreqIndex =  (data[1] & 7) << 1 | (data[2] >> 7);
+        if (extFreqIndex > 11) {
+            ALOGW("setAACParameters: Unsupported freqIndex2 %d, no offload",
+                    freqIndex);
+            return BAD_VALUE;
+        }
+        if (extFreqIndex == freqIndex) {
+            downSamplingSBR = 1;
+            //Current TEL LPE has limitation it cannot play these SBR files
+            // Use IA OMX S/w decoder. When LPE supports, remove the return
+            ALOGW("setAACParameters: Downsampling");
+        }
+        freqIndex = extFreqIndex;
+    }
+    // SBR Explicit signaling with extended AOT information
+    if (AOT != AOT_SBR) {
+        // Scan ESDS for next audioObjectType to be HEv1 (SBR=5:00101)
+        // If HEv1 found, again scan for looking    HEv2 (PS=29:11101)
+        // Now, look for 11 bits of sync info+SBR 0, 01010110, 111-00101
+        if ( (!(data[1]&0x1)) && (data[2]==0x56) && (data[3]==0xE5)){
+            if (data[4] & 0x80){ // SBR present flag is set
+                AOT = AOT_SBR;
+                uint32_t extFreqIndex = (data[4] >>3) & 0xF;
+                if (extFreqIndex > 11) {
+                    ALOGW("setAACParameters: Unsupported freqIndex3 %d, "
+                            "no offload", freqIndex);
+                    return BAD_VALUE;
+                }
+                if (extFreqIndex == freqIndex){
+                    downSamplingSBR = 1;
+                    ALOGW("setAACParameters: Downsampling");
+                }
+
+                // Get next 11 sync bits. If it matches 0x548 and
+                // next bit PS=1, then its HEv2
+                // Bit stream to look for is  ....101, 01001000, 1
+                // (the last 1 represents PS)..
+                if (((data[4]&0x7)==0x5) && (data[5]==0x48) &&
+                        (data[6]&0x80)){
+                    AOT = AOT_PS;
+                }
+                freqIndex = extFreqIndex;
+            }
+        }
+    }
+
+    static uint32_t kSamplingRate[] = {96000, 88200, 64000, 48000, 44100,
+                                       32000, 24000, 22050, 16000, 12000,
+                                       11025, 8000, 7350, 0, 0, 0};
+
+    AudioParameter param = AudioParameter();
+    param.addInt(String8(AUDIO_OFFLOAD_CODEC_ID), AOT);
+    param.addInt(String8(AUDIO_OFFLOAD_CODEC_DOWN_SAMPLING), downSamplingSBR);
+
+    ALOGV("setAACParameters: avgBitRate %d, sampleRate %d, AOT %d,"
+          "numChannels %d, downSamplingSBR %d", info->bit_rate,
+           kSamplingRate[freqIndex], AOT, numChannels, downSamplingSBR);
+
+    status_t status = NO_ERROR;
+    status = AudioSystem::setParameters(0, param.toString());
+
+    if (status != NO_ERROR) {
+        ALOGE("error in setting offload AAC parameters");
+        return status;
+    }
+    if ((AOT != AOT_SBR) && (AOT != AOT_PS) && (AOT != AOT_AAC_LC)) {
+        ALOGV("Unsupported AAC format");
+        return BAD_VALUE;
+    }
+
+    info->format = AUDIO_FORMAT_AAC;
+    return OK;
+}
 }  // namespace android
 
