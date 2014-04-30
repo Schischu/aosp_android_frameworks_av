@@ -87,6 +87,9 @@ private:
     size_t mNumSamples;
     size_t mSampleIx;
 
+    bool mEnabled;
+    bool mStabilize;
+
     DISALLOW_EVIL_CONSTRUCTORS(WindowedLinearInterpolator);
 };
 
