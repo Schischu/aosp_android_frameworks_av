@@ -1954,10 +1954,20 @@ void AwesomePlayer::onVideoEvent() {
             }
         }
 
-        if (latenessUs < -30000) {
-            // We're more than 30ms early, schedule at most 20 ms before time due
-            postVideoEvent_l(latenessUs < -60000 ? 30000 : -latenessUs - 20000);
-            return;
+        if (mUsePTS) {
+            if (latenessUs < -30000) {
+                // We're more than 30ms early, schedule at most 20 ms before time
+                // due or every 30ms
+                postVideoEvent_l(latenessUs < -60000 ? 30000 : -latenessUs - 20000);
+                return;
+            }
+        } else {
+            if (latenessUs < -10000) {
+                // We're more than 10ms early.  Try to schedule at least 12ms
+                // early (to hit this same check), or just on time.
+                postVideoEvent_l(latenessUs < -22000 ? 10000 : -latenessUs);
+                return;
+            }
         }
     }
 
@@ -1970,7 +1980,9 @@ void AwesomePlayer::onVideoEvent() {
 
     if (mVideoRenderer != NULL) {
         mSinceLastDropped++;
-        mVideoBuffer->meta_data()->setInt64(kKeyTime, looperTimeUs - latenessUs);
+        if (mUsePTS) {
+            mVideoBuffer->meta_data()->setInt64(kKeyTime, looperTimeUs - latenessUs);
+        }
 
         mVideoRenderer->render(mVideoBuffer);
         if (!mVideoRenderingStarted) {
@@ -2025,8 +2037,13 @@ void AwesomePlayer::onVideoEvent() {
         int64_t delayUs = nextTimeUs - interpolateRealTimeUs(ts, systemTimeUs) + mTimeSourceDeltaUs;
         ATRACE_INT("Frame delta (ms)", (nextTimeUs - timeUs) / 1E3);
         ALOGV("next frame in %" PRId64, delayUs);
-        // try to schedule 30ms before time due
-        postVideoEvent_l(delayUs > 60000 ? 30000 : delayUs < 30000 ? 0 : delayUs - 30000);
+        if (mUsePTS) {
+            // try to schedule 30ms before time due
+            postVideoEvent_l(delayUs > 60000 ? 30000 : delayUs < 30000 ? 0 : delayUs - 30000);
+        } else {
+            // try to schedule at least 12ms before time due, or just on time
+            postVideoEvent_l(delayUs > 22000 ? 10000 : delayUs < 0 ? 0 : delayUs);
+        }
         return;
     }
 
@@ -2189,6 +2206,15 @@ status_t AwesomePlayer::prepareAsync_l() {
         mQueue.start();
         mQueueStarted = true;
     }
+
+    char prop[PROPERTY_VALUE_MAX];
+    if (property_get("media.player.use-pts", prop, "1") &&
+        (!strcmp("1", prop) || !strcasecmp("true", prop))) {
+        mUsePTS = true;
+    } else {
+        mUsePTS = false;
+    }
+    ALOGD("Interpolator: use-pts=%d", mUsePTS);
 
     modifyFlags(PREPARING, SET);
     mAsyncPrepareEvent = new AwesomeEvent(
