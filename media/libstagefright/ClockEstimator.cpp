@@ -18,6 +18,7 @@
 //#define LOG_NDEBUG 0
 #define LOG_TAG "ClockEstimator"
 #include <utils/Log.h>
+#include <cutils/properties.h>
 
 #include <math.h>
 #include <media/stagefright/ClockEstimator.h>
@@ -98,6 +99,14 @@ double WindowedLinearFitEstimator::LinearFit::interpolate(double x) {
 }
 
 double WindowedLinearFitEstimator::estimate(double x, double y) {
+    if (!mEnabled) {
+        return y;
+    }
+
+    if (mStabilize && mNumSamples == mHistoryLength) {
+        return mYHistory[0] + x;
+    }
+
     /*
      * TODO: We could update the head by adding the new sample to it
      * and amplifying it, but this approach can lead to unbounded
@@ -161,6 +170,13 @@ double WindowedLinearFitEstimator::estimate(double x, double y) {
     total.combine(mHead);
     total.combine(mMain);
     total.combine(mTail);
+
+    if (mStabilize && mNumSamples == mHistoryLength) {
+        mYHistory.editItemAt(0) = total.interpolate(x) - x;
+        ALOGD("stabilized at %g + time", mYHistory[0]);
+        return mYHistory[0] + x;
+    }
+
     return total.interpolate(x);
 }
 
@@ -170,6 +186,21 @@ void WindowedLinearFitEstimator::reset() {
     mTail.reset();
     mNumSamples = 0;
     mSampleIx = mHistoryLength - 1;
+
+    char prop[PROPERTY_VALUE_MAX];
+    if (property_get("media.clock_estimator.enable", prop, "1") &&
+        (!strcmp("1", prop) || !strcasecmp("true", prop))) {
+        mEnabled = true;
+    } else {
+        mEnabled = false;
+    }
+    if (property_get("media.clock_estimator.stabilize", prop, "0") &&
+        (!strcmp("1", prop) || !strcasecmp("true", prop))) {
+        mStabilize = true;
+    } else {
+        mStabilize = false;
+    }
+    ALOGD("in reset(enabled=%d stabilize=%d)", mEnabled, mStabilize);
 }
 
 }; // namespace android
