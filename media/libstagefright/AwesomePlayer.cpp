@@ -381,7 +381,9 @@ status_t AwesomePlayer::setDataSource_l(const sp<MediaExtractor> &extractor) {
     mExtractor = extractor;
     for (size_t i = 0; i < extractor->countTracks(); ++i) {
         sp<MetaData> meta = extractor->getTrackMetaData(i);
-
+        if (meta == NULL) {
+            continue;
+        }
         int32_t bitrate;
         if (!meta->findInt32(kKeyBitRate, &bitrate)) {
             const char *mime;
@@ -411,7 +413,9 @@ status_t AwesomePlayer::setDataSource_l(const sp<MediaExtractor> &extractor) {
     bool haveVideo = false;
     for (size_t i = 0; i < extractor->countTracks(); ++i) {
         sp<MetaData> meta = extractor->getTrackMetaData(i);
-
+        if (meta == NULL) {
+            continue;
+        }
         const char *_mime;
         CHECK(meta->findCString(kKeyMIMEType, &_mime));
 
