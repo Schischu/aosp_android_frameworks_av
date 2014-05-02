@@ -1407,7 +1407,8 @@ status_t AwesomePlayer::seekTo(int64_t timeUs) {
         Mutex::Autolock autoLock(mLock);
         return seekTo_l(timeUs);
     }
-
+    // Send seek complete event for non-seekable streams
+    notifyListener_l(MEDIA_SEEK_COMPLETE);
     return OK;
 }
 
