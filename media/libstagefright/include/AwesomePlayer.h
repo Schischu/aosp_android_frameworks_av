@@ -203,6 +203,7 @@ private:
 
     int64_t mBitrate;  // total bitrate of the file (in bps) or -1 if unknown.
 
+    bool mUsePTS;
     bool mWatchForAudioSeekComplete;
     bool mWatchForAudioEOS;
 
