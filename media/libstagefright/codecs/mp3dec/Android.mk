@@ -79,3 +79,23 @@ LOCAL_MODULE := libstagefright_soft_mp3dec
 LOCAL_MODULE_TAGS := optional
 
 include $(BUILD_SHARED_LIBRARY)
+
+################################################################################
+include $(CLEAR_VARS)
+LOCAL_SRC_FILES := \
+        test/mp3dec_test.cpp  \
+        test/mp3reader.cpp  \
+        test/wavwriter.cpp
+
+LOCAL_C_INCLUDES := \
+        $(LOCAL_PATH)/src \
+        $(LOCAL_PATH)/include \
+        $(LOCAL_PATH)/test/include
+
+LOCAL_STATIC_LIBRARIES := \
+        libstagefright_mp3dec
+
+LOCAL_MODULE := libstagefright_mp3dec_test
+LOCAL_MODULE_TAGS := optional
+
+include $(BUILD_EXECUTABLE)
