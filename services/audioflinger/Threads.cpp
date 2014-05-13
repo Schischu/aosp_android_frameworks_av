@@ -3951,7 +3951,8 @@ void AudioFlinger::OffloadThread::threadLoop_exit()
         mMixerStatus = MIXER_DRAIN_ALL;
         threadLoop_drain();
     }
-    mCallbackThread->exit();
+    if (mCallbackThread)
+        mCallbackThread->exit();
     PlaybackThread::threadLoop_exit();
 }
 
