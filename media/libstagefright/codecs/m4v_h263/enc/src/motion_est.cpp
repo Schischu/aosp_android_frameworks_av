@@ -674,11 +674,11 @@ void CalcThreshold(double pf, double exp_lamda[], Int nrmlz_th[])
 void    HTFMPrepareCurMB(VideoEncData *video, HTFM_Stat *htfm_stat, UChar *cur)
 {
     void* tmp = (void*)(video->currYMB);
-    ULong *htfmMB = (ULong*)tmp;
+    uint32_t *htfmMB = (uint32_t*)tmp;
     UChar *ptr, byte;
     Int *offset;
     Int i;
-    ULong word;
+    uint32_t word;
     Int width = video->currVop->width;
 
     if (((Int)video->numVopsInGOP) % 30 == 1)
