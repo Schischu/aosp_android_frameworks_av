@@ -24,7 +24,7 @@
 @
 @
 @ Who:                                   Date: MM/DD/YYYY
-@ Description: 
+@ Description:
 @
 @------------------------------------------------------------------------------
 
@@ -68,67 +68,50 @@ pvmp3_dct_9:
         str      r10,[r0,#0]
         ldr      r11,cos_2pi_9
         rsb      r7,r2,#0
-
         ldr      r10,cos_4pi_9
         mov      r9,r1,lsl #1
         mov      r8,r7
-
-@    vec[4]  = fxp_mac32_Q32( vec[4], tmp0<<1, cos_2pi_9)@ 
-
+@    vec[4]  = fxp_mac32_Q32( vec[4], tmp0<<1, cos_2pi_9)@
         smlal    r1,r8,r11,r9
         ldr      r11,cos_pi_9
-		mov      r1,r9			@@@@@@  !!!!!!
-
+        mov      r1,r9
 @    vec[8]  = fxp_mac32_Q32( vec[8], tmp0<<1, cos_4pi_9)@
-
         smlal    r1,r7,r10,r9
-
         mov      r1,r12,lsl #1
-
-
-@    vec[2]  = fxp_mac32_Q32( vec[2], tmp0<<1, cos_pi_9)@
-
+@    vec[2]  = fxp_mac32_Q32( vec[2], tmp0<<1,  cos_pi_9)@
         smlal    r9,r2,r11,r9
         rsb      r9,r10,#0
-        ldr      r11,cos_5pi_9
-
-        smlal    r12,r2,r9,r1
-
-
-
+        ldr      r11,cos_8pi_9
 @    vec[2]  = fxp_mac32_Q32( vec[2], tmp2<<1, cos_5pi_9)@
-
+        smlal    r12,r2,r9,r1
         ldr      r9,cos_2pi_9
-        mov      r12,r1			@@@@@@  !!!!!!
+        mov      r12,r1
+@    vec[4]  = fxp_mac32_Q32( vec[4], tmp2<<1, cos_8pi_9)@
         smlal    r12,r8,r11,r1
-
-
 @    vec[8]  = fxp_mac32_Q32( vec[8], tmp2<<1, cos_2pi_9)@
-
         smlal    r1,r7,r9,r1
         mov      r1,r6,lsl #1
+@    vec[8]  = fxp_mac32_Q32( vec[8], tmp3<<1, cos_8pi_9)@
         smlal    r12,r7,r11,r1
         and      r6,r10,r11,asr #14
+@    vec[4]  = fxp_mac32_Q32( vec[4], tmp3<<1, cos_4pi_9)@
         smlal    r12,r8,r6,r1
-        ldr      r10,cos_11pi_18
+        ldr      r10,cos_13pi_18
         add      r12,r11,r6
+@    vec[2]  = fxp_mac32_Q32( vec[2], tmp3<<1, cos_7pi_9)@
         smlal    r1,r2,r12,r1
-        ldr      r9,cos_8pi_9
+        ldr      r9,cos_11pi_18
         str      r2,[r0,#8]
         mov      r1,r5,lsl #1
-
-@    vec[8]  = fxp_mac32_Q32( vec[8], tmp3<<1, cos_8pi_9)@
-
+@    vec[1]  = fxp_mul32_Q32( tmp5 << 1, cos_11pi_18)@
         smull    r2,r6,r9,r1
         str      r7,[r0,#0x20]
         mov      r2,r4,lsl #1
-        ldr      r7,cos_13pi_18
+        ldr      r7,cos_5pi_6
+@    vec[1]  = fxp_mac32_Q32( vec[1], tmp6<<1, cos_13pi_18)@
         smlal    r12,r6,r10,r2
-
         mov      r3,r3,lsl #1
-
-@    vec[5]  = fxp_mac32_Q32( vec[5], tmp8<<1, cos_13pi_18)@
-
+@    vec[1]  = fxp_mac32_Q32( vec[1], tmp7<<1,   cos_5pi_6)@
         smlal    r12,r6,r7,r3
         add      r4,r5,r4
         mov      r12,lr,lsl #1
@@ -136,20 +119,13 @@ pvmp3_dct_9:
         ldr      r7,cos_17pi_18
         str      r8,[r0, #0x10]
         ldr      r4,cos_pi_6
-
         mov      lr,lr,lsl #1
-
 @    vec[1]  = fxp_mac32_Q32( vec[1], tmp8<<1, cos_17pi_18)@
-
         smlal    r8,r6,r7,r12
-
 @    vec[3]  = fxp_mul32_Q32((tmp5 + tmp6  - tmp8)<<1, cos_pi_6)@
-
         smull    r5,lr,r4,lr
         str      r6,[r0, #4]
         str      lr,[r0, #0xc]
-
-
 @    vec[5]  = fxp_mul32_Q32(tmp5<<1, cos_17pi_18)@
         smull    r5,lr,r7,r1
         rsb      r6,r9,#0
@@ -161,7 +137,6 @@ pvmp3_dct_9:
         smlal    r5,lr,r10,r12
         str      lr,[r0, #0x14]
         rsb      lr,r10,#0
-
 @    vec[7]  = fxp_mul32_Q32(tmp5<<1, cos_5pi_18)@
         smull    r5,r1,lr,r1
 @    vec[7]  = fxp_mac32_Q32( vec[7], tmp6<<1, cos_17pi_18)@
@@ -178,13 +153,13 @@ cos_4pi_9:
         .word      0x163a1a80
 cos_pi_9:
         .word      0x7847d900
-cos_5pi_9:
-        .word      0x87b82700
 cos_8pi_9:
-        .word      0xd438af00
+        .word      0x87b82700
 cos_11pi_18:
-        .word      0xadb92280
+        .word      0xd438af00
 cos_13pi_18:
+        .word      0xadb92280
+cos_5pi_6:
         .word      0x91261480
 cos_17pi_18:
         .word      0x81f1d200
