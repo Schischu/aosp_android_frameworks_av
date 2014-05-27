@@ -10,11 +10,14 @@ LOCAL_MODULE := AMRWBEncTest
 
 LOCAL_ARM_MODE := arm
 
-LOCAL_CFLAGS := -DLINUX
+LOCAL_CFLAGS :=
 
 LOCAL_SHARED_LIBRARIES := \
     libstagefright \
     libdl
+
+LOCAL_STATIC_LIBRARIES := \
+    libstagefright_amrwbenc
 
 LOCAL_C_INCLUDES := \
     $(LOCAL_PATH)/ \
