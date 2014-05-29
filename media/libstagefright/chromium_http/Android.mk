@@ -18,7 +18,6 @@ LOCAL_C_INCLUDES:= \
 LOCAL_CFLAGS += -Wno-multichar
 
 LOCAL_SHARED_LIBRARIES += \
-        libstlport \
         libchromium_net \
         libutils \
         libcutils \
@@ -27,7 +26,7 @@ LOCAL_SHARED_LIBRARIES += \
         libstagefright \
         libdrmframework
 
-include external/stlport/libstlport.mk
+include external/libcxx/libcxx.mk
 
 LOCAL_MODULE:= libstagefright_chromium_http
 

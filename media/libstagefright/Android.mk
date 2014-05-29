@@ -108,8 +108,7 @@ LOCAL_SRC_FILES += \
         chromium_http_stub.cpp
 LOCAL_CPPFLAGS += -DCHROMIUM_AVAILABLE=1
 
-LOCAL_SHARED_LIBRARIES += libstlport
-include external/stlport/libstlport.mk
+include external/libcxx/libcxx.mk
 
 LOCAL_SHARED_LIBRARIES += \
         libstagefright_enc_common \
