@@ -156,7 +156,9 @@ size_t SkipCutBuffer::read(char *dst, size_t num) {
             mReadHead += num;
         }
     }
-    return available;
+    // It is reasonable to return num instead of available
+    // When available > num, it should casue some problem if return available
+    return num;
 }
 
 size_t SkipCutBuffer::size() {
