@@ -4,6 +4,8 @@ include $(CLEAR_VARS)
 
 LOCAL_ARM_MODE := arm
 
+LOCAL_USE_OMXDL_REFERENCE := false
+
 LOCAL_SRC_FILES := \
 	./source/h264bsd_transform.c \
 	./source/h264bsd_util.c \
@@ -45,7 +47,7 @@ MY_ASM := \
 	./source/arm_neon_asm_gcc/h264bsdFlushBits.S
 
 
-MY_OMXDL_C_SRC := \
+MY_OMXDL_ARM_NEON_C_SRC := \
 	./omxdl/arm_neon/vc/m4p10/src/omxVCM4P10_DeblockChroma_I.c \
 	./omxdl/arm_neon/vc/m4p10/src/omxVCM4P10_DeblockLuma_I.c \
 	./omxdl/arm_neon/vc/m4p10/src/omxVCM4P10_InterpolateChroma.c \
@@ -55,7 +57,7 @@ MY_OMXDL_C_SRC := \
 	./omxdl/arm_neon/src/armCOMM_Bitstream.c \
 	./omxdl/arm_neon/src/armCOMM.c
 
-MY_OMXDL_ASM_SRC := \
+MY_OMXDL_ARM_NEON_ASM_SRC := \
 	./omxdl/arm_neon/vc/m4p10/src_gcc/armVCM4P10_DeblockingChroma_unsafe_s.S \
 	./omxdl/arm_neon/vc/m4p10/src_gcc/armVCM4P10_DeblockingLuma_unsafe_s.S \
 	./omxdl/arm_neon/vc/m4p10/src_gcc/armVCM4P10_Interpolate_Chroma_s.S \
@@ -84,17 +86,60 @@ MY_OMXDL_ASM_SRC := \
 	./omxdl/arm_neon/vc/m4p10/src_gcc/omxVCM4P10_DequantTransformResidualFromPairAndAdd_s.S \
 	./omxdl/arm_neon/vc/m4p10/src_gcc/omxVCM4P10_TransformDequantChromaDCFromPair_s.S \
 
+MY_OMXDL_REFERENCE_C_SRC := \
+	./omxdl/reference/src/armCOMM.c \
+	./omxdl/reference/src/armCOMM_Bitstream.c \
+	./omxdl/reference/vc/comm/src/armVCCOMM_Average.c \
+	./omxdl/reference/vc/m4p10/src/armVCM4P10_CAVLCTables.c \
+	./omxdl/reference/vc/m4p10/src/armVCM4P10_DeBlockPixel.c \
+	./omxdl/reference/vc/m4p10/src/armVCM4P10_DecodeCoeffsToPair.c \
+	./omxdl/reference/vc/m4p10/src/armVCM4P10_DequantTables.c \
+	./omxdl/reference/vc/m4p10/src/armVCM4P10_Interpolate_Chroma.c \
+	./omxdl/reference/vc/m4p10/src/armVCM4P10_Interpolate_Luma.c \
+	./omxdl/reference/vc/m4p10/src/armVCM4P10_InterpolateHalfDiag_Luma.c \
+	./omxdl/reference/vc/m4p10/src/armVCM4P10_InterpolateHalfHor_Luma.c \
+	./omxdl/reference/vc/m4p10/src/armVCM4P10_InterpolateHalfVer_Luma.c \
+	./omxdl/reference/vc/m4p10/src/armVCM4P10_PredictIntraDC4x4.c \
+	./omxdl/reference/vc/m4p10/src/armVCM4P10_TransformResidual4x4.c \
+	./omxdl/reference/vc/m4p10/src/armVCM4P10_UnpackBlock2x2.c \
+	./omxdl/reference/vc/m4p10/src/armVCM4P10_UnpackBlock4x4.c \
+	./omxdl/reference/vc/m4p10/src/omxVCM4P10_DeblockChroma_I.c \
+	./omxdl/reference/vc/m4p10/src/omxVCM4P10_DeblockLuma_I.c \
+	./omxdl/reference/vc/m4p10/src/omxVCM4P10_DecodeChromaDcCoeffsToPairCAVLC.c \
+	./omxdl/reference/vc/m4p10/src/omxVCM4P10_DecodeCoeffsToPairCAVLC.c \
+	./omxdl/reference/vc/m4p10/src/omxVCM4P10_DequantTransformResidualFromPairAndAdd.c \
+	./omxdl/reference/vc/m4p10/src/omxVCM4P10_FilterDeblockingChroma_HorEdge_I.c \
+	./omxdl/reference/vc/m4p10/src/omxVCM4P10_FilterDeblockingChroma_VerEdge_I.c \
+	./omxdl/reference/vc/m4p10/src/omxVCM4P10_FilterDeblockingLuma_HorEdge_I.c \
+	./omxdl/reference/vc/m4p10/src/omxVCM4P10_FilterDeblockingLuma_VerEdge_I.c \
+	./omxdl/reference/vc/m4p10/src/omxVCM4P10_InterpolateChroma.c \
+	./omxdl/reference/vc/m4p10/src/omxVCM4P10_InterpolateLuma.c \
+	./omxdl/reference/vc/m4p10/src/omxVCM4P10_PredictIntra_16x16.c \
+	./omxdl/reference/vc/m4p10/src/omxVCM4P10_PredictIntra_4x4.c \
+	./omxdl/reference/vc/m4p10/src/omxVCM4P10_PredictIntraChroma_8x8.c \
+	./omxdl/reference/vc/m4p10/src/omxVCM4P10_TransformDequantChromaDCFromPair.c \
+	./omxdl/reference/vc/m4p10/src/omxVCM4P10_TransformDequantLumaDCFromPair.c \
+	./omxdl/reference/vc/src/armVC_Version.c \
+
+ifeq ($(LOCAL_USE_OMXDL_REFERENCE), true)
+    LOCAL_CFLAGS     := -DH264DEC_OMXDL
+    LOCAL_SRC_FILES  += $(MY_OMXDL_REFERENCE_C_SRC)
+    LOCAL_C_INCLUDES += $(LOCAL_PATH)/./omxdl/reference/api \
+                        $(LOCAL_PATH)/./omxdl/reference/vc/api \
+                        $(LOCAL_PATH)/./omxdl/reference/vc/m4p10/api
+else
 ifeq ($(TARGET_ARCH),arm)
   ifeq ($(ARCH_ARM_HAVE_NEON),true)
     LOCAL_ARM_NEON   := true
 #    LOCAL_CFLAGS     := -std=c99 -D._NEON -D._OMXDL
     LOCAL_CFLAGS     := -DH264DEC_NEON -DH264DEC_OMXDL
-    LOCAL_SRC_FILES  += $(MY_ASM) $(MY_OMXDL_C_SRC) $(MY_OMXDL_ASM_SRC)
+    LOCAL_SRC_FILES  += $(MY_ASM) $(MY_OMXDL_ARM_NEON_C_SRC) $(MY_OMXDL_ARM_NEON_ASM_SRC)
     LOCAL_C_INCLUDES += $(LOCAL_PATH)/./source/arm_neon_asm_gcc
     LOCAL_C_INCLUDES += $(LOCAL_PATH)/./omxdl/arm_neon/api \
                         $(LOCAL_PATH)/./omxdl/arm_neon/vc/api \
                         $(LOCAL_PATH)/./omxdl/arm_neon/vc/m4p10/api
   endif
+endif
 endif
 
 LOCAL_SHARED_LIBRARIES := \
