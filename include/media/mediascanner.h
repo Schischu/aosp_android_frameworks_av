@@ -41,6 +41,26 @@ enum MediaScanResult {
     MEDIA_SCAN_RESULT_ERROR,
 };
 
+struct MediaAlbumArt;
+
+struct FlatMediaAlbumArt {
+public:
+    FlatMediaAlbumArt *clone();
+
+    const char *data() {
+        return &mData[0];
+    }
+
+    int32_t size() {
+        return mSize;
+    }
+
+private:
+    int32_t mSize;
+    void* dummy;
+    char mData[0];
+} __packed;
+
 struct MediaScanner {
     MediaScanner();
     virtual ~MediaScanner();
@@ -53,8 +73,7 @@ struct MediaScanner {
 
     void setLocale(const char *locale);
 
-    // extracts album art as a block of data
-    virtual char *extractAlbumArt(int fd) = 0;
+    virtual FlatMediaAlbumArt *extractAlbumArt(int fd) = 0;
 
 protected:
     const char *locale() const;

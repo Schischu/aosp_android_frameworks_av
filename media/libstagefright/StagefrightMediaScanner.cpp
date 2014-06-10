@@ -202,7 +202,7 @@ MediaScanResult StagefrightMediaScanner::processFileInternal(
     return MEDIA_SCAN_RESULT_OK;
 }
 
-char *StagefrightMediaScanner::extractAlbumArt(int fd) {
+FlatMediaAlbumArt *StagefrightMediaScanner::extractAlbumArt(int fd) {
     ALOGV("extractAlbumArt %d", fd);
 
     off64_t size = lseek64(fd, 0, SEEK_END);
@@ -214,15 +214,9 @@ char *StagefrightMediaScanner::extractAlbumArt(int fd) {
     sp<MediaMetadataRetriever> mRetriever(new MediaMetadataRetriever);
     if (mRetriever->setDataSource(fd, 0, size) == OK) {
         sp<IMemory> mem = mRetriever->extractAlbumArt();
-
         if (mem != NULL) {
-            MediaAlbumArt *art = static_cast<MediaAlbumArt *>(mem->pointer());
-
-            char *data = (char *)malloc(art->mSize + 4);
-            *(int32_t *)data = art->mSize;
-            memcpy(&data[4], &art[1], art->mSize);
-
-            return data;
+            FlatMediaAlbumArt *art = static_cast<FlatMediaAlbumArt *>(mem->pointer());
+            return art->clone();
         }
     }
 

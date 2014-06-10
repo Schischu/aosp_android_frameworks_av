@@ -237,4 +237,12 @@ MediaScanResult MediaScanner::doProcessDirectoryEntry(
     return MEDIA_SCAN_RESULT_OK;
 }
 
+FlatMediaAlbumArt *FlatMediaAlbumArt::clone() {
+    size_t byte_size = this->size() + sizeof(FlatMediaAlbumArt);
+    FlatMediaAlbumArt *result = reinterpret_cast<FlatMediaAlbumArt *>(malloc(byte_size));
+    result->mSize = this->size();
+    memcpy(&result->mData[0], &this->mData[0], this->size());
+    return result;
+}
+
 }  // namespace android
