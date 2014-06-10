@@ -56,6 +56,7 @@ LOCAL_SHARED_LIBRARIES :=       \
     libaudioresampler           \
     libaudioutils               \
     libbinder                   \
+    libcrypto                   \
     libcutils                   \
     liblog                      \
     libmedia                    \

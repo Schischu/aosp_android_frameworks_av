@@ -26,9 +26,6 @@ LOCAL_C_INCLUDES:= \
 
 LOCAL_MODULE:= libstagefright_rtsp
 
-LOCAL_WHOLE_STATIC_LIBRARIES := \
-	libcrypto_static
-
 ifeq ($(TARGET_ARCH),arm)
     LOCAL_CFLAGS += -Wno-psabi
 endif
@@ -45,7 +42,12 @@ LOCAL_SRC_FILES:=         \
         rtp_test.cpp
 
 LOCAL_SHARED_LIBRARIES := \
-	libstagefright liblog libutils libbinder libstagefright_foundation
+	libbinder \
+	libcrypto \
+	liblog \
+	libstagefright \
+	libstagefright_foundation \
+	libutils \
 
 LOCAL_STATIC_LIBRARIES := \
         libstagefright_rtsp

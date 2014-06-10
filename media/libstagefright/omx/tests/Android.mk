@@ -5,7 +5,13 @@ LOCAL_SRC_FILES =       \
 	OMXHarness.cpp  \
 
 LOCAL_SHARED_LIBRARIES := \
-	libstagefright libbinder libmedia libutils liblog libstagefright_foundation
+	libbinder \
+	libcrypto \
+	liblog \
+	libmedia \
+	libstagefright \
+	libstagefright_foundation \
+	libutils \
 
 LOCAL_C_INCLUDES := \
 	$(TOP)/frameworks/av/media/libstagefright \

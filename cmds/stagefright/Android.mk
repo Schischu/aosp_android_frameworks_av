@@ -8,8 +8,16 @@ LOCAL_SRC_FILES:=       \
 	SineSource.cpp
 
 LOCAL_SHARED_LIBRARIES := \
-	libstagefright libmedia libutils libbinder libstagefright_foundation \
-        libjpeg libgui libcutils liblog
+	libbinder \
+	libcrypto \
+	libcutils \
+	libgui \
+	libjpeg \
+	liblog \
+	libmedia \
+	libstagefright \
+	libstagefright_foundation \
+	libutils \
 
 LOCAL_C_INCLUDES:= \
 	frameworks/av/media/libstagefright \
@@ -34,7 +42,12 @@ LOCAL_SRC_FILES:=         \
         record.cpp
 
 LOCAL_SHARED_LIBRARIES := \
-	libstagefright liblog libutils libbinder libstagefright_foundation
+	libbinder \
+	libcrypto \
+	liblog \
+	libstagefright \
+	libstagefright_foundation \
+	libutils \
 
 LOCAL_C_INCLUDES:= \
 	frameworks/av/media/libstagefright \
@@ -57,7 +70,12 @@ LOCAL_SRC_FILES:=         \
         recordvideo.cpp
 
 LOCAL_SHARED_LIBRARIES := \
-	libstagefright liblog libutils libbinder libstagefright_foundation
+	libbinder \
+	libcrypto \
+	liblog \
+	libstagefright \
+	libstagefright_foundation \
+	libutils \
 
 LOCAL_C_INCLUDES:= \
 	frameworks/av/media/libstagefright \
@@ -81,7 +99,12 @@ LOCAL_SRC_FILES:=         \
         audioloop.cpp
 
 LOCAL_SHARED_LIBRARIES := \
-	libstagefright liblog libutils libbinder libstagefright_foundation
+	libbinder \
+	libcrypto \
+	liblog \
+	libstagefright \
+	libstagefright_foundation \
+	libutils \
 
 LOCAL_C_INCLUDES:= \
 	frameworks/av/media/libstagefright \
@@ -103,8 +126,15 @@ LOCAL_SRC_FILES:=         \
         stream.cpp    \
 
 LOCAL_SHARED_LIBRARIES := \
-	libstagefright liblog libutils libbinder libgui \
-        libstagefright_foundation libmedia libcutils
+	libbinder \
+	libcrypto \
+	libcutils \
+	libgui \
+	liblog \
+	libmedia \
+	libstagefright \
+	libstagefright_foundation \
+	libutils \
 
 LOCAL_C_INCLUDES:= \
 	frameworks/av/media/libstagefright \
@@ -126,8 +156,16 @@ LOCAL_SRC_FILES:=         \
         sf2.cpp    \
 
 LOCAL_SHARED_LIBRARIES := \
-	libstagefright liblog libutils libbinder libstagefright_foundation \
-        libmedia libgui libcutils libui
+	libbinder \
+	libcrypto \
+	libcutils \
+	libgui \
+	liblog \
+	libmedia \
+	libstagefright \
+	libstagefright_foundation \
+	libui \
+	libutils \
 
 LOCAL_C_INCLUDES:= \
 	frameworks/av/media/libstagefright \
@@ -150,8 +188,16 @@ LOCAL_SRC_FILES:=               \
         SimplePlayer.cpp        \
 
 LOCAL_SHARED_LIBRARIES := \
-	libstagefright liblog libutils libbinder libstagefright_foundation \
-        libmedia libgui libcutils libui
+	libbinder \
+	libcrypto \
+	libcutils \
+	libgui \
+	liblog \
+	libmedia \
+	libstagefright \
+	libstagefright_foundation \
+	libui \
+	libutils \
 
 LOCAL_C_INCLUDES:= \
 	frameworks/av/media/libstagefright \
@@ -173,8 +219,17 @@ LOCAL_SRC_FILES:=               \
         muxer.cpp            \
 
 LOCAL_SHARED_LIBRARIES := \
-	libstagefright liblog libutils libbinder libstagefright_foundation \
-        libmedia libgui libcutils libui libc
+	libbinder \
+	libcrypto \
+	libc \
+	libcutils \
+	libgui \
+	liblog \
+	libmedia \
+	libstagefright \
+	libstagefright_foundation \
+	libui \
+	libutils \
 
 LOCAL_C_INCLUDES:= \
 	frameworks/av/media/libstagefright \

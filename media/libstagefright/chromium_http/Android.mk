@@ -19,15 +19,15 @@ LOCAL_CFLAGS += -Wno-multichar
 
 LOCAL_SHARED_LIBRARIES += \
         libbinder \
-        libstlport \
         libchromium_net \
-        libutils \
-        libbinder \
+        libcrypto \
+        libdrmframework \
         libcutils \
         liblog \
-        libstagefright_foundation \
         libstagefright \
-        libdrmframework
+        libstagefright_foundation \
+        libstlport \
+        libutils \
 
 include external/stlport/libstlport.mk
 

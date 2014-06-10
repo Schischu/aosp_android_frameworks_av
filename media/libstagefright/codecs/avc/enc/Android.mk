@@ -56,14 +56,15 @@ LOCAL_STATIC_LIBRARIES := \
         libstagefright_avcenc
 
 LOCAL_SHARED_LIBRARIES := \
+        libcrypto \
+        liblog \
         libstagefright \
         libstagefright_avc_common \
         libstagefright_enc_common \
         libstagefright_foundation \
         libstagefright_omx \
+        libui \
         libutils \
-        liblog \
-        libui
 
 
 LOCAL_MODULE := libstagefright_soft_h264enc

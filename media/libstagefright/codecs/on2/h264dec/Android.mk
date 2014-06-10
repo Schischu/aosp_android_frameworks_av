@@ -98,7 +98,12 @@ ifeq ($(TARGET_ARCH),arm)
 endif
 
 LOCAL_SHARED_LIBRARIES := \
-	libstagefright libstagefright_omx libstagefright_foundation libutils liblog \
+	libcrypto \
+	liblog \
+	libstagefright \
+	libstagefright_foundation \
+	libstagefright_omx \
+	libutils \
 
 LOCAL_MODULE := libstagefright_soft_h264dec
 

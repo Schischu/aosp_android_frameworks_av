@@ -16,7 +16,12 @@ LOCAL_SRC_FILES := \
 	testid3.cpp
 
 LOCAL_SHARED_LIBRARIES := \
-	libstagefright libutils liblog libbinder libstagefright_foundation
+	libbinder \
+	libcrypto \
+	liblog \
+	libstagefright \
+	libstagefright_foundation \
+	libutils \
 
 LOCAL_STATIC_LIBRARIES := \
         libstagefright_id3

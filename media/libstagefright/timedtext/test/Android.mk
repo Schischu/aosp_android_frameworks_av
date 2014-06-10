@@ -21,7 +21,8 @@ LOCAL_C_INCLUDES := \
     $(TOP)/frameworks/base/media/libstagefright/timedtext
 
 LOCAL_SHARED_LIBRARIES := \
+    libcrypto \
     libexpat \
-    libstagefright
+    libstagefright \
 
 include $(BUILD_NATIVE_TEST)

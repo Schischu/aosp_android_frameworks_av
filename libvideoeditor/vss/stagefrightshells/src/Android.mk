@@ -44,6 +44,7 @@ LOCAL_C_INCLUDES += \
     $(TOP)/frameworks/native/include/media/openmax
 
 LOCAL_SHARED_LIBRARIES :=     \
+    libcrypto                 \
     libcutils                 \
     libutils                  \
     libmedia                  \

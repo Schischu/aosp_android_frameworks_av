@@ -10,8 +10,13 @@ LOCAL_C_INCLUDES := \
         frameworks/native/include/media/openmax \
 
 LOCAL_SHARED_LIBRARIES := \
-        libvorbisidec libstagefright libstagefright_omx \
-        libstagefright_foundation libutils liblog
+        libcrypto \
+        liblog \
+        libstagefright \
+        libstagefright_foundation \
+        libstagefright_omx \
+        libutils \
+        libvorbisidec \
 
 LOCAL_MODULE := libstagefright_soft_vorbisdec
 LOCAL_MODULE_TAGS := optional

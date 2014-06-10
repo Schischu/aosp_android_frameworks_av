@@ -15,7 +15,12 @@ LOCAL_STATIC_LIBRARIES := \
         libvpx
 
 LOCAL_SHARED_LIBRARIES := \
-        libstagefright libstagefright_omx libstagefright_foundation libutils liblog
+        libcrypto \
+        liblog \
+        libstagefright \
+        libstagefright_foundation \
+        libstagefright_omx \
+        libutils \
 
 LOCAL_MODULE := libstagefright_soft_vpxdec
 LOCAL_MODULE_TAGS := optional

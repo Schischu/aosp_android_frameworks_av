@@ -13,11 +13,13 @@ LOCAL_SRC_FILES := \
 	DummyRecorder.cpp \
 
 LOCAL_SHARED_LIBRARIES := \
+	libbinder \
+	libcrypto \
+	libcutils \
 	libEGL \
 	libGLESv2 \
-	libbinder \
-	libcutils \
 	libgui \
+	liblog \
 	libmedia \
 	libstagefright \
 	libstagefright_foundation \
@@ -26,7 +28,6 @@ LOCAL_SHARED_LIBRARIES := \
 	libsync \
 	libui \
 	libutils \
-	liblog
 
 LOCAL_STATIC_LIBRARIES := \
 	libgtest \

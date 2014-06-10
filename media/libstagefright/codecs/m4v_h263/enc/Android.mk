@@ -60,13 +60,14 @@ LOCAL_STATIC_LIBRARIES := \
         libstagefright_m4vh263enc
 
 LOCAL_SHARED_LIBRARIES := \
+        libcrypto \
+        liblog \
         libstagefright \
         libstagefright_enc_common \
         libstagefright_foundation \
         libstagefright_omx \
         libutils \
-        liblog \
-        libui
+        libui \
 
 
 LOCAL_MODULE := libstagefright_soft_mpeg4enc

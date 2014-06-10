@@ -12,8 +12,9 @@ LOCAL_MODULE := AACEncTest
 LOCAL_ARM_MODE := arm
 
 LOCAL_SHARED_LIBRARIES := \
+    libcrypto \
+    libdl \
     libstagefright \
-    libdl
 
 LOCAL_C_INCLUDES := \
     $(LOCAL_PATH)/ \
