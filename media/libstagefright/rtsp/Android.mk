@@ -26,6 +26,9 @@ LOCAL_C_INCLUDES:= \
 
 LOCAL_MODULE:= libstagefright_rtsp
 
+LOCAL_SHARED_LIBRARIES := \
+	libcrypto
+
 ifeq ($(TARGET_ARCH),arm)
     LOCAL_CFLAGS += -Wno-psabi
 endif
