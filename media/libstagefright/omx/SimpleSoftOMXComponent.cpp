@@ -628,14 +628,14 @@ void SimpleSoftOMXComponent::addPort(const OMX_PARAM_PORTDEFINITIONTYPE &def) {
     info->mTransition = PortInfo::NONE;
 }
 
-void SimpleSoftOMXComponent::onQueueFilled(OMX_U32 portIndex) {
+void SimpleSoftOMXComponent::onQueueFilled(OMX_U32 /*portIndex*/) {
 }
 
-void SimpleSoftOMXComponent::onPortFlushCompleted(OMX_U32 portIndex) {
+void SimpleSoftOMXComponent::onPortFlushCompleted(OMX_U32 /*portIndex*/) {
 }
 
 void SimpleSoftOMXComponent::onPortEnableCompleted(
-        OMX_U32 portIndex, bool enabled) {
+        OMX_U32 /*portIndex*/, bool /*enabled*/) {
 }
 
 List<SimpleSoftOMXComponent::BufferInfo *> &
