@@ -49,7 +49,7 @@ static void usage(const char *me) {
 using namespace android;
 
 static int muxing(
-        const android::sp<android::ALooper> &looper,
+        const android::sp<android::ALooper> &/*looper*/,
         const char *path,
         bool useAudio,
         bool useVideo,
