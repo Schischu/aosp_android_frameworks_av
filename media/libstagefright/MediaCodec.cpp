@@ -74,7 +74,8 @@ MediaCodec::MediaCodec(const sp<ALooper> &looper)
       mDequeueInputReplyID(0),
       mDequeueOutputTimeoutGeneration(0),
       mDequeueOutputReplyID(0),
-      mHaveInputSurface(false) {
+      mHaveInputSurface(false),
+      mSpontaneousShutdown(false) {
 }
 
 MediaCodec::~MediaCodec() {
@@ -887,14 +888,23 @@ void MediaCodec::onMessageReceived(const sp<AMessage> &msg) {
 
                 case ACodec::kWhatShutdownCompleted:
                 {
+                    int32_t spontaneous = false;
+                    msg->findInt32("spontaneous", &spontaneous);
+                    if (spontaneous) {
+                        mSpontaneousShutdown = true;
+                    }
                     if (mState == STOPPING) {
                         setState(INITIALIZED);
                     } else {
-                        CHECK_EQ(mState, RELEASING);
+                        if (!mSpontaneousShutdown) {
+                            CHECK_EQ(mState, RELEASING);
+                        }
                         setState(UNINITIALIZED);
                     }
 
-                    (new AMessage)->postReply(mReplyID);
+                    if (!spontaneous) {
+                        (new AMessage)->postReply(mReplyID);
+                    }
                     break;
                 }
 
@@ -1051,6 +1061,7 @@ void MediaCodec::onMessageReceived(const sp<AMessage> &msg) {
 
             mReplyID = replyID;
             setState(STARTING);
+            mSpontaneousShutdown = false;
 
             mCodec->initiateStart();
             break;

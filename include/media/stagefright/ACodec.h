@@ -189,6 +189,7 @@ private:
     bool mIsEncoder;
     bool mUseMetadataOnEncoderOutput;
     bool mShutdownInProgress;
+    bool mSpontaneousShutdown;
     bool mIsConfiguredForAdaptivePlayback;
 
     // If "mKeepComponentAllocated" we only transition back to Loaded state

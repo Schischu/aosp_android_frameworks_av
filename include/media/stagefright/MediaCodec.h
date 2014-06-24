@@ -217,6 +217,8 @@ private:
 
     bool mHaveInputSurface;
 
+    bool mSpontaneousShutdown;
+
     MediaCodec(const sp<ALooper> &looper);
 
     static status_t PostAndAwaitResponse(

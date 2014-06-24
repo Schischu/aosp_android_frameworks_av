@@ -218,7 +218,7 @@ private:
     bool onConfigureComponent(const sp<AMessage> &msg);
     void onCreateInputSurface(const sp<AMessage> &msg);
     void onStart();
-    void onShutdown(bool keepComponentAllocated);
+    void onShutdown(bool keepComponentAllocated, bool spontaneous);
 
     DISALLOW_EVIL_CONSTRUCTORS(LoadedState);
 };
@@ -366,6 +366,7 @@ ACodec::ACodec()
       mIsEncoder(false),
       mUseMetadataOnEncoderOutput(false),
       mShutdownInProgress(false),
+      mSpontaneousShutdown(false),
       mIsConfiguredForAdaptivePlayback(false),
       mEncoderDelay(0),
       mEncoderPadding(0),
@@ -3561,7 +3562,7 @@ bool ACodec::UninitializedState::onMessageReceived(const sp<AMessage> &msg) {
             int32_t keepComponentAllocated;
             CHECK(msg->findInt32(
                         "keepComponentAllocated", &keepComponentAllocated));
-            CHECK(!keepComponentAllocated);
+            CHECK(!keepComponentAllocated || mCodec->mSpontaneousShutdown);
 
             sp<AMessage> notify = mCodec->mNotify->dup();
             notify->setInt32("what", ACodec::kWhatShutdownCompleted);
@@ -3727,15 +3728,18 @@ void ACodec::LoadedState::stateEntered() {
 
     if (mCodec->mShutdownInProgress) {
         bool keepComponentAllocated = mCodec->mKeepComponentAllocated;
+        bool spontaneousShutdown = mCodec->mSpontaneousShutdown;
 
         mCodec->mShutdownInProgress = false;
         mCodec->mKeepComponentAllocated = false;
+        // Don't clear mSpontaneousShutdown here, we need to know later
+        // if this has happened.
 
-        onShutdown(keepComponentAllocated);
+        onShutdown(keepComponentAllocated, spontaneousShutdown);
     }
 }
 
-void ACodec::LoadedState::onShutdown(bool keepComponentAllocated) {
+void ACodec::LoadedState::onShutdown(bool keepComponentAllocated, bool spontaneous) {
     if (!keepComponentAllocated) {
         CHECK_EQ(mCodec->mOMX->freeNode(mCodec->mNode), (status_t)OK);
 
@@ -3743,6 +3747,7 @@ void ACodec::LoadedState::onShutdown(bool keepComponentAllocated) {
     }
 
     sp<AMessage> notify = mCodec->mNotify->dup();
+    notify->setInt32("spontaneous", spontaneous);
     notify->setInt32("what", ACodec::kWhatShutdownCompleted);
     notify->post();
 }
@@ -3778,7 +3783,7 @@ bool ACodec::LoadedState::onMessageReceived(const sp<AMessage> &msg) {
             CHECK(msg->findInt32(
                         "keepComponentAllocated", &keepComponentAllocated));
 
-            onShutdown(keepComponentAllocated);
+            onShutdown(keepComponentAllocated, false);
 
             handled = true;
             break;
@@ -3919,6 +3924,8 @@ ACodec::LoadedToIdleState::LoadedToIdleState(ACodec *codec)
 
 void ACodec::LoadedToIdleState::stateEntered() {
     ALOGV("[%s] Now Loaded->Idle", mCodec->mComponentName.c_str());
+
+    mCodec->mSpontaneousShutdown = false;
 
     status_t err;
     if ((err = allocateBuffers()) != OK) {
@@ -4440,6 +4447,7 @@ bool ACodec::OutputPortSettingsChangedState::onOMXEvent(
                     // and idle->loaded seem impossible probably because
                     // the output port never finishes re-enabling.
                     mCodec->mShutdownInProgress = true;
+                    mCodec->mSpontaneousShutdown = true;
                     mCodec->mKeepComponentAllocated = false;
                     mCodec->changeState(mCodec->mLoadedState);
                 }
