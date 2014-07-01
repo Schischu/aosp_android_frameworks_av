@@ -26,6 +26,28 @@
 
 namespace android {
 
+enum drm_perm_t {
+    CONSUME_RIGHTS          = 0,
+    SET_PLAYBACK_STATUS     = 1,
+    OPEN_DECRYPT_SESSION    = 2,
+    CLOSE_DECRYPT_SESSION   = 3,
+    INITIALIZE_DECRYPT_UNIT = 4,
+    DECRYPT                 = 5,
+    FINALIZE_DECRYPT_UNIT   = 6,
+    PREAD                   = 7,
+};
+
+static const char *drm_perm_labels[] = {
+    "consumeRights",
+    "setPlaybackStatus",
+    "openDecryptSession",
+    "closeDecryptSession",
+    "initializeDecryptUnit",
+    "decrypt",
+    "finalizeDecryptUnit",
+    "pread"
+};
+
 class DrmManager;
 class String8;
 class Mutex;
