@@ -819,9 +819,10 @@ void SoftAVCEncoder::onQueueFilled(OMX_U32 portIndex) {
                 videoInput.coding_timestamp = (inHeader->nTimeStamp + 500) / 1000;  // in ms
                 uint8_t *inputData = NULL;
                 if (mStoreMetaDataInBuffers) {
-                    if (inHeader->nFilledLen != 8) {
+                    if (inHeader->nFilledLen != (4 + sizeof(buffer_handle_t))) {
                         ALOGE("MetaData buffer is wrong size! "
-                                "(got %u bytes, expected 8)", inHeader->nFilledLen);
+                                "(got %u bytes, expected %d)", inHeader->nFilledLen,
+                                  4 + sizeof(buffer_handle_t));
                         mSignalledError = true;
                         notify(OMX_EventError, OMX_ErrorUndefined, 0, 0);
                         return;
