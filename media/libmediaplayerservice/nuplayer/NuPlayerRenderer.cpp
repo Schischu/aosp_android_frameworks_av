@@ -1163,6 +1163,10 @@ void NuPlayer::Renderer::onResume() {
 
     if (!mAudioQueue.empty()) {
         postDrainAudioQueue_l();
+    } else if (mHasAudio) {
+        // Audio decoder is not ready when resuming playback after
+        // changing audio track. Queue synching is needed.
+        mSyncQueues = true;
     }
 
     if (!mVideoQueue.empty()) {
