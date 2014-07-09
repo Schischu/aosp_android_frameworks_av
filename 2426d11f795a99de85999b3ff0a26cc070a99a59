@@ -1,0 +1,8 @@
+Verified+1: Deckard Autoverifier <deckard@android.com>
+Code-Review+1: Mark D Ryan <mark.d.ryan@intel.com>
+Code-Review+2: Lajos Molnar <lajos@google.com>
+Submitted-by: Narayan Kamath <narayan@google.com>
+Submitted-at: Wed, 09 Jul 2014 08:32:36 +0000
+Reviewed-on: https://android-review.googlesource.com/97983
+Project: platform/frameworks/av
+Branch: refs/heads/master
