@@ -389,8 +389,8 @@ status_t ColorConverter::convertYUV420SemiPlanar(
             signed y1 = (signed)src_y[x] - 16;
             signed y2 = (signed)src_y[x + 1] - 16;
 
-            signed v = (signed)src_u[x & ~1] - 128;
-            signed u = (signed)src_u[(x & ~1) + 1] - 128;
+            signed u = (signed)src_u[x & ~1] - 128;
+            signed v = (signed)src_u[(x & ~1) + 1] - 128;
 
             signed u_b = u * 517;
             signed u_g = -u * 100;
@@ -408,14 +408,14 @@ status_t ColorConverter::convertYUV420SemiPlanar(
             signed r2 = (tmp2 + v_r) / 256;
 
             uint32_t rgb1 =
-                ((kAdjustedClip[b1] >> 3) << 11)
+                ((kAdjustedClip[r1] >> 3) << 11)
                 | ((kAdjustedClip[g1] >> 2) << 5)
-                | (kAdjustedClip[r1] >> 3);
+                | (kAdjustedClip[b1] >> 3);
 
             uint32_t rgb2 =
-                ((kAdjustedClip[b2] >> 3) << 11)
+                ((kAdjustedClip[r2] >> 3) << 11)
                 | ((kAdjustedClip[g2] >> 2) << 5)
-                | (kAdjustedClip[r2] >> 3);
+                | (kAdjustedClip[b2] >> 3);
 
             if (x + 1 < src.cropWidth()) {
                 *(uint32_t *)(&dst_ptr[x]) = (rgb2 << 16) | rgb1;
