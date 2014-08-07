@@ -94,6 +94,8 @@ LOCAL_STATIC_LIBRARIES :=
 
 LOCAL_SHARED_LIBRARIES :=
 
+LOCAL_LDFLAGS := -Wl,-Bsymbolic
+
 LOCAL_C_INCLUDES := \
 	frameworks/av/include \
 	frameworks/av/media/libstagefright/include \
@@ -132,6 +134,8 @@ LOCAL_STATIC_LIBRARIES := \
 LOCAL_SHARED_LIBRARIES := \
         libstagefright_omx libstagefright_foundation libutils liblog \
         libstagefright_enc_common
+
+LOCAL_LDFLAGS := -Wl,-Bsymbolic
 
 LOCAL_MODULE := libstagefright_soft_amrwbenc
 LOCAL_MODULE_TAGS := optional

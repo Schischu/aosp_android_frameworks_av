@@ -100,6 +100,8 @@ endif
 LOCAL_SHARED_LIBRARIES := \
 	libstagefright libstagefright_omx libstagefright_foundation libutils liblog \
 
+LOCAL_LDFLAGS := -Wl,-Bsymbolic
+
 LOCAL_MODULE := libstagefright_soft_h264dec
 
 LOCAL_MODULE_TAGS := optional

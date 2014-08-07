@@ -50,6 +50,8 @@ LOCAL_C_INCLUDES := \
 LOCAL_CFLAGS := \
         -DOSCL_UNUSED_ARG=
 
+LOCAL_LDFLAGS := -Wl,-Bsymbolic
+
 LOCAL_MODULE := libstagefright_mp3dec
 
 LOCAL_ARM_MODE := arm
@@ -74,6 +76,8 @@ LOCAL_SHARED_LIBRARIES := \
 
 LOCAL_STATIC_LIBRARIES := \
         libstagefright_mp3dec
+
+LOCAL_LDFLAGS := -Wl,-Bsymbolic
 
 LOCAL_MODULE := libstagefright_soft_mp3dec
 LOCAL_MODULE_TAGS := optional
