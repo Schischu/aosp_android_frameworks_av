@@ -77,6 +77,7 @@ ARTPAssembler::AssemblyStatus AH263Assembler::addPacket(
     if (!mNextExpectedSeqNoValid) {
         mNextExpectedSeqNoValid = true;
         mNextExpectedSeqNo = (uint32_t)buffer->int32Data();
+        buffer->meta()->setInt32("firstAU", true);
     } else if ((uint32_t)buffer->int32Data() != mNextExpectedSeqNo) {
 #if VERBOSE
         LOG(VERBOSE) << "Not the sequence number I expected";

@@ -1814,7 +1814,7 @@ private:
     }
 
     bool addMediaTimestamp(
-            int32_t trackIndex, const TrackInfo *track,
+            int32_t trackIndex, TrackInfo *track,
             const sp<ABuffer> &accessUnit) {
         uint32_t rtpTime;
         CHECK(accessUnit->meta()->findInt32(
@@ -1823,6 +1823,16 @@ private:
         int64_t relRtpTimeUs =
             (((int64_t)rtpTime - (int64_t)track->mRTPAnchor) * 1000000ll)
                 / track->mTimeScale;
+
+        if (relRtpTimeUs < 0) {
+            int firstAccessUnit;
+            accessUnit->meta()->findInt32("firstAU", &firstAccessUnit);
+            if (firstAccessUnit) {
+                ALOGV("update track %d's RTPAnchor time: %u", trackIndex, rtpTime);
+                track->mRTPAnchor = rtpTime;
+                relRtpTimeUs = 0;
+            }
+        }
 
         int64_t ntpTimeUs = track->mNTPAnchorUs + relRtpTimeUs;
 
