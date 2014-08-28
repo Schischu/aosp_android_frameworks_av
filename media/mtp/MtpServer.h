@@ -104,11 +104,13 @@ public:
 
     void                sendObjectAdded(MtpObjectHandle handle);
     void                sendObjectRemoved(MtpObjectHandle handle);
+    void                changeStorageInfo(MtpStorage* storage);
 
 private:
     void                sendStoreAdded(MtpStorageID id);
     void                sendStoreRemoved(MtpStorageID id);
     void                sendEvent(MtpEventCode code, uint32_t param1);
+    void                sendStorageInfoChanged(MtpStorageID id);
 
     void                addEditObject(MtpObjectHandle handle, MtpString& path,
                                 uint64_t size, MtpObjectFormat format, int fd);
