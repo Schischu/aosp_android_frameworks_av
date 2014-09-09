@@ -8,7 +8,6 @@ LOCAL_SRC_FILES:= \
 LOCAL_SHARED_LIBRARIES := \
 	libutils \
 	libcutils \
-	libstlport \
 	libcamera_metadata \
 	libcamera_client \
 	libgui \
@@ -17,14 +16,7 @@ LOCAL_SHARED_LIBRARIES := \
 	libdl \
 	libbinder
 
-LOCAL_STATIC_LIBRARIES := \
-	libgtest
-
 LOCAL_C_INCLUDES += \
-	bionic \
-	bionic/libstdc++/include \
-	external/gtest/include \
-	external/stlport/stlport \
 	system/media/camera/include \
 	frameworks/av/services/camera/libcameraservice \
 	frameworks/av/include/camera \
