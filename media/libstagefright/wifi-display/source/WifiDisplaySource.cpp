@@ -34,11 +34,18 @@
 #include <media/stagefright/foundation/ParsedMessage.h>
 #include <media/stagefright/MediaErrors.h>
 #include <media/stagefright/Utils.h>
-
 #include <arpa/inet.h>
 #include <cutils/properties.h>
 
+#include <gui/ISurfaceComposer.h>
+#include <gui/SurfaceComposerClient.h>
+#include <ui/DisplayInfo.h>
+
 #include <ctype.h>
+
+#define UIBC_SCROLL_MOUSE_NOTCH 0x4000
+#define UIBC_SCROLL_MOUSE_UP    0x2000
+#define UIBC_SCROLL_NUMBER_MASK 0x1FFF
 
 namespace android {
 
@@ -53,12 +60,22 @@ WifiDisplaySource::WifiDisplaySource(
       mNetSession(netSession),
       mClient(client),
       mSessionID(0),
+      mUibcSessionID(0),
       mStopReplyID(0),
       mChosenRTPPort(-1),
       mUsingPCMAudio(false),
       mClientSessionID(0),
       mReaperPending(false),
       mNextCSeq(1),
+      resolutionWidth(0),
+      resolutionHeigh(0),
+      mResolution_RealW(0),
+      mResolution_RealH(0),
+      mResolution_NativeW(0),
+      mResolution_NativeH(0),
+      uibc_calc_data_Ss(0),
+      uibc_calc_data_Wbs(0),
+      uibc_calc_data_Hbs(0),
       mUsingHDCP(false),
       mIsHDCP2_0(false),
       mHDCPPort(0),
@@ -67,6 +84,26 @@ WifiDisplaySource::WifiDisplaySource(
       mPlaybackSessionEstablished(false) {
     if (path != NULL) {
         mMediaPath.setTo(path);
+    }
+    DisplayInfo mainDpyInfo;
+    size_t err = 0;
+    sp<IBinder> mainDpy = SurfaceComposerClient::getBuiltInDisplay(
+            ISurfaceComposer::eDisplayIdMain);
+    err = SurfaceComposerClient::getDisplayInfo(mainDpy, &mainDpyInfo);
+    if (err != NO_ERROR) {
+        fprintf(stderr, "ERROR: unable to get display characteristics\n");
+        return;
+    }
+
+    mResolution_RealW = mainDpyInfo.w;
+    mResolution_RealH = mainDpyInfo.h;
+
+    mOrientation = mainDpyInfo.orientation;
+
+    if (mOrientation & 0x1) {
+        size_t tmp = mResolution_RealW;
+        mResolution_RealW = mResolution_RealH;
+        mResolution_RealH = tmp;
     }
 
     mSupportedSourceVideoFormats.disableAll();
@@ -79,6 +116,21 @@ WifiDisplaySource::WifiDisplaySource(
             VideoFormats::RESOLUTION_CEA, 5,
             VideoFormats::PROFILE_CHP,  // Constrained High Profile
             VideoFormats::LEVEL_32);    // Level 3.2
+
+}
+
+uint8_t WifiDisplaySource::getOrientation() {
+    DisplayInfo mainDpyInfo;
+    int err;
+    sp<IBinder> mainDpy = SurfaceComposerClient::getBuiltInDisplay(
+    ISurfaceComposer::eDisplayIdMain);
+    err = SurfaceComposerClient::getDisplayInfo(mainDpy, &mainDpyInfo);
+    if (err != NO_ERROR) {
+        fprintf(stderr, "ERROR: unable to get display characteristics\n");
+        return -1;
+    }
+    return mainDpyInfo.orientation;
+
 }
 
 WifiDisplaySource::~WifiDisplaySource() {
@@ -109,6 +161,19 @@ status_t WifiDisplaySource::start(const char *iface) {
     return PostAndAwaitResponse(msg, &response);
 }
 
+status_t WifiDisplaySource::startUibc(const int32_t port) {
+
+    status_t err = OK;
+    sp<AMessage> notify = new AMessage(kWhatUIBCNotify, id());
+    ALOGI("source will create uibc channel");
+    err = mNetSession->createTCPDatagramSession(
+            mInterfaceAddr,
+            port,
+            notify,
+            &mUibcSessionID);
+   return err;
+}
+
 status_t WifiDisplaySource::stop() {
     sp<AMessage> msg = new AMessage(kWhatStop, id());
 
@@ -128,6 +193,192 @@ status_t WifiDisplaySource::resume() {
 
     sp<AMessage> response;
     return PostAndAwaitResponse(msg, &response);
+}
+
+
+int WifiDisplaySource::calc_uibc_parameter(size_t width, size_t height)
+{
+    float this_w, this_h, dw, dh, vWidth = (float) width, vHeight = (float) height;
+
+    this_w = mResolution_RealW;
+    this_h = mResolution_RealH;
+
+    dw = mResolution_NativeW / vWidth;
+    dh = mResolution_NativeH / vHeight;
+
+    uibc_calc_data_Ss = (dw > dh) ? dh : dw;
+
+    dw =  vWidth / this_w;
+    dh =  vHeight / this_h;
+
+    uibc_calc_data_Ss = ((dw > dh) ? dh : dw) * uibc_calc_data_Ss;
+
+    uibc_calc_data_Wbs = (mResolution_NativeW - this_w * uibc_calc_data_Ss) / 2;
+    uibc_calc_data_Hbs = (mResolution_NativeH - this_h * uibc_calc_data_Ss) / 2;
+
+    return 0;
+}
+
+void WifiDisplaySource::calculateNormalXY(float x, float y, int *abs_x, int *abs_y)
+{
+    float dx, dy;
+    dx = x - uibc_calc_data_Wbs;
+    dx = dx > 0 ? dx : 0;
+    dy = y - uibc_calc_data_Hbs;
+    dy = dy > 0 ? dy : 0;
+
+    if(uibc_calc_data_Ss >= -0.000001 && uibc_calc_data_Ss <= 0.000001) {
+        *abs_x = (int)(x + 0.5);
+        *abs_y = (int)(y + 0.5);
+        ALOGW("calculateNormalXY: Ss is zero!!!");
+        return;
+    }
+
+    *abs_x = (int) (
+             ((dx / uibc_calc_data_Ss) + 0.5));
+    *abs_y = (int) (
+             ((dy / uibc_calc_data_Ss) + 0.5));
+}
+
+void WifiDisplaySource::recalculateUibcParamaterViaOrientation() {
+    uint8_t ori = getOrientation();
+    /* Orientation = 0 and 2 are the same and 1 and 3 are same*/
+    if ((ori & 0x1) ^ (mOrientation & 0x1)) {
+        ALOGI("on UIBC rotation swaped");
+        mOrientation = ori;
+        size_t tmp = mResolution_RealW;
+        mResolution_RealW = mResolution_RealH;
+        mResolution_RealH = tmp;
+        calc_uibc_parameter(mVideoWidth, mVideoHeight);
+    }
+
+
+}
+void WifiDisplaySource::parseUIBCtouchEvent(const uint8_t *data) {
+    if (data[6] < 3) {
+        for (int i = 0; i < data[7]; i++) {
+            int32_t x = (int32_t)U16_AT(&data[9]);
+            int32_t y = (int32_t)U16_AT(&data[11]);
+            int32_t action = (int32_t)data[6];
+            int32_t abs_x, abs_y;
+            recalculateUibcParamaterViaOrientation();
+            calculateNormalXY(x, y, &abs_x, &abs_y);
+
+            mClient->onUibcData(action, (float)abs_x, (float)abs_y, 0);
+        }
+    } else {
+        ALOGE("parseUIBCtouchEvent wrong type!");
+    }
+
+}
+
+void WifiDisplaySource::parseUIBCscrollEvent(const uint8_t *data) {
+    if (data == NULL)
+         return;
+    if (data[3] != 9) {
+         ALOGI("parseUIBCscrollEvent data len error!");
+         return;
+    }
+
+    int16_t d = data[7];
+    d = (d << 8) & 0xff00;
+    d = d | data[8];
+    int updown = 0;
+    float x = 0;
+    if (d & UIBC_SCROLL_MOUSE_UP) {
+        updown = 1;
+        x = 1.0f;
+    } else {
+        x = -1.0f;
+        updown = 0;
+    }
+    if (data[6] == UIBC_MOUSE_VSCROLL)
+        mClient->onUibcData(ANDROID_ACTION_SCROLL, x, 0, updown);
+    else
+        mClient->onUibcData(ANDROID_ACTION_SCROLL, 0, x, updown);
+
+}
+
+void WifiDisplaySource::parseUIBCkeyEvent(const uint8_t *data) {
+
+    if (data[3] != 10) {
+        ALOGE("parseUIBCkeyEvent length err!!");
+        return;
+    }
+    int action = data[6];
+    int keycode = data[8];
+
+    mClient->onUibcData(action, 0, 0, keycode);
+
+
+
+}
+
+status_t WifiDisplaySource::parseUIBC(const uint8_t *data) {
+    switch (data[6]) {
+        case TOUCH_ACTION_DOWN:
+        {
+            parseUIBCtouchEvent(data);
+            break;
+        }
+        case TOUCH_ACTION_UP:
+        {
+            parseUIBCtouchEvent(data);
+            break;
+        }
+        case TOUCH_ACTION_MOVE:
+        {
+            parseUIBCtouchEvent(data);
+            break;
+        }
+        case KEY_ACTION_DOWN:
+        {
+            parseUIBCkeyEvent(data);
+            break;
+        }
+        case KEY_ACTION_UP:
+        {
+            parseUIBCkeyEvent(data);
+            break;
+        }
+        case UIBC_MOUSE_HSCROLL:
+        {
+            parseUIBCscrollEvent(data);
+            break;
+        }
+        case UIBC_MOUSE_VSCROLL:
+        {
+            parseUIBCscrollEvent(data);
+            break;
+        }
+        default:
+            ALOGW("On UIBC parse meet unknown style");
+
+    }
+
+    return OK;
+}
+
+status_t WifiDisplaySource::onUIBCData(const sp<ABuffer> &buffer) {
+    const uint8_t *data = buffer->data();
+
+    switch (data[1]) {
+        case INPUT_CATEGORY_GENERIC: //Generic category
+            {
+                parseUIBC(data);
+                break;
+            }
+
+        case INPUT_CATEGORY_HIDC:
+            break;
+
+        default:
+            {
+                ALOGW("Unknown UIBC packet type %u",(unsigned)data[1]);
+                break;
+            }
+    }
+    return OK;
 }
 
 void WifiDisplaySource::onMessageReceived(const sp<AMessage> &msg) {
@@ -180,6 +431,26 @@ void WifiDisplaySource::onMessageReceived(const sp<AMessage> &msg) {
             break;
         }
 
+       case kWhatUIBCNotify:
+        {
+            int32_t reason;
+            CHECK(msg->findInt32("reason", &reason));
+            switch (reason) {
+                case ANetworkSession::kWhatDatagram:
+                {
+                    int32_t sessionID;
+                    CHECK(msg->findInt32("sessionID", &sessionID));
+
+                    sp<ABuffer> data;
+                    CHECK(msg->findBuffer("data", &data));
+                    onUIBCData(data);
+                    break;
+
+                }
+
+            }
+            break;
+        }
         case kWhatRTSPNotify:
         {
             int32_t reason;
@@ -586,6 +857,7 @@ status_t WifiDisplaySource::sendM1(int32_t sessionID) {
 status_t WifiDisplaySource::sendM3(int32_t sessionID) {
     AString body =
         "wfd_content_protection\r\n"
+        "wfd_uibc_capability\r\n"
         "wfd_video_formats\r\n"
         "wfd_audio_codecs\r\n"
         "wfd_client_rtp_ports\r\n";
@@ -649,7 +921,20 @@ status_t WifiDisplaySource::sendM4(int32_t sessionID) {
     body.append(
             StringPrintf(
                 "wfd_client_rtp_ports: %s\r\n", mWfdClientRtpPorts.c_str()));
+    if (mSinkSupportsUIBC) {
+        body.append(
+                StringPrintf(
+                    "wfd_uibc_capability: input_category_list=GENERIC;"
+                    "generic_cap_list=Mouse,SingleTouch;"
+                    "hidc_cap_list=none;"
+                    "port=%d\r\n", DEFAULT_UIBC_PORT)
+                );
+        body.append(
+                StringPrintf(
+                    "wfd_uibc_setting: %s\r\n", "enable")
+                );
 
+    }
     AString request = "SET_PARAMETER rtsp://localhost/wfd1.0 RTSP/1.0\r\n";
     AppendCommonResponse(&request, mNextCSeq);
 
@@ -876,9 +1161,24 @@ status_t WifiDisplaySource::onReceiveM3Response(
                     &height,
                     &framesPerSecond,
                     &interlaced));
+        ALOGI("Picked video resolution %u x %u %c%u Type: %u Index : %u ",
+              width, height, interlaced ? 'i' : 'p', framesPerSecond, mChosenVideoResolutionType, mChosenVideoResolutionIndex);
 
-        ALOGI("Picked video resolution %u x %u %c%u",
-              width, height, interlaced ? 'i' : 'p', framesPerSecond);
+        VideoFormats::ResolutionType mResolutionType;
+        size_t mResolutionIndex;
+
+        mSupportedSinkVideoFormats.getNativeResolution(&mResolutionType,&mResolutionIndex);
+
+        VideoFormats::GetConfiguration(
+                       mResolutionType,
+                       mResolutionIndex,
+                       &mResolution_NativeW,
+                       &mResolution_NativeH,
+                       NULL, NULL);
+
+        mVideoHeight = height;
+        mVideoWidth = width;
+        calc_uibc_parameter(width,height);
 
         ALOGI("Picked AVC profile %d, level %d",
               mChosenVideoProfile, mChosenVideoLevel);
@@ -930,6 +1230,19 @@ status_t WifiDisplaySource::onReceiveM3Response(
         return ERROR_UNSUPPORTED;
     }
 
+    mSinkSupportsUIBC = false;
+    if (!params->findParameter("wfd_uibc_capability", &value)) {
+        ALOGI("Sink doesn't appear to support uibc.");
+    } else if (value == "none") {
+        ALOGI("Sink does not support uibc.");
+    } else {
+        mSinkSupportsUIBC = true;
+        ALOGI("Sink support uibc.");
+        status_t err = startUibc(DEFAULT_UIBC_PORT);
+        if (err != OK) {
+            ALOGI("start uibc channel failed");
+        }
+    }
     mUsingHDCP = false;
     if (!params->findParameter("wfd_content_protection", &value)) {
         ALOGI("Sink doesn't appear to support content protection.");
@@ -965,7 +1278,6 @@ status_t WifiDisplaySource::onReceiveM3Response(
             mUsingHDCP = false;
         }
     }
-
     return sendM4(sessionID);
 }
 
@@ -1509,6 +1821,10 @@ void WifiDisplaySource::finishStop2() {
         mSessionID = 0;
     }
 
+    if (mUibcSessionID != 0) {
+        mNetSession->destroySession(mUibcSessionID);
+        mUibcSessionID = 0;
+   }
     ALOGI("We're stopped.");
     mState = STOPPED;
 
