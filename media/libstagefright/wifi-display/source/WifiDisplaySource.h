@@ -24,6 +24,7 @@
 #include <media/stagefright/foundation/ANetworkSession.h>
 
 #include <netinet/in.h>
+#include <media/stagefright/foundation/ABuffer.h>
 
 namespace android {
 
@@ -42,6 +43,9 @@ struct WifiDisplaySource : public AHandler {
             const char *path = NULL);
 
     status_t start(const char *iface);
+    status_t parseUIBC(const uint8_t *d);
+    status_t onUIBCData(const sp<ABuffer> &buffer);
+    status_t startUibc(const int32_t port);
     status_t stop();
 
     status_t pause();
@@ -73,6 +77,7 @@ private:
     enum {
         kWhatStart,
         kWhatRTSPNotify,
+        kWhatUIBCNotify,
         kWhatStop,
         kWhatPause,
         kWhatResume,
@@ -120,7 +125,7 @@ private:
     AString mMediaPath;
     struct in_addr mInterfaceAddr;
     int32_t mSessionID;
-
+    int32_t mUibcSessionID;
     uint32_t mStopReplyID;
 
     AString mWfdClientRtpPorts;
@@ -136,6 +141,7 @@ private:
 
     bool mSinkSupportsAudio;
 
+    bool mSinkSupportsUIBC;
     bool mUsingPCMAudio;
     int32_t mClientSessionID;
 
@@ -154,6 +160,21 @@ private:
 
     KeyedVector<ResponseID, HandleRTSPResponseFunc> mResponseHandlers;
 
+    //VideoResolution
+    size_t resolutionWidth;
+    size_t resolutionHeigh;
+
+    //UIBC Native and real resolution data
+    size_t mResolution_RealW;
+    size_t mResolution_RealH;
+    size_t mResolution_NativeW;
+    size_t mResolution_NativeH;
+
+    //UIBC calc data
+    float uibc_calc_data_Ss;
+    float uibc_calc_data_Wbs;
+    float uibc_calc_data_Hbs;
+
     // HDCP specific section >>>>
     bool mUsingHDCP;
     bool mIsHDCP2_0;
@@ -166,6 +187,16 @@ private:
 
     bool mPlaybackSessionEstablished;
 
+    //Parse UIBC data
+    void parseUIBCtouchEvent(const uint8_t *data);
+    void parseUIBCscrollEvent(const uint8_t *data);
+    void parseUIBCkeyEvent(const uint8_t *data);
+    void recalculateUibcParamaterViaOrientation();
+
+    uint8_t getOrientation();
+    uint8_t mOrientation;
+    size_t mVideoWidth;
+    size_t mVideoHeight;
     status_t makeHDCP();
     // <<<< HDCP specific section
 
@@ -251,6 +282,9 @@ private:
     void scheduleReaper();
     void scheduleKeepAlive(int32_t sessionID);
 
+    //calc UIBC coordinate parameters
+    int calc_uibc_parameter(size_t witdh, size_t height);
+
     int32_t makeUniquePlaybackSessionID() const;
 
     sp<PlaybackSession> findPlaybackSession(
@@ -263,10 +297,28 @@ private:
     void finishStop2();
 
     void finishPlay();
-
+    void calculateNormalXY(float x, float y, int *abs_x, int *abs_y);
     DISALLOW_EVIL_CONSTRUCTORS(WifiDisplaySource);
 };
 
+    //UIBC magic numbers
+    const int32_t DEFAULT_UIBC_PORT = 7239;
+    const int16_t INPUT_CATEGORY_GENERIC = 0x00;
+    const int16_t INPUT_CATEGORY_HIDC = 0x01;
+    const int16_t TOUCH_ACTION_DOWN = 0;
+    const int16_t TOUCH_ACTION_UP = 1;
+    const int16_t TOUCH_ACTION_MOVE = 2;
+    const int16_t TOUCH_ACTION_CANCEL = 3;
+    const int16_t TOUCH_ACTION_POINTER_DOWN = 5;
+    const int16_t TOUCH_ACTION_POINTER_UP = 6;
+    const int16_t TOUCH_RANDOM_PRESSURE = 1234;
+    const int16_t KEY_ACTION_DOWN = 3;
+    const int16_t KEY_ACTION_UP = 4;
+    const int16_t MOUSE_WHEEL_SCROLL = 8;
+    const int16_t UIBC_MOUSE_VSCROLL = 6;
+    const int16_t UIBC_MOUSE_HSCROLL = 7;
+
+    const int16_t ANDROID_ACTION_SCROLL = 0x8;
 }  // namespace android
 
 #endif  // WIFI_DISPLAY_SOURCE_H_
