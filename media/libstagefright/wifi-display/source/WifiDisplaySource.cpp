@@ -90,6 +90,8 @@ WifiDisplaySource::WifiDisplaySource(
     VideoFormats::ResolutionType type;
     size_t err = 0;
     size_t index;
+    uint8_t sysOrientation = 0;
+    char sysOriprop[PROPERTY_VALUE_MAX];
     sp<IBinder> mainDpy = SurfaceComposerClient::getBuiltInDisplay(
             ISurfaceComposer::eDisplayIdMain);
     err = SurfaceComposerClient::getDisplayInfo(mainDpy, &mainDpyInfo);
@@ -100,10 +102,16 @@ WifiDisplaySource::WifiDisplaySource(
     mSupportedSourceVideoFormats.ConvertDpyInfo2Resolution(mainDpyInfo, type, index);
     mResolution_RealW = mainDpyInfo.w;
     mResolution_RealH = mainDpyInfo.h;
-
     mOrientation = mainDpyInfo.orientation;
-
-    if (mOrientation & 0x1) {
+    property_get("ro.sf.hwrotation", sysOriprop, NULL);
+    if (!strcmp("0", sysOriprop) || !strcmp("180", sysOriprop)) {
+        sysOrientation = DISPLAY_ORIENTATION_0;
+    } else if (!strcmp("90", sysOriprop) || !strcmp("270", sysOriprop)) {
+        sysOrientation = DISPLAY_ORIENTATION_90;
+    } else {
+        sysOrientation = DISPLAY_ORIENTATION_0;
+    }
+    if ((sysOrientation & 0x1) ^ (mOrientation & 0x1)) {
         size_t tmp = mResolution_RealW;
         mResolution_RealW = mResolution_RealH;
         mResolution_RealH = tmp;
