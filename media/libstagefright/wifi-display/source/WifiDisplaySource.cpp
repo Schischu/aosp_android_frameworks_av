@@ -46,6 +46,7 @@
 #define UIBC_SCROLL_MOUSE_NOTCH 0x4000
 #define UIBC_SCROLL_MOUSE_UP    0x2000
 #define UIBC_SCROLL_NUMBER_MASK 0x1FFF
+#define UIBC_LATENCY_THRESHOLD  10
 
 namespace android {
 
@@ -86,7 +87,9 @@ WifiDisplaySource::WifiDisplaySource(
         mMediaPath.setTo(path);
     }
     DisplayInfo mainDpyInfo;
+    VideoFormats::ResolutionType type;
     size_t err = 0;
+    size_t index;
     sp<IBinder> mainDpy = SurfaceComposerClient::getBuiltInDisplay(
             ISurfaceComposer::eDisplayIdMain);
     err = SurfaceComposerClient::getDisplayInfo(mainDpy, &mainDpyInfo);
@@ -94,7 +97,7 @@ WifiDisplaySource::WifiDisplaySource(
         fprintf(stderr, "ERROR: unable to get display characteristics\n");
         return;
     }
-
+    mSupportedSourceVideoFormats.ConvertDpyInfo2Resolution(mainDpyInfo, type, index);
     mResolution_RealW = mainDpyInfo.w;
     mResolution_RealH = mainDpyInfo.h;
 
@@ -109,11 +112,11 @@ WifiDisplaySource::WifiDisplaySource(
     mSupportedSourceVideoFormats.disableAll();
 
     mSupportedSourceVideoFormats.setNativeResolution(
-            VideoFormats::RESOLUTION_CEA, 5);  // 1280x720 p30
+            type, index);
 
-    // Enable all resolutions up to 1280x720p30
+    // Enable all resolutions up to NativeResolution
     mSupportedSourceVideoFormats.enableResolutionUpto(
-            VideoFormats::RESOLUTION_CEA, 5,
+            type, index,
             VideoFormats::PROFILE_CHP,  // Constrained High Profile
             VideoFormats::LEVEL_32);    // Level 3.2
 
@@ -240,6 +243,20 @@ void WifiDisplaySource::calculateNormalXY(float x, float y, int *abs_x, int *abs
              ((dy / uibc_calc_data_Ss) + 0.5));
 }
 
+bool WifiDisplaySource::checkUIBCtimeStamp(const uint8_t *data) {
+    if (data[0] & 0x08) {
+        uint16_t timestamp = (int32_t)U16_AT(&data[4]);
+        uint16_t tnow = (uint16_t) (((ALooper::GetNowUs() * 9) / 100ll) >> 16);
+        ALOGI("UIBC latency is %d = %d - %d", tnow - timestamp, tnow, timestamp);
+        uint16_t uibc_latency = tnow - timestamp;
+        if (uibc_latency >= UIBC_LATENCY_THRESHOLD) {
+            ALOGD("UIBC latency %d too long and drop it.", uibc_latency);
+            return false;
+        }
+    }
+    return true;
+}
+
 void WifiDisplaySource::recalculateUibcParamaterViaOrientation() {
     uint8_t ori = getOrientation();
     /* Orientation = 0 and 2 are the same and 1 and 3 are same*/
@@ -251,10 +268,10 @@ void WifiDisplaySource::recalculateUibcParamaterViaOrientation() {
         mResolution_RealH = tmp;
         calc_uibc_parameter(mVideoWidth, mVideoHeight);
     }
-
-
 }
 void WifiDisplaySource::parseUIBCtouchEvent(const uint8_t *data) {
+    if (!checkUIBCtimeStamp(data))
+        return;
     if (data[6] < 3) {
         for (int i = 0; i < data[7]; i++) {
             int32_t x = (int32_t)U16_AT(&data[9]);
@@ -263,23 +280,22 @@ void WifiDisplaySource::parseUIBCtouchEvent(const uint8_t *data) {
             int32_t abs_x, abs_y;
             recalculateUibcParamaterViaOrientation();
             calculateNormalXY(x, y, &abs_x, &abs_y);
-
             mClient->onUibcData(action, (float)abs_x, (float)abs_y, 0);
         }
     } else {
         ALOGE("parseUIBCtouchEvent wrong type!");
     }
-
 }
 
 void WifiDisplaySource::parseUIBCscrollEvent(const uint8_t *data) {
+    if (!checkUIBCtimeStamp(data))
+        return;
     if (data == NULL)
          return;
     if (data[3] != 9) {
          ALOGI("parseUIBCscrollEvent data len error!");
          return;
     }
-
     int16_t d = data[7];
     d = (d << 8) & 0xff00;
     d = d | data[8];
@@ -296,22 +312,18 @@ void WifiDisplaySource::parseUIBCscrollEvent(const uint8_t *data) {
         mClient->onUibcData(ANDROID_ACTION_SCROLL, x, 0, updown);
     else
         mClient->onUibcData(ANDROID_ACTION_SCROLL, 0, x, updown);
-
 }
 
 void WifiDisplaySource::parseUIBCkeyEvent(const uint8_t *data) {
-
+    if (!checkUIBCtimeStamp(data))
+        return;
     if (data[3] != 10) {
         ALOGE("parseUIBCkeyEvent length err!!");
         return;
     }
     int action = data[6];
     int keycode = data[8];
-
     mClient->onUibcData(action, 0, 0, keycode);
-
-
-
 }
 
 status_t WifiDisplaySource::parseUIBC(const uint8_t *data) {

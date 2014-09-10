@@ -197,6 +197,8 @@ private:
     uint8_t mOrientation;
     size_t mVideoWidth;
     size_t mVideoHeight;
+
+    bool checkUIBCtimeStamp(const uint8_t *data);
     status_t makeHDCP();
     // <<<< HDCP specific section
 
