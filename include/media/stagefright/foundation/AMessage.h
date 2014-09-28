@@ -25,11 +25,12 @@
 
 namespace android {
 
-struct ABuffer;
-struct AString;
+class ABuffer;
+class AString;
 struct Parcel;
 
-struct AMessage : public RefBase {
+class AMessage : public RefBase {
+public:
     AMessage(uint32_t what = 0, ALooper::handler_id target = 0);
 
     static sp<AMessage> FromParcel(const Parcel &parcel);

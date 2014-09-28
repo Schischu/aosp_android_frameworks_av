@@ -22,7 +22,8 @@
 
 namespace android {
 
-struct AState : public RefBase {
+class AState : public RefBase {
+public:
     AState(const sp<AState> &parentState = NULL);
 
     sp<AState> parentState();
@@ -36,14 +37,15 @@ protected:
     virtual bool onMessageReceived(const sp<AMessage> &msg) = 0;
 
 private:
-    friend struct AHierarchicalStateMachine;
+    friend class AHierarchicalStateMachine;
 
     sp<AState> mParentState;
 
     DISALLOW_EVIL_CONSTRUCTORS(AState);
 };
 
-struct AHierarchicalStateMachine : public AHandler {
+class AHierarchicalStateMachine : public AHandler {
+public:
     AHierarchicalStateMachine();
 
 protected:

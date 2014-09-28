@@ -27,9 +27,9 @@
 
 namespace android {
 
-struct ABuffer;
-struct ANetworkSession;
-struct AMessage;
+class ABuffer;
+class ANetworkSession;
+class AMessage;
 struct IHDCP;
 struct TSPacketizer;
 

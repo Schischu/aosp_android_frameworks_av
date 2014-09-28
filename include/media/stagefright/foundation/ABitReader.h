@@ -25,7 +25,8 @@
 
 namespace android {
 
-struct ABitReader {
+class ABitReader {
+public:
     ABitReader(const uint8_t *data, size_t size);
 
     uint32_t getBits(size_t n);

@@ -27,7 +27,7 @@
 
 namespace android {
 
-struct ALooper;
+class ALooper;
 
 struct SimpleSoftOMXComponent : public SoftOMXComponent {
     SimpleSoftOMXComponent(

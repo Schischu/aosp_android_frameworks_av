@@ -28,10 +28,11 @@
 
 namespace android {
 
-struct AHandler;
-struct AMessage;
+class AHandler;
+class AMessage;
 
-struct ALooper : public RefBase {
+class ALooper : public RefBase {
+public:
     typedef int32_t event_id;
     typedef int32_t handler_id;
 
@@ -57,7 +58,7 @@ protected:
     virtual ~ALooper();
 
 private:
-    friend struct ALooperRoster;
+    friend class ALooperRoster;
 
     struct Event {
         int64_t mWhenUs;

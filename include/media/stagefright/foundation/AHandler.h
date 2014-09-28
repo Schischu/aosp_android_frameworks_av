@@ -23,9 +23,10 @@
 
 namespace android {
 
-struct AMessage;
+class AMessage;
 
-struct AHandler : public RefBase {
+class AHandler : public RefBase {
+public:
     AHandler()
         : mID(0) {
     }
@@ -40,7 +41,7 @@ protected:
     virtual void onMessageReceived(const sp<AMessage> &msg) = 0;
 
 private:
-    friend struct ALooperRoster;
+    friend class ALooperRoster;
 
     ALooper::handler_id mID;
 

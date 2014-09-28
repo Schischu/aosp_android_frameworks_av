@@ -23,7 +23,8 @@
 namespace android {
 
 template<class T>
-struct AHandlerReflector : public AHandler {
+class AHandlerReflector : public AHandler {
+public:
     AHandlerReflector(T *target)
         : mTarget(target) {
     }

@@ -22,7 +22,8 @@
 
 namespace android {
 
-struct AString {
+class AString {
+public:
     AString();
     AString(const char *s);
     AString(const char *s, size_t size);

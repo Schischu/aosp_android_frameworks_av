@@ -24,8 +24,8 @@
 
 namespace android {
 
-struct ABuffer;
-struct ANetworkSession;
+class ABuffer;
+class ANetworkSession;
 
 // An object of this class facilitates sending of media data over an RTP
 // channel. The channel is established over a UDP or TCP connection depending

@@ -28,7 +28,8 @@
 
 namespace android {
 
-struct AAtomizer {
+class AAtomizer {
+public:
     static const char *Atomize(const char *name);
 
 private:

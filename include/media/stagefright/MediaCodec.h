@@ -28,7 +28,7 @@ namespace android {
 struct ABuffer;
 struct ACodec;
 struct AMessage;
-struct AString;
+class AString;
 struct ICrypto;
 struct SoftwareRenderer;
 struct Surface;

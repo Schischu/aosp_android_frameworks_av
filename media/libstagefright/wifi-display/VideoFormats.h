@@ -24,7 +24,7 @@
 
 namespace android {
 
-struct AString;
+class AString;
 
 // This class encapsulates that video resolution capabilities of a wfd source
 // or sink as outlined in the wfd specs. Currently three sets of resolutions

@@ -22,8 +22,8 @@
 
 namespace android {
 
-struct ABuffer;
-struct AString;
+class ABuffer;
+class AString;
 
 sp<ABuffer> decodeBase64(const AString &s);
 void encodeBase64(const void *data, size_t size, AString *out);

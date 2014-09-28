@@ -27,7 +27,7 @@
 namespace android {
 
 struct AMessage;
-struct AString;
+class AString;
 
 struct AAMRAssembler : public ARTPAssembler {
     AAMRAssembler(

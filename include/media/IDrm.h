@@ -25,7 +25,7 @@
 
 namespace android {
 
-struct AString;
+class AString;
 
 struct IDrm : public IInterface {
     DECLARE_META_INTERFACE(Drm);

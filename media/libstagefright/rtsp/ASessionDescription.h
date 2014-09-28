@@ -27,7 +27,7 @@
 
 namespace android {
 
-struct AString;
+class AString;
 
 struct ASessionDescription : public RefBase {
     ASessionDescription();

@@ -22,7 +22,7 @@
 
 namespace android {
 
-struct AString;
+class AString;
 
 void hexdump(
         const void *_data, size_t size,

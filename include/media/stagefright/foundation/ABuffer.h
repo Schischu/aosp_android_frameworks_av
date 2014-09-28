@@ -26,9 +26,10 @@
 
 namespace android {
 
-struct AMessage;
+class AMessage;
 
-struct ABuffer : public RefBase {
+class ABuffer : public RefBase {
+public:
     ABuffer(size_t capacity);
     ABuffer(void *data, size_t capacity);
 

@@ -23,7 +23,8 @@
 
 namespace android {
 
-struct ALooperRoster {
+class ALooperRoster {
+public:
     ALooperRoster();
 
     ALooper::handler_id registerHandler(

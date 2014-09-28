@@ -25,8 +25,8 @@
 
 namespace android {
 
-struct ABuffer;
-struct AMessage;
+class ABuffer;
+class AMessage;
 
 // Forms the packets of a transport stream given access units.
 // Emits metadata tables (PAT and PMT) and timestamp stream (PCR) based
