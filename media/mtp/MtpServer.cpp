@@ -95,6 +95,7 @@ static const MtpEventCode kSupportedEventCodes[] = {
     MTP_EVENT_STORE_ADDED,
     MTP_EVENT_STORE_REMOVED,
     MTP_EVENT_DEVICE_PROP_CHANGED,
+    MTP_EVENT_STORAGE_INFO_CHANGED,
 };
 
 MtpServer::MtpServer(int fd, MtpDatabase* database, bool ptp,
@@ -1300,6 +1301,16 @@ MtpResponseCode MtpServer::doEndEditObject() {
     commitEdit(edit);
     removeEditObject(handle);
     return MTP_RESPONSE_OK;
+}
+
+void MtpServer::changeStorageInfo(MtpStorage* storage) {
+    sendStorageInfoChanged(storage->getStorageID());
+}
+
+
+void MtpServer::sendStorageInfoChanged(MtpStorageID id) {
+    ALOGV("sendStorageInfoChanged %08X\n", id);
+    sendEvent(MTP_EVENT_STORAGE_INFO_CHANGED, id);
 }
 
 }  // namespace android
