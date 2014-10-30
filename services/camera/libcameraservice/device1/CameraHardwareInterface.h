@@ -79,7 +79,7 @@ public:
         mName = name;
     }
 
-    ~CameraHardwareInterface()
+    virtual ~CameraHardwareInterface()
     {
         ALOGI("Destroying camera %s", mName.string());
         if(mDevice) {
@@ -89,7 +89,7 @@ public:
         }
     }
 
-    status_t initialize(hw_module_t *module)
+    virtual status_t initialize(hw_module_t *module)
     {
         ALOGI("Opening camera %s", mName.string());
         int rc = module->methods->open(module, mName.string(),
@@ -103,7 +103,7 @@ public:
     }
 
     /** Set the ANativeWindow to which preview frames are sent */
-    status_t setPreviewWindow(const sp<ANativeWindow>& buf)
+    virtual status_t setPreviewWindow(const sp<ANativeWindow>& buf)
     {
         ALOGV("%s(%s) buf %p", __FUNCTION__, mName.string(), buf.get());
 
@@ -119,7 +119,7 @@ public:
     }
 
     /** Set the notification and data callbacks */
-    void setCallbacks(notify_callback notify_cb,
+    virtual void setCallbacks(notify_callback notify_cb,
                       data_callback data_cb,
                       data_callback_timestamp data_cb_timestamp,
                       void* user)
@@ -150,7 +150,7 @@ public:
     /**
      * Enable a message, or set of messages.
      */
-    void enableMsgType(int32_t msgType)
+    virtual void enableMsgType(int32_t msgType)
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->enable_msg_type)
@@ -167,7 +167,7 @@ public:
      * modify/access any video recording frame after calling
      * disableMsgType(CAMERA_MSG_VIDEO_FRAME).
      */
-    void disableMsgType(int32_t msgType)
+    virtual void disableMsgType(int32_t msgType)
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->disable_msg_type)
@@ -179,7 +179,7 @@ public:
      * Note that this is operates as an AND, if any of the messages
      * queried are off, this will return false.
      */
-    int msgTypeEnabled(int32_t msgType)
+    virtual int msgTypeEnabled(int32_t msgType)
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->msg_type_enabled)
@@ -190,7 +190,7 @@ public:
     /**
      * Start preview mode.
      */
-    status_t startPreview()
+    virtual status_t startPreview()
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->start_preview)
@@ -201,7 +201,7 @@ public:
     /**
      * Stop a previously started preview.
      */
-    void stopPreview()
+    virtual void stopPreview()
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->stop_preview)
@@ -211,7 +211,7 @@ public:
     /**
      * Returns true if preview is enabled.
      */
-    int previewEnabled()
+    virtual int previewEnabled()
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->preview_enabled)
@@ -251,7 +251,7 @@ public:
      * @return OK on success.
      */
 
-    status_t storeMetaDataInBuffers(int enable)
+    virtual status_t storeMetaDataInBuffers(int enable)
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->store_meta_data_in_buffers)
@@ -268,7 +268,7 @@ public:
      * to manage the life-cycle of the video recording frames, and the client must
      * not modify/access any video recording frames.
      */
-    status_t startRecording()
+    virtual status_t startRecording()
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->start_recording)
@@ -279,7 +279,7 @@ public:
     /**
      * Stop a previously started recording.
      */
-    void stopRecording()
+    virtual void stopRecording()
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->stop_recording)
@@ -289,7 +289,7 @@ public:
     /**
      * Returns true if recording is enabled.
      */
-    int recordingEnabled()
+    virtual int recordingEnabled()
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->recording_enabled)
@@ -307,7 +307,7 @@ public:
      * responsibility of managing the life-cycle of the video recording
      * frames.
      */
-    void releaseRecordingFrame(const sp<IMemory>& mem)
+    virtual void releaseRecordingFrame(const sp<IMemory>& mem)
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->release_recording_frame) {
@@ -324,7 +324,7 @@ public:
      * with CAMERA_MSG_FOCUS once when focusing is complete. autoFocus()
      * will be called again if another auto focus is needed.
      */
-    status_t autoFocus()
+    virtual status_t autoFocus()
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->auto_focus)
@@ -338,7 +338,7 @@ public:
      * or not, this function will return the focus position to the default.
      * If the camera does not support auto-focus, this is a no-op.
      */
-    status_t cancelAutoFocus()
+    virtual status_t cancelAutoFocus()
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->cancel_auto_focus)
@@ -349,7 +349,7 @@ public:
     /**
      * Take a picture.
      */
-    status_t takePicture()
+    virtual status_t takePicture()
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->take_picture)
@@ -361,7 +361,7 @@ public:
      * Cancel a picture that was started with takePicture.  Calling this
      * method when no picture is being taken is a no-op.
      */
-    status_t cancelPicture()
+    virtual status_t cancelPicture()
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->cancel_picture)
@@ -372,7 +372,7 @@ public:
     /**
      * Set the camera parameters. This returns BAD_VALUE if any parameter is
      * invalid or not supported. */
-    status_t setParameters(const CameraParameters &params)
+    virtual status_t setParameters(const CameraParameters &params)
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->set_parameters)
@@ -382,7 +382,7 @@ public:
     }
 
     /** Return the camera parameters. */
-    CameraParameters getParameters() const
+    virtual CameraParameters getParameters() const
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         CameraParameters parms;
@@ -401,7 +401,7 @@ public:
     /**
      * Send command to camera driver.
      */
-    status_t sendCommand(int32_t cmd, int32_t arg1, int32_t arg2)
+    virtual status_t sendCommand(int32_t cmd, int32_t arg1, int32_t arg2)
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->send_command)
@@ -413,7 +413,7 @@ public:
      * Release the hardware resources owned by this object.  Note that this is
      * *not* done in the destructor.
      */
-    void release() {
+    virtual void release() {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->release)
             mDevice->ops->release(mDevice);
@@ -422,7 +422,7 @@ public:
     /**
      * Dump state of the camera hardware
      */
-    status_t dump(int fd, const Vector<String16>& /*args*/) const
+    virtual status_t dump(int fd, const Vector<String16>& /*args*/) const
     {
         ALOGV("%s(%s)", __FUNCTION__, mName.string());
         if (mDevice->ops->dump)
