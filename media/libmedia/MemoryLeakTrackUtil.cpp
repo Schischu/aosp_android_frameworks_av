@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -168,6 +169,27 @@ void dumpMemoryAddresses(int fd)
 
         delete[] entries;
         free_malloc_leak_info(info);
+
+        result.append("MAPS\n");
+        write(fd, result.string(), result.size());
+        result.clear();
+
+        const char* maps = "/proc/self/maps";
+        int in = open(maps, O_RDONLY);
+        if (in != -1) {
+            size_t n;
+            while ((n = read(in, buffer, SIZE - 1)) > 0) {
+                buffer[n] = '\0';
+                result.append(buffer);
+                write(fd, result.string(), result.size());
+                result.clear();
+            }
+            close(in);
+        }
+
+        result.append("END\n");
+        write(fd, result.string(), result.size());
+        result.clear();
     }
 }
 
