@@ -67,7 +67,7 @@ public:
     // mData should be 64 bit aligned to prevent additional padding
     uint8_t* mData;            // Actual binary data
     // pad structure so it's the same size on 64 bit and 32 bit
-    char     mPadding[8 - sizeof(mData)];
+    char     mPadding[8 - sizeof(uint8_t* /*mData*/)];
 };
 
 }; // namespace android
