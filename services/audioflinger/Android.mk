@@ -39,6 +39,9 @@ LOCAL_SRC_FILES:=               \
 
 LOCAL_SRC_FILES += StateQueue.cpp
 
+# FIXME Workaround for clang bug http://llvm.org/bugs/show_bug.cgi?id=21590
+LOCAL_CLANG_CFLAGS += -O1
+
 LOCAL_C_INCLUDES := \
     $(TOPDIR)frameworks/av/services/audiopolicy \
     $(call include-path-for, audio-effects) \
