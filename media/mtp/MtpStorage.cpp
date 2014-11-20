@@ -63,6 +63,11 @@ int MtpStorage::getAccessCapability() const {
 
 uint64_t MtpStorage::getMaxCapacity() {
     if (mMaxCapacity == 0) {
+
+        if (mRemovable) {
+            ALOGV("Sleep for removable storage path: %s \n", getPath());
+            sleep(1);
+        }
         struct statfs   stat;
         if (statfs(getPath(), &stat))
             return -1;
