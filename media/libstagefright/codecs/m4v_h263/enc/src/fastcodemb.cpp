@@ -525,7 +525,7 @@ Int getBlockSAV(Short block[])
 /*  In/out   : Previous and current frame block pointers, and frame width   */
 /*  Return   :                                                              */
 /*  Modified :                                                              */
-/*      8/15/01,  - do 4 pixel at a time    assuming 32 bit register        */
+/*      8/15/01,  - do 4 pixel at a time    assuming 32 bit        */
 /* ======================================================================== */
 Int Sad8x8(UChar *cur, UChar *prev, Int width)
 {

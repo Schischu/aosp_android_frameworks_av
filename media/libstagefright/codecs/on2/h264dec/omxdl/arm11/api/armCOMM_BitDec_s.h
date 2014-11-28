@@ -66,7 +66,7 @@
 ;//
 ;// This writes the bitstream state back to memory.
 ;//
-;// The three bitstream cache register names are assigned to the following global
+;// The three bitstream cache names are assigned to the following global
 ;// variables:
 ;//
 
@@ -75,7 +75,7 @@
         GBLS    BitCount    ;// Register name for BitCount
    
 ;//        
-;// These register variables must have a certain defined state on entry to every bitstream
+;// These variables must have a certain defined state on entry to every bitstream
 ;// macro (except M_BD_INIT) and on exit from every bitstream macro (except M_BD_FINI).
 ;// The state may depend on implementation.
 ;//
@@ -97,9 +97,9 @@
         ;//
         ;// $ppBitStream    - pointer to pointer to the next bitstream byte
         ;// $pBitOffset     - pointer to the number of bits used in the current byte (0..7)
-        ;// $RBitStream     - register to use for pBitStream (can be $ppBitStream)
-        ;// $RBitBuffer     - register to use for BitBuffer
-        ;// $RBitCount      - register to use for BitCount   (can be $pBitOffset)
+        ;// $RBitStream     - to use for pBitStream (can be $ppBitStream)
+        ;// $RBitBuffer     - to use for BitBuffer
+        ;// $RBitCount      - to use for BitCount   (can be $pBitOffset)
         ;//
         ;// Output Registers:
         ;//
@@ -648,7 +648,7 @@ BitCount    SETS "$RBitCount"
         ;// $ppBitStream    - pointer to pointer to the next bitstream byte
         ;// $pBitOffset     - pointer to the number of bits used in the current byte (0..7)
         ;// $pBitStream     \ 
-        ;// $BitBuffer       } these register are corrupted
+        ;// $BitBuffer       } these are corrupted
         ;// $BitCount       / 
         ;//
         MACRO

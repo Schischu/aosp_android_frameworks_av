@@ -147,8 +147,8 @@ pScale  RN 3    ;// pointer to scaling table
 ;// REGISTER ALLOCATION
 ;// This is hard since we have 8 values, 9 free registers and each
 ;// butterfly requires a temporary register. We also want to 
-;// maintain register order so we can use LDM/STM. The table below
-;// summarises the register allocation that meets all these criteria.
+;// maintain order so we can use LDM/STM. The table below
+;// summarises the allocation that meets all these criteria.
 ;// a=1stcol, b=2ndcol, f,g,h,i are dataflow points described above.
 ;//
 ;// r1  a01     g0  h0
@@ -1216,10 +1216,10 @@ dYf7U8          DN YTR7*2.U8
         ;//
         ;// Input Registers:
         ;//
-        ;// $dAlo           - Input D register with first four S16 values of row n
-        ;// $dAhi           - Input D register with next four S16 values of row n
-        ;// $dBlo           - Input D register with first four S16 values of row n+1
-        ;// $dBhi           - Input D register with next four S16 values of row n+1
+        ;// $dAlo           - Input D with first four S16 values of row n
+        ;// $dAhi           - Input D with next four S16 values of row n
+        ;// $dBlo           - Input D with first four S16 values of row n+1
+        ;// $dBhi           - Input D with next four S16 values of row n+1
         ;// pScale          - Pointer to next row of scale values
         ;// qT0lo           - Temporary scratch register
         ;// qT0hi           - Temporary scratch register
@@ -1267,14 +1267,14 @@ dYf7U8          DN YTR7*2.U8
         ;//
         ;// Input Registers:
         ;//
-        ;// dXjnlo          - n th input D register with first four S16 values
-        ;// dXjnhi          - n th input D register with next four S16 values
-        ;// qXjn            - n th input Q register with eight S16 values
+        ;// dXjnlo          - n th input D with first four S16 values
+        ;// dXjnhi          - n th input D with next four S16 values
+        ;// qXjn            - n th input Q with eight S16 values
         ;// pScale          - Pointer to scale values
         ;//
         ;// Output Registers:
         ;//
-        ;// qXin            - n th output Q register with eight S16 output values of 1st stage
+        ;// qXin            - n th output Q with eight S16 output values of 1st stage
         ;//
         MACRO
         M_IDCT_PRESCALE16
@@ -1302,15 +1302,15 @@ dYf7U8          DN YTR7*2.U8
         ;//
         ;// Input Registers:
         ;//
-        ;// dXjnlo          - n th input D register with first four S16 values
-        ;// dXjnhi          - n th input D register with next four S16 values
-        ;// qXjn            - n th input Q register with eight S16 values
+        ;// dXjnlo          - n th input D with first four S16 values
+        ;// dXjnhi          - n th input D with next four S16 values
+        ;// qXjn            - n th input Q with eight S16 values
         ;// pScale          - Pointer to 32bit scale values in Q23 format
         ;//
         ;// Output Registers:
         ;//
-        ;// dXinlo          - n th output D register with first four S16 output values of 1st stage
-        ;// dXinhi          - n th output D register with next four S16 output values of 1st stage
+        ;// dXinlo          - n th output D with first four S16 output values of 1st stage
+        ;// dXinhi          - n th output D with next four S16 output values of 1st stage
         ;//
         MACRO
         M_IDCT_PRESCALE32

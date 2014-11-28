@@ -345,11 +345,11 @@ SadMBOffset1:
 
     __inline int32 SUB_SAD(int32 sad, int32 tmp, int32 tmp2)
     {
-        register int32 out;
-        register int32 temp1;
-        register int32 ss = sad;
-        register int32 tt = tmp;
-        register int32 uu = tmp2;
+        int32 out;
+        int32 temp1;
+        int32 ss = sad;
+        int32 tt = tmp;
+        int32 uu = tmp2;
 
         asm volatile("rsbs  %1, %4, %3\n\t"
                      "rsbmi %1, %1, #0\n\t"
@@ -364,11 +364,11 @@ SadMBOffset1:
 
     __inline int32 sad_4pixel(int32 src1, int32 src2, int32 mask)
 {
-        register int32 out;
-        register int32 temp1;
-        register int32 s1 = src1;
-        register int32 s2 = src2;
-        register int32 mm = mask;
+        int32 out;
+        int32 temp1;
+        int32 s1 = src1;
+        int32 s2 = src2;
+        int32 mm = mask;
 
         asm volatile("eor   %0, %3, %2\n\t"
                      "subs  %1, %3, %2\n\t"
@@ -389,11 +389,11 @@ SadMBOffset1:
 
     __inline int32 sad_4pixelN(int32 src1, int32 src2, int32 mask)
 {
-        register int32 out;
-        register int32 temp1;
-        register int32 s1 = src1;
-        register int32 s2 = src2;
-        register int32 mm = mask;
+        int32 out;
+        int32 temp1;
+        int32 s1 = src1;
+        int32 s2 = src2;
+        int32 mm = mask;
 
         asm volatile("eor    %1, %3, %2\n\t"
                      "adds   %0, %3, %2\n\t"

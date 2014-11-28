@@ -268,10 +268,10 @@ __inline int32 sum_abs(int32 k0, int32 k1, int32 k2, int32 k3,
 
 __inline int32 mla724(int32 op1, int32 op2, int32 op3)
 {
-    register int32 out;
-    register int32 aa = (int32)op1;
-    register int32 bb = (int32)op2;
-    register int32 cc = (int32)op3;
+    int32 out;
+    int32 aa = (int32)op1;
+    int32 bb = (int32)op2;
+    int32 cc = (int32)op3;
 
     asm volatile("smlabb %0, %1, %2, %3"
              : "=&r"(out)
@@ -284,10 +284,10 @@ __inline int32 mla724(int32 op1, int32 op2, int32 op3)
 
 __inline int32 mla392(int32 k0, int32 k14, int32 round)
 {
-    register int32 out;
-    register int32 aa = (int32)k0;
-    register int32 bb = (int32)k14;
-    register int32 cc = (int32)round;
+    int32 out;
+    int32 aa = (int32)k0;
+    int32 bb = (int32)k14;
+    int32 cc = (int32)round;
 
     asm volatile("smlabt %0, %1, %2, %3"
              : "=&r"(out)
@@ -300,10 +300,10 @@ __inline int32 mla392(int32 k0, int32 k14, int32 round)
 
 __inline int32 mla554(int32 k4, int32 k12, int32 k1)
 {
-    register int32 out;
-    register int32 aa = (int32)k4;
-    register int32 bb = (int32)k12;
-    register int32 cc = (int32)k1;
+    int32 out;
+    int32 aa = (int32)k4;
+    int32 bb = (int32)k12;
+    int32 cc = (int32)k1;
 
     asm volatile("smlabt %0, %1, %2, %3"
              : "=&r"(out)
@@ -316,10 +316,10 @@ __inline int32 mla554(int32 k4, int32 k12, int32 k1)
 
 __inline int32 mla1338(int32 k6, int32 k14, int32 k1)
 {
-    register int32 out;
-    register int32 aa = (int32)k6;
-    register int32 bb = (int32)k14;
-    register int32 cc = (int32)k1;
+    int32 out;
+    int32 aa = (int32)k6;
+    int32 bb = (int32)k14;
+    int32 cc = (int32)k1;
 
     asm volatile("smlabb %0, %1, %2, %3"
              : "=&r"(out)
@@ -331,10 +331,10 @@ __inline int32 mla1338(int32 k6, int32 k14, int32 k1)
 
 __inline int32 mla946(int32 k6, int32 k14, int32 k1)
 {
-    register int32 out;
-    register int32 aa = (int32)k6;
-    register int32 bb = (int32)k14;
-    register int32 cc = (int32)k1;
+    int32 out;
+    int32 aa = (int32)k6;
+    int32 bb = (int32)k14;
+    int32 cc = (int32)k1;
 
     asm volatile("smlabb %0, %1, %2, %3"
              : "=&r"(out)
@@ -347,16 +347,16 @@ __inline int32 mla946(int32 k6, int32 k14, int32 k1)
 __inline int32 sum_abs(int32 k0, int32 k1, int32 k2, int32 k3,
                        int32 k4, int32 k5, int32 k6, int32 k7)
 {
-    register int32 carry;
-    register int32 abs_sum;
-    register int32 aa = (int32)k0;
-    register int32 bb = (int32)k1;
-    register int32 cc = (int32)k2;
-    register int32 dd = (int32)k3;
-    register int32 ee = (int32)k4;
-    register int32 ff = (int32)k5;
-    register int32 gg = (int32)k6;
-    register int32 hh = (int32)k7;
+    int32 carry;
+    int32 abs_sum;
+    int32 aa = (int32)k0;
+    int32 bb = (int32)k1;
+    int32 cc = (int32)k2;
+    int32 dd = (int32)k3;
+    int32 ee = (int32)k4;
+    int32 ff = (int32)k5;
+    int32 gg = (int32)k6;
+    int32 hh = (int32)k7;
 
     asm volatile("eor  %0, %2, %2, asr #31\n\t"
                  "eors %1, %3, %3, asr #31\n\t"

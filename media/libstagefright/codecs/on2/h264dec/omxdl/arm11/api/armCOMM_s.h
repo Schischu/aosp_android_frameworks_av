@@ -24,8 +24,8 @@ ARM_ERRORCHECK  SETL {FALSE}
 
 ;// Globals
 
-        GBLS    _RRegList   ;// R saved register list
-        GBLS    _DRegList   ;// D saved register list
+        GBLS    _RRegList   ;// R saved list
+        GBLS    _DRegList   ;// D saved list
         GBLS    _Variant    ;// Selected processor variant
         GBLS    _CPU        ;// CPU name
         GBLS    _Struct     ;// Structure name
@@ -33,7 +33,7 @@ ARM_ERRORCHECK  SETL {FALSE}
         GBLL    _InFunc     ;// Inside function assembly flag
         GBLL    _SwLong     ;// Long switch flag
         
-        GBLA    _RBytes     ;// Number of register bytes on stack
+        GBLA    _RBytes     ;// Number of bytes on stack
         GBLA    _SBytes     ;// Number of scratch bytes on stack 
         GBLA    _ABytes     ;// Stack offset of next argument
         GBLA    _Workspace  ;// Stack offset of scratch workspace
@@ -217,9 +217,9 @@ _Struct SETS ""
 ;// Switch and table macros
 ;//////////////////////////////////////////////////////////
 
-        ;// Start a relative switch table with register to switch on
+        ;// Start a relative switch table with to switch on
         ;//
-        ;// $v = the register to switch on
+        ;// $v = the to switch on
         ;// $s = if specified must be "L" to indicate long
         ;//      this allows a greater range to the case code
         MACRO
@@ -689,7 +689,7 @@ _RRegList   SETS "r4-r12"
 _RBytes     SETA _RBytes+40
             MEXIT
         ENDIF
-        INFO 1, "Unrecognized saved r register limit '$rreg'"
+        INFO 1, "Unrecognized saved r limit '$rreg'"
         MEND        
         
         ;// Work out a list of D saved registers
@@ -739,7 +739,7 @@ _DRegList   SETS "d8-d15"
 _RBytes     SETA _RBytes+64
             MEXIT
         ENDIF
-        INFO 1, "Unrecognized saved d register limit '$dreg'"
+        INFO 1, "Unrecognized saved d limit '$dreg'"
         MEND
         
         ;// Produce function return instructions

@@ -80,11 +80,11 @@ extern "C"
 
     __inline int32 INTERP1_SUB_SAD(int32 sad, int32 tmp, int32 tmp2)
     {
-        register int32 out;
-        register int32 temp1;
-        register int32 ss = sad;
-        register int32 tt = tmp;
-        register int32 uu = tmp2;
+        int32 out;
+        int32 temp1;
+        int32 ss = sad;
+        int32 tt = tmp;
+        int32 uu = tmp2;
 
         asm volatile("rsbs	%1, %3, %4, asr #1\n\t"
                      "rsbmi %1, %1, #0\n\t"
@@ -100,11 +100,11 @@ extern "C"
 
     __inline int32 INTERP2_SUB_SAD(int32 sad, int32 tmp, int32 tmp2)
 {
-        register int32 out;
-        register int32 temp1;
-        register int32 ss = sad;
-        register int32 tt = tmp;
-        register int32 uu = tmp2;
+        int32 out;
+        int32 temp1;
+        int32 ss = sad;
+        int32 tt = tmp;
+        int32 uu = tmp2;
 
         asm volatile("rsbs      %1, %4, %3, asr #2\n\t"
                      "rsbmi %1, %1, #0\n\t"

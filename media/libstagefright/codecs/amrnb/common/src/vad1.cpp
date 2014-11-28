@@ -1530,7 +1530,7 @@ static Word16 vad_decision(
         vad_thr = VAD_THR_LOW;
     }
 
-    /* Shift VAD decision register */
+    /* Shift VAD decision */
     st->vadreg = shr(st->vadreg, 1, pOverflow);
 
     /* Make intermediate VAD decision */

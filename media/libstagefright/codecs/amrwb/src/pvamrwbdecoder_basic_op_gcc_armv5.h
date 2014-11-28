@@ -58,10 +58,10 @@ extern "C"
 
     static inline int16 sub_int16(int16 var1, int16 var2)
     {
-        register int32 L_var_out;
-        register int32 L_var_aux;
-        register int32 ra = (int32)var1;
-        register int32 rb = (int32)var2;
+        int32 L_var_out;
+        int32 L_var_aux;
+        int32 ra = (int32)var1;
+        int32 rb = (int32)var2;
 
         asm volatile(
             "mov  %0, %2, lsl #16\n"
@@ -79,10 +79,10 @@ extern "C"
 
     static inline int16 add_int16(int16 var1, int16 var2)
 {
-        register int32 L_var_out;
-        register int32 L_var_aux;
-        register int32 ra = (int32)var1;
-        register int32 rb = (int32)var2;
+        int32 L_var_out;
+        int32 L_var_aux;
+        int32 ra = (int32)var1;
+        int32 rb = (int32)var2;
 
         asm volatile(
             "mov  %0, %2, lsl #16\n"
@@ -100,11 +100,11 @@ extern "C"
 
     static inline  int32 mul_32by16(int16 hi, int16 lo, int16 n)
 {
-        register int32 H_32;
-        register int32 L_32;
-        register int32 ra = (int32)hi;
-        register int32 rb = (int32)lo;
-        register int32 rc = (int32)n;
+        int32 H_32;
+        int32 L_32;
+        int32 ra = (int32)hi;
+        int32 rb = (int32)lo;
+        int32 rc = (int32)n;
 
 
         asm volatile(
@@ -124,9 +124,9 @@ extern "C"
 
     static inline int32 sub_int32(int32 L_var1, int32 L_var2)
 {
-        register int32 L_var_out;
-        register int32 ra = L_var1;
-        register int32 rb = L_var2;
+        int32 L_var_out;
+        int32 ra = L_var1;
+        int32 rb = L_var2;
 
         asm volatile(
             "qsub %0, %1, %2"
@@ -139,9 +139,9 @@ extern "C"
 
     static inline int32 add_int32(int32 L_var1, int32 L_var2)
 {
-        register int32 L_var_out;
-        register int32 ra = L_var1;
-        register int32 rb = L_var2;
+        int32 L_var_out;
+        int32 ra = L_var1;
+        int32 rb = L_var2;
 
         asm volatile(
             "qadd %0, %1, %2"
@@ -154,10 +154,10 @@ extern "C"
 
     static inline int32 msu_16by16_from_int32(int32 L_var3, int16 var1, int16 var2)
 {
-        register int32 L_var_out;
-        register int32 ra = (int32)var1;
-        register int32 rb = (int32)var2;
-        register int32 rc = L_var3;
+        int32 L_var_out;
+        int32 ra = (int32)var1;
+        int32 rb = (int32)var2;
+        int32 rc = L_var3;
 
         asm volatile(
             "smulbb %0, %1, %2\n"
@@ -173,10 +173,10 @@ extern "C"
 
     static inline int32 mac_16by16_to_int32(int32 L_var3, int16 var1, int16 var2)
 {
-        register int32 L_var_out;
-        register int32 ra = (int32)var1;
-        register int32 rb = (int32)var2;
-        register int32 rc = L_var3;
+        int32 L_var_out;
+        int32 ra = (int32)var1;
+        int32 rb = (int32)var2;
+        int32 rc = L_var3;
 
         asm volatile(
             "smulbb %0, %1, %2\n"
@@ -192,9 +192,9 @@ extern "C"
 
     static inline  int32 mul_16by16_to_int32(int16 var1, int16 var2)
 {
-        register int32 L_var_out;
-        register int32 ra = (int32)var1;
-        register int32 rb = (int32)var2;
+        int32 L_var_out;
+        int32 ra = (int32)var1;
+        int32 rb = (int32)var2;
 
         asm volatile(
             "smulbb %0, %1, %2\n"
@@ -209,9 +209,9 @@ extern "C"
 
     static inline int16 mult_int16(int16 var1, int16 var2)
 {
-        register int32 L_var_out;
-        register int32 ra = (int32)var1;
-        register int32 rb = (int32)var2;
+        int32 L_var_out;
+        int32 ra = (int32)var1;
+        int32 rb = (int32)var2;
 
         asm volatile(
             "smulbb %0, %1, %2\n"
@@ -225,9 +225,9 @@ extern "C"
 
     static inline int16 amr_wb_round(int32 L_var1)
 {
-        register int32 L_var_out;
-        register int32 ra = (int32)L_var1;
-        register int32 rb = (int32)0x00008000L;
+        int32 L_var_out;
+        int32 ra = (int32)L_var1;
+        int32 rb = (int32)0x00008000L;
 
         asm volatile(
             "qadd %0, %1, %2\n"
@@ -240,9 +240,9 @@ extern "C"
 
     static inline int16 amr_wb_shl1_round(int32 L_var1)
 {
-        register int32 L_var_out;
-        register int32 ra = (int32)L_var1;
-        register int32 rb = (int32)0x00008000L;
+        int32 L_var_out;
+        int32 ra = (int32)L_var1;
+        int32 rb = (int32)0x00008000L;
 
         asm volatile(
             "qadd %0, %1, %1\n"
@@ -257,10 +257,10 @@ extern "C"
 
     static inline int32 fxp_mac_16by16(const int16 L_var1, const int16 L_var2, int32 L_add)
 {
-        register int32 tmp;
-        register int32 ra = (int32)L_var1;
-        register int32 rb = (int32)L_var2;
-        register int32 rc = (int32)L_add;
+        int32 tmp;
+        int32 ra = (int32)L_var1;
+        int32 rb = (int32)L_var2;
+        int32 rc = (int32)L_add;
 
         asm volatile(
             "smlabb %0, %1, %2, %3"
@@ -273,9 +273,9 @@ extern "C"
 
     static inline int32 fxp_mul_16by16bb(int16 L_var1, const int16 L_var2)
 {
-        register int32 tmp;
-        register int32 ra = (int32)L_var1;
-        register int32 rb = (int32)L_var2;
+        int32 tmp;
+        int32 ra = (int32)L_var1;
+        int32 rb = (int32)L_var2;
 
         asm volatile(
             "smulbb %0, %1, %2"
@@ -291,9 +291,9 @@ extern "C"
 
     static inline int32 fxp_mul32_by_16(int32 L_var1, const int32 L_var2)
 {
-        register int32 tmp;
-        register int32 ra = (int32)L_var1;
-        register int32 rb = (int32)L_var2;
+        int32 tmp;
+        int32 ra = (int32)L_var1;
+        int32 rb = (int32)L_var2;
 
         asm volatile(
             "smulwb %0, %1, %2"

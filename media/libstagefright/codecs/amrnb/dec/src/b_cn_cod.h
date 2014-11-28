@@ -124,7 +124,7 @@ extern "C"
     ----------------------------------------------------------------------------*/
 
     Word16 pseudonoise(
-        Word32 *pShift_reg,     /* i/o : Old CN generator shift register state */
+        Word32 *pShift_reg,     /* i/o : Old CN generator shift state */
         Word16 no_bits          /* i   : Number of bits                        */
     );
 
@@ -138,7 +138,7 @@ extern "C"
     ----------------------------------------------------------------------------*/
 
     void build_CN_code(
-        Word32 *pSeed,          /* i/o : Old CN generator shift register state  */
+        Word32 *pSeed,          /* i/o : Old CN generator shift state  */
         Word16 cod[],           /* o   : Generated CN fixed codebook vector     */
         Flag   *pOverflow       /* i/o : Overflow flag                          */
     );
@@ -153,7 +153,7 @@ extern "C"
     ----------------------------------------------------------------------------*/
 
     void build_CN_param(
-        Word16 *pSeed,          /* i/o : Old CN generator shift register state  */
+        Word16 *pSeed,          /* i/o : Old CN generator shift state  */
         const Word16 n_param,               /* i  : number of params            */
         const Word16 param_size_table[],    /* i : size of params               */
         Word16 parm[],                  /* o : CN Generated params              */

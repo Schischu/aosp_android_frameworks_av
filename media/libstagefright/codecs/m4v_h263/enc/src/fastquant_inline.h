@@ -428,11 +428,11 @@ __inline int32 coeff_dequant_mpeg_intra(int32 q_value, int32 tmp)
 __inline int32 aan_scale(int32 q_value, int32 coeff,
                          int32 round, int32 QPdiv2)
 {
-    register int32 out;
-    register int32 qv = q_value;
-    register int32 cf = coeff;
-    register int32 rr = round;
-    register int32 qp = QPdiv2;
+    int32 out;
+    int32 qv = q_value;
+    int32 cf = coeff;
+    int32 rr = round;
+    int32 qp = QPdiv2;
 
     asm volatile("smlabb %0, %2, %1, %3\n\t"
                  "movs %0, %0, asr #16\n\t"
@@ -448,11 +448,11 @@ __inline int32 aan_scale(int32 q_value, int32 coeff,
 
 __inline int32 coeff_quant(int32 coeff, int32 q_scale, int32 shift)
 {
-    register int32 out;
-    register int32 temp1;
-    register int32 cc = coeff;
-    register int32 qs = q_scale;
-    register int32 ss = shift;
+    int32 out;
+    int32 temp1;
+    int32 cc = coeff;
+    int32 qs = q_scale;
+    int32 ss = shift;
 
     asm volatile("smulbb %0, %3, %2\n\t"
                  "mov %1, %0, asr %4\n\t"
@@ -468,7 +468,7 @@ __inline int32 coeff_quant(int32 coeff, int32 q_scale, int32 shift)
 
 __inline int32 coeff_clip(int32 q_value, int32 ac_clip)
 {
-    register int32 coeff;
+    int32 coeff;
 
     asm volatile("add   %1, %0, %2\n\t"
                  "subs  %1, %1, %2, lsl #1\n\t"
@@ -482,12 +482,12 @@ __inline int32 coeff_clip(int32 q_value, int32 ac_clip)
 
 __inline int32 coeff_dequant(int32 q_value, int32 QPx2, int32 Addition, int32 tmp)
 {
-    register int32 out;
-    register int32 temp1;
-    register int32 qv = q_value;
-    register int32 qp = QPx2;
-    register int32 aa = Addition;
-    register int32 tt = tmp;
+    int32 out;
+    int32 temp1;
+    int32 qv = q_value;
+    int32 qp = QPx2;
+    int32 aa = Addition;
+    int32 tt = tmp;
 
     asm volatile("cmp    %2, #0\n\t"
                  "mul    %0, %2, %3\n\t"
@@ -509,10 +509,10 @@ __inline int32 coeff_dequant(int32 q_value, int32 QPx2, int32 Addition, int32 tm
 
 __inline int32 smlabb(int32 q_value, int32 coeff, int32 round)
 {
-    register int32 out;
-    register int32 aa = (int32)q_value;
-    register int32 bb = (int32)coeff;
-    register int32 cc = (int32)round;
+    int32 out;
+    int32 aa = (int32)q_value;
+    int32 bb = (int32)coeff;
+    int32 cc = (int32)round;
 
     asm volatile("smlabb %0, %1, %2, %3"
              : "=&r"(out)
@@ -524,9 +524,9 @@ __inline int32 smlabb(int32 q_value, int32 coeff, int32 round)
 
 __inline int32 smulbb(int32 q_scale, int32 coeff)
 {
-    register int32 out;
-    register int32 aa = (int32)q_scale;
-    register int32 bb = (int32)coeff;
+    int32 out;
+    int32 aa = (int32)q_scale;
+    int32 bb = (int32)coeff;
 
     asm volatile("smulbb %0, %1, %2"
              : "=&r"(out)
@@ -537,9 +537,9 @@ __inline int32 smulbb(int32 q_scale, int32 coeff)
 
 __inline int32 aan_dc_scale(int32 coeff, int32 QP)
 {
-    register int32 out;
-    register int32 cc = coeff;
-    register int32 qp = QP;
+    int32 out;
+    int32 cc = coeff;
+    int32 qp = QP;
 
     asm volatile("cmp %1, #0\n\t"
                  "addle %0, %1, %2, asr #1\n\t"
@@ -552,7 +552,7 @@ __inline int32 aan_dc_scale(int32 coeff, int32 QP)
 
 __inline int32 clip_2047(int32 q_value, int32 tmp)
 {
-    register int32 coeff;
+    int32 coeff;
     asm volatile("add    %1, %0, %2\n\t"
                  "subs   %1, %1, #0xF00\n\t"
                  "subcss %1, %1, #0xFE\n\t"
@@ -566,12 +566,12 @@ __inline int32 clip_2047(int32 q_value, int32 tmp)
 
 __inline int32 coeff_dequant_mpeg(int32 q_value, int32 stepsize, int32 QP, int32 tmp)
 {
-    register int32 out;
-    register int32 temp1;
-    register int32 qv = q_value;
-    register int32 ss = stepsize;
-    register int32 qp = QP;
-    register int32 tt = tmp;
+    int32 out;
+    int32 temp1;
+    int32 qv = q_value;
+    int32 ss = stepsize;
+    int32 qp = QP;
+    int32 tt = tmp;
 
     asm volatile("movs    %1, %2, lsl #1\n\t"
                  "mul     %0, %3, %4\n\t"
@@ -597,10 +597,10 @@ __inline int32 coeff_dequant_mpeg(int32 q_value, int32 stepsize, int32 QP, int32
 
 __inline int32 coeff_dequant_mpeg_intra(int32 q_value, int32 tmp)
 {
-    register int32 out;
-    register int32 temp1;
-    register int32 qv = q_value;
-    register int32 tt = tmp;
+    int32 out;
+    int32 temp1;
+    int32 qv = q_value;
+    int32 tt = tmp;
 
     asm volatile("movs    %1, %2, lsl #1\n\t"
                  "addlt   %1, %1, #15\n\t"

@@ -523,7 +523,7 @@ static Word16 vad_decision(                           /* return value : VAD_flag
 	{
 		vad_thr = THR_MIN;
 	}
-	/* Shift VAD decision register */
+	/* Shift VAD decision */
 	st->vadreg = (st->vadreg >> 1);
 
 	/* Make intermediate VAD decision */

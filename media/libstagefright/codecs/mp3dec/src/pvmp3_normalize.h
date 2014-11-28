@@ -75,8 +75,8 @@ __inline int32 pvmp3_normalize(int32 x)
 
 __inline int32 pvmp3_normalize(int32 x)
 {
-    register int32 y;
-    register int32 ra = x;
+    int32 y;
+    int32 ra = x;
 
 
     asm volatile(

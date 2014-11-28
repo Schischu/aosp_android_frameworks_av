@@ -65,7 +65,7 @@ terms listed above has been obtained from the copyright holder.
 
  Description:  For Pre_Process()
               1. Replaced variables (containing filter coefficients) with
-                 constants, to avoid extra register swaping.
+                 constants, to avoid extra swaping.
               2. Changed to decrement loop
 
  Description:  Replaced OSCL mem type functions and eliminated include
@@ -542,7 +542,7 @@ void Pre_Process(
     Word16 signal[], /* input/output signal */
     Word16 lg)       /* length of signal    */
 {
-    register Word16 i;
+    Word16 i;
     Word16 x_n_2;
     Word16 x_n_1;
     Word32 L_tmp;

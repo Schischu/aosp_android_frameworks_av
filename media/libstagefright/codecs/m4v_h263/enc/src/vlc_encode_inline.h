@@ -213,8 +213,8 @@ __inline  Int zero_run_search(UInt *bitmapzz, Short *dataBlock, RunLevelBlock *R
 
 __inline Int m4v_enc_clz(UInt temp)
 {
-    register Int rb;
-    register UInt ra = (UInt)temp;
+    Int rb;
+    UInt ra = (UInt)temp;
 
     asm volatile("clz   %0, %1"
              : "=&r"(rb)

@@ -109,7 +109,7 @@ extern "C"
 
     __inline Word16  norm_s(Word16 var)
     {
-        register Word32 var_out = 0;
+        Word32 var_out = 0;
         Word32 var1 = var << 16;
 
         __asm
@@ -126,8 +126,8 @@ extern "C"
 
     static inline Word16 norm_s(Word16 var1)
     {
-        register Word32 var_out = 0;
-        register Word32 ra = var1 << 16;
+        Word32 var_out = 0;
+        Word32 ra = var1 << 16;
         if (ra)
         {
             ra ^= (ra << 1);

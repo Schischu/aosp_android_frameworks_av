@@ -95,11 +95,11 @@ terms listed above has been obtained from the copyright holder.
  INPUT AND OUTPUT DEFINITIONS
 
  Inputs:
-    pShift_reg = pointer to Old CN generator shift register state (Word32)
+    pShift_reg = pointer to Old CN generator shift state (Word32)
     no_bits = Number of bits (Word16)
 
  Outputs:
-    pShift_reg -> Updated CN generator shift register state
+    pShift_reg -> Updated CN generator shift state
 
  Returns:
     noise_bits = Generated random integer value (Word16)
@@ -131,7 +131,7 @@ terms listed above has been obtained from the copyright holder.
  PSEUDO-CODE
 
 Word16 pseudonoise (
-    Word32 *shift_reg, // i/o : Old CN generator shift register state
+    Word32 *shift_reg, // i/o : Old CN generator shift state
     Word16 no_bits     // i   : Number of bits
 )
 {
@@ -200,7 +200,7 @@ Word16 pseudonoise (
 ----------------------------------------------------------------------------*/
 
 Word16 pseudonoise(
-    Word32 *pShift_reg,     /* i/o : Old CN generator shift register state */
+    Word32 *pShift_reg,     /* i/o : Old CN generator shift state */
     Word16 no_bits          /* i   : Number of bits                        */
 )
 {
@@ -254,13 +254,13 @@ Word16 pseudonoise(
  INPUT AND OUTPUT DEFINITIONS
 
  Inputs:
-    pSeed = pointer to the Old CN generator shift register state (Word32)
+    pSeed = pointer to the Old CN generator shift state (Word32)
     cod[] = array to hold the generated CN fixed code vector (Word16)
     pOverflow = pointer to overflow flag (Flag)
 
  Outputs:
     cod[] = generated CN fixed code vector (Word16)
-    pSeed = Updated CN generator shift register state (Word16)
+    pSeed = Updated CN generator shift state (Word16)
     pOverflow -> 1 if overflow occured
 
  Returns:
@@ -292,7 +292,7 @@ of the pulses are always +/-1.
  PSEUDO-CODE
 
 void build_CN_code (
-    Word32 *seed,         // i/o : Old CN generator shift register state
+    Word32 *seed,         // i/o : Old CN generator shift state
     Word16 cod[]          // o   : Generated CN fixed codebook vector
 )
 {
@@ -355,7 +355,7 @@ void build_CN_code (
 ; FUNCTION CODE
 ----------------------------------------------------------------------------*/
 void build_CN_code(
-    Word32 *pSeed,          /* i/o : Old CN generator shift register state  */
+    Word32 *pSeed,          /* i/o : Old CN generator shift state  */
     Word16 cod[],           /* o   : Generated CN fixed codebook vector     */
     Flag   *pOverflow       /* i/o : Overflow flag                          */
 )
@@ -398,7 +398,7 @@ void build_CN_code(
  INPUT AND OUTPUT DEFINITIONS
 
  Inputs:
-    pSeed = pointer to the Old CN generator shift register state (Word32)
+    pSeed = pointer to the Old CN generator shift state (Word32)
     n_param = Number of parameters to randomize (Word16)
     param_size_table = table holding paameter sizes (Word16)
     param[] = array to hold CN generated paramters (Word16)
@@ -406,7 +406,7 @@ void build_CN_code(
 
  Outputs:
     param[] = CN generated parameters (Word16)
-    pSeed = Updated CN generator shift register state (Word16)
+    pSeed = Updated CN generator shift state (Word16)
     pOverflow -> 1 if overflow occured
 
  Returns:
@@ -437,7 +437,7 @@ tonal artifacts if used by ECU.
 ------------------------------------------------------------------------------
  PSEUDO-CODE
 void build_CN_param (
-    Word16 *seed,             // i/o : Old CN generator shift register state
+    Word16 *seed,             // i/o : Old CN generator shift state
     const Word16 n_param,           // i  : number of params
     const Word16 param_size_table[],// i : size of params
     Word16 parm[]                   // o : CN Generated params
@@ -487,7 +487,7 @@ void build_CN_param (
 ; FUNCTION CODE
 ----------------------------------------------------------------------------*/
 void build_CN_param(
-    Word16 *pSeed,          /* i/o : Old CN generator shift register state  */
+    Word16 *pSeed,          /* i/o : Old CN generator shift state  */
     const Word16 n_param,           /* i  : number of params                */
     const Word16 param_size_table[],/* i : size of params                   */
     Word16 parm[],                  /* o : CN Generated params              */

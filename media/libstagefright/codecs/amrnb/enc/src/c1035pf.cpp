@@ -116,11 +116,11 @@ terms listed above has been obtained from the copyright holder.
  INPUT AND OUTPUT DEFINITIONS
 
  Inputs:
-    pShift_reg = pointer to Old CN generator shift register state (Word32)
+    pShift_reg = pointer to Old CN generator shift state (Word32)
     no_bits = Number of bits (Word16)
 
  Outputs:
-    pShift_reg -> Updated CN generator shift register state
+    pShift_reg -> Updated CN generator shift state
 
  Returns:
     noise_bits = Generated random integer value (Word16)
@@ -222,7 +222,7 @@ void q_p(
  INPUT AND OUTPUT DEFINITIONS
 
  Inputs:
-    pSeed = pointer to the Old CN generator shift register state (Word32)
+    pSeed = pointer to the Old CN generator shift state (Word32)
     n_param = Number of parameters to randomize (Word16)
     param_size_table = table holding paameter sizes (Word16)
     param[] = array to hold CN generated paramters (Word16)
@@ -230,7 +230,7 @@ void q_p(
 
  Outputs:
     param[] = CN generated parameters (Word16)
-    pSeed = Updated CN generator shift register state (Word16)
+    pSeed = Updated CN generator shift state (Word16)
     pOverflow -> 1 if overflow occured
 
  Returns:
@@ -534,7 +534,7 @@ static void build_code(
  INPUT AND OUTPUT DEFINITIONS
 
  Inputs:
-    pSeed = pointer to the Old CN generator shift register state (Word32)
+    pSeed = pointer to the Old CN generator shift state (Word32)
     n_param = Number of parameters to randomize (Word16)
     param_size_table = table holding paameter sizes (Word16)
     param[] = array to hold CN generated paramters (Word16)
@@ -542,7 +542,7 @@ static void build_code(
 
  Outputs:
     param[] = CN generated parameters (Word16)
-    pSeed = Updated CN generator shift register state (Word16)
+    pSeed = Updated CN generator shift state (Word16)
     pOverflow -> 1 if overflow occured
 
  Returns:
