@@ -875,7 +875,7 @@ void SoftAAC2::onQueueFilled(OMX_U32 /* portIndex */) {
                         *currentBufLeft -= decodedSize;
                         *nextTimeStamp += mStreamInfo->aacSamplesPerFrame *
                                 1000000ll / mStreamInfo->sampleRate;
-                        ALOGV("adjusted nextTimeStamp/size to %lld/%d",
+                        ALOGV("adjusted nextTimeStamp/size to %zd/%d",
                                 *nextTimeStamp, *currentBufLeft);
                     } else {
                         // move to next timestamp in list
@@ -884,7 +884,7 @@ void SoftAAC2::onQueueFilled(OMX_U32 /* portIndex */) {
                             nextTimeStamp = &mBufferTimestamps.editItemAt(0);
                             mBufferSizes.removeAt(0);
                             currentBufLeft = &mBufferSizes.editItemAt(0);
-                            ALOGV("moved to next time/size: %lld/%d",
+                            ALOGV("moved to next time/size: %zd/%d",
                                     *nextTimeStamp, *currentBufLeft);
                         }
                         // try to limit output buffer size to match input buffers
