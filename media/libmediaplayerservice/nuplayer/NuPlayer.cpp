@@ -1790,8 +1790,10 @@ void NuPlayer::performDecoderFlush() {
 void NuPlayer::performDecoderShutdown(bool audio, bool video) {
     ALOGV("performDecoderShutdown audio=%d, video=%d", audio, video);
 
-    if ((!audio || mAudioDecoder == NULL)
-            && (!video || mVideoDecoder == NULL)) {
+    if ((!audio || mAudioDecoder == NULL ||
+                    mFlushingAudio == SHUTTING_DOWN_DECODER)
+            && (!video || mVideoDecoder == NULL ||
+                           mFlushingVideo == SHUTTING_DOWN_DECODER)) {
         return;
     }
 
