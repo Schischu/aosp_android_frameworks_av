@@ -71,6 +71,7 @@ static enum {
 static bool gSizeSpecified = false;     // was size explicitly requested?
 static bool gWantInfoScreen = false;    // do we want initial info screen?
 static bool gWantFrameTime = false;     // do we want times on each frame?
+static bool gWantUsePipe = false;       // do we want use pipe for streaming?
 static uint32_t gVideoWidth = 0;        // default width+height
 static uint32_t gVideoHeight = 0;
 static uint32_t gBitRate = 4000000;     // 4Mbps
@@ -340,7 +341,7 @@ static status_t runEncoder(const sp<MediaCodec>& encoder,
         int64_t ptsUsec;
         uint32_t flags;
 
-        if (systemTime(CLOCK_MONOTONIC) > endWhenNsec) {
+        if (!gWantUsePipe && systemTime(CLOCK_MONOTONIC) > endWhenNsec) {
             if (gVerbose) {
                 printf("Time limit reached\n");
             }
@@ -495,6 +496,7 @@ static FILE* prepareRawOutput(const char* fileName) {
             return NULL;
         }
         rawFp = stdout;
+        gWantUsePipe = true;
     } else {
         rawFp = fopen(fileName, "w");
         if (rawFp == NULL) {
