@@ -495,6 +495,7 @@ static FILE* prepareRawOutput(const char* fileName) {
             return NULL;
         }
         rawFp = stdout;
+        gTimeLimitSec = UINT32_MAX;
     } else {
         rawFp = fopen(fileName, "w");
         if (rawFp == NULL) {
