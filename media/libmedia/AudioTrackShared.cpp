@@ -213,6 +213,7 @@ status_t ClientProxy::obtainBuffer(Buffer* buffer, const struct timespec *reques
         }
         int32_t old = android_atomic_and(~CBLK_FUTEX_WAKE, &cblk->mFutex);
         if (!(old & CBLK_FUTEX_WAKE)) {
+            usleep(500*1000);
             if (measure && !beforeIsValid) {
                 clock_gettime(CLOCK_MONOTONIC, &before);
                 beforeIsValid = true;
