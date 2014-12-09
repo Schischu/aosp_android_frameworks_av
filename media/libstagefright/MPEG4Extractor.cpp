@@ -1534,7 +1534,7 @@ status_t MPEG4Extractor::parseChunk(off64_t *offset, int depth) {
         }
 
         // @xyz
-        case FOURCC('\xA9', 'x', 'y', 'z'):
+        case FOURCC(0xA9, 'x', 'y', 'z'):
         {
             *offset += chunk_size;
 
