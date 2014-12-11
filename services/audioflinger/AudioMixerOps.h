@@ -56,7 +56,13 @@ struct is_same<T, T>  // partial specialization
 
 template <typename TO, typename TI, typename TV>
 inline TO MixMul(TI value, TV volume) {
+#if __clang__
+    // Do not trigger error when the template is parsed,
+    // but only when the template is instantiated.
+    value.NoSuchFunction();
+#else
     COMPILE_TIME_ASSERT_FUNCTION_SCOPE(false);
+#endif
     // should not be here :-).
     // To avoid mistakes, this template is always specialized.
     return value * volume;
