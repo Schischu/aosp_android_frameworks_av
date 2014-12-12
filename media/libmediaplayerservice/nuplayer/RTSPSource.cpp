@@ -518,7 +518,12 @@ void NuPlayer::RTSPSource::onMessageReceived(const sp<AMessage> &msg) {
         {
             size_t trackIndex;
             CHECK(msg->findSize("trackIndex", &trackIndex));
-            CHECK_LT(trackIndex, mTracks.size());
+            if (mTSParser == NULL) {
+                CHECK_LT(trackIndex, mTracks.size());
+            } else {
+                CHECK_EQ(trackIndex, 0u);
+                return;
+            }
 
             uint32_t rtpTime;
             CHECK(msg->findInt32("rtpTime", (int32_t *)&rtpTime));
