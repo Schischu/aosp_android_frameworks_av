@@ -71,8 +71,6 @@ LOCAL_C_INCLUDES:= \
         $(TOP)/external/openssl/include \
         $(TOP)/external/libvpx/libwebm \
         $(TOP)/system/netd/include \
-        $(TOP)/external/icu/icu4c/source/common \
-        $(TOP)/external/icu/icu4c/source/i18n \
 
 LOCAL_SHARED_LIBRARIES := \
         libbinder \
