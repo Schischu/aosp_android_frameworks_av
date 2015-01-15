@@ -4386,7 +4386,7 @@ uint32_t AudioPolicyManager::setOutputDevice(audio_io_handle_t output,
 
             status_t status = mpClientInterface->createAudioPatch(&patch,
                                                                    &afPatchHandle,
-                                                                   delayMs);
+                                                                   0);
             ALOGV("setOutputDevice() createAudioPatch returned %d patchHandle %d"
                     "num_sources %d num_sinks %d",
                                        status, afPatchHandle, patch.num_sources, patch.num_sinks);
