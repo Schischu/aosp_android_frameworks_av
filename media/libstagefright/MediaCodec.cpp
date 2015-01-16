@@ -24,6 +24,7 @@
 #include <binder/IBatteryStats.h>
 #include <binder/IServiceManager.h>
 #include <gui/Surface.h>
+#include <media/AudioTrack.h>
 #include <media/ICrypto.h>
 #include <media/stagefright/foundation/ABuffer.h>
 #include <media/stagefright/foundation/ADebug.h>
@@ -149,7 +150,8 @@ MediaCodec::MediaCodec(const sp<ALooper> &looper)
       mDequeueInputReplyID(0),
       mDequeueOutputTimeoutGeneration(0),
       mDequeueOutputReplyID(0),
-      mHaveInputSurface(false) {
+      mHaveInputSurface(false),
+      mBlockOutputBuffers(false) {
 }
 
 MediaCodec::~MediaCodec() {
@@ -254,6 +256,15 @@ status_t MediaCodec::configure(
         const sp<Surface> &nativeWindow,
         const sp<ICrypto> &crypto,
         uint32_t flags) {
+    return configure(format, nativeWindow, NULL, crypto, flags);
+}
+
+status_t MediaCodec::configure(
+        const sp<AMessage> &format,
+        const sp<Surface> &nativeWindow,
+        const sp<AudioTrack> &audioTrack,
+        const sp<ICrypto> &crypto,
+        uint32_t flags) {
     sp<AMessage> msg = new AMessage(kWhatConfigure, id());
 
     msg->setMessage("format", format);
@@ -263,6 +274,10 @@ status_t MediaCodec::configure(
         msg->setObject(
                 "native-window",
                 new NativeWindowWrapper(nativeWindow));
+    }
+
+    if (audioTrack != NULL) {
+        msg->setObject("audio-track", audioTrack);
     }
 
     if (crypto != NULL) {
@@ -589,8 +604,11 @@ status_t MediaCodec::getBufferAndFormat(
     if (index < buffers->size()) {
         const BufferInfo &info = buffers->itemAt(index);
         if (info.mOwnedByClient) {
+            if (mBlockOutputBuffers && portIndex == kPortIndexOutput) {
+                *buffer = info.mProtectedOutputBuffer;
+            }
             // by the time buffers array is initialized, crypto is set
-            if (portIndex == kPortIndexInput && mCrypto != NULL) {
+            else if (portIndex == kPortIndexInput && mCrypto != NULL) {
                 *buffer = info.mEncryptedData;
             } else {
                 *buffer = info.mData;
@@ -963,6 +981,12 @@ void MediaCodec::onMessageReceived(const sp<AMessage> &msg) {
                                 new ABuffer(info.mData->capacity());
                         }
 
+                        if (mBlockOutputBuffers && portIndex == kPortIndexOutput) {
+                            info.mProtectedOutputBuffer = new ABuffer(info.mData->capacity());
+                            memset(info.mProtectedOutputBuffer->data(), 0,
+                                    info.mProtectedOutputBuffer->size());
+                        }
+
                         buffers->push_back(info);
                     }
 
@@ -993,6 +1017,24 @@ void MediaCodec::onMessageReceived(const sp<AMessage> &msg) {
 
                         if (mime.startsWithIgnoreCase("video/")) {
                             mSoftRenderer = new SoftwareRenderer(mNativeWindow);
+                        }
+                    }
+
+                    if (mAudioTrack != NULL) {
+                        AString mime;
+                        CHECK(msg->findString("mime", &mime));
+
+                        if (mime.startsWithIgnoreCase("audio/")) {
+                            int32_t numChannels;
+                            CHECK(msg->findInt32("channel-count", &numChannels));
+
+                            int32_t sampleRate;
+                            CHECK(msg->findInt32("sample-rate", &sampleRate));
+
+                            ALOGV("Audio output format changed to %d Hz, %d channels",
+                                   sampleRate, numChannels);
+
+                            mAudioTrack->reconfigure(sampleRate, numChannels);
                         }
                     }
 
@@ -1267,6 +1309,13 @@ void MediaCodec::onMessageReceived(const sp<AMessage> &msg) {
                 setNativeWindow(NULL);
             }
 
+            sp<RefBase> audioTrack;
+            if (msg->findObject("audio-track", &audioTrack)) {
+                mAudioTrack = static_cast<AudioTrack *>(audioTrack.get());
+            } else {
+                mAudioTrack.clear();
+            }
+
             mReplyID = replyID;
             setState(CONFIGURING);
 
@@ -1276,6 +1325,12 @@ void MediaCodec::onMessageReceived(const sp<AMessage> &msg) {
             }
 
             mCrypto = static_cast<ICrypto *>(crypto);
+
+            if (mCrypto != NULL) {
+                AString mime;
+                CHECK(format->findString("mime", &mime));
+                mBlockOutputBuffers = mCrypto->requiresSecureDecoderComponent(mime.c_str());
+            }
 
             uint32_t flags;
             CHECK(msg->findInt32("flags", (int32_t *)&flags));
@@ -1572,9 +1627,13 @@ void MediaCodec::onMessageReceived(const sp<AMessage> &msg) {
             for (size_t i = 0; i < srcBuffers.size(); ++i) {
                 const BufferInfo &info = srcBuffers.itemAt(i);
 
-                dstBuffers->push_back(
-                        (portIndex == kPortIndexInput && mCrypto != NULL)
-                                ? info.mEncryptedData : info.mData);
+                if (mBlockOutputBuffers && portIndex == kPortIndexOutput) {
+                    dstBuffers->push_back(info.mProtectedOutputBuffer);
+                } else {
+                    dstBuffers->push_back(
+                            (portIndex == kPortIndexInput && mCrypto != NULL)
+                                    ? info.mEncryptedData : info.mData);
+                }
             }
 
             (new AMessage)->postReply(replyID);
@@ -1734,6 +1793,7 @@ void MediaCodec::setState(State newState) {
 
         mCrypto.clear();
         setNativeWindow(NULL);
+        mAudioTrack.clear();
 
         mInputFormat.clear();
         mOutputFormat.clear();
@@ -1995,6 +2055,10 @@ status_t MediaCodec::onReleaseOutputBuffer(const sp<AMessage> &msg) {
             mSoftRenderer->render(
                     info->mData->data(), info->mData->size(),
                     timestampNs, NULL, info->mFormat);
+        }
+
+        if (mAudioTrack != NULL) {
+            mAudioTrack->write(info->mData->data(), info->mData->size());
         }
     }
 

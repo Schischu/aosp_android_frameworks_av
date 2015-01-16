@@ -204,6 +204,28 @@ AudioTrack::~AudioTrack()
     }
 }
 
+status_t AudioTrack::reconfigure(
+        int32_t sampleRate,
+        int32_t numChannels)
+{
+    stop();
+    if (mAudioTrackThread != 0) {
+        mProxy->interrupt();
+        mAudioTrackThread->requestExit();   // see comment in AudioTrack.h
+        mAudioTrackThread->requestExitAndWait();
+        mAudioTrackThread.clear();
+    }
+    IInterface::asBinder(mAudioTrack)->unlinkToDeath(mDeathNotifier, this);
+    mAudioTrack.clear();
+
+    size_t frameCount;
+    getMinFrameCount(&frameCount, mStreamType, sampleRate);
+
+    return set(mStreamType, sampleRate, mFormat, audio_channel_out_mask_from_count(numChannels),
+            frameCount, mFlags, mCbf, mUserData, mNotificationFramesReq,
+            mSharedBuffer, true, mSessionId, mTransfer, mOffloadInfo, mClientUid, mClientPid, &mAttributes);
+}
+
 status_t AudioTrack::set(
         audio_stream_type_t streamType,
         uint32_t sampleRate,

@@ -258,6 +258,19 @@ public:
                             pid_t pid = -1,
                             const audio_attributes_t* pAttributes = NULL);
 
+    /* Reconfigure an AudioTrack that was previously configured with set() or a constructor
+     * that take parameters.
+     * Returned status (from utils/Errors.h) can be:
+     *  - NO_ERROR: successful initialization
+     *  - BAD_VALUE: invalid parameter
+     *  - NO_INIT: audio server or audio hardware not initialized
+     * If status is not equal to NO_ERROR, don't call any other APIs on this AudioTrack.
+     */
+            status_t    reconfigure(int32_t sampleRate,
+                            int32_t numChannels);
+
+public:
+
     /* Result of constructing the AudioTrack. This must be checked for successful initialization
      * before using any AudioTrack API (except for set()), because using
      * an uninitialized AudioTrack produces undefined results.
