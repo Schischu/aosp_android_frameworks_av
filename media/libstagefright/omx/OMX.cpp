@@ -124,6 +124,10 @@ void OMX::CallbackDispatcher::dispatch(const omx_message &msg) {
 }
 
 bool OMX::CallbackDispatcher::loop() {
+
+    sp<CallbackDispatcher> strong = this;
+    wp<CallbackDispatcher> weak(strong);
+
     for (;;) {
         omx_message msg;
 
@@ -142,6 +146,16 @@ bool OMX::CallbackDispatcher::loop() {
         }
 
         dispatch(msg);
+
+        // Release our strong reference, to let a chance to the thread
+        // to die a peaceful death.
+        strong.clear();
+        // And immediately, re-acquire a strong reference for the next loop
+        strong = weak.promote();
+        if(strong == 0) {
+            ALOGW("loop count is null and break");
+            break;
+        }
     }
 
     return false;
