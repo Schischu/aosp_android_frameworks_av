@@ -1,3 +1,6 @@
+/**
+ * @file NdkMediaDrm.h
+ */
 /*
  * Copyright (C) 2014 The Android Open Source Project
  *
@@ -36,20 +39,34 @@ extern "C" {
 #include <stdint.h>
 #include <stdbool.h>
 
+///TODO: DOCUMENT
 struct AMediaDrm;
+
+///TODO: DOCUMENT
 typedef struct AMediaDrm AMediaDrm;
 
+///TODO: DOCUMENT
 typedef struct {
+///TODO: DOCUMENT
     const uint8_t *ptr;
+///TODO: DOCUMENT
     size_t length;
 } AMediaDrmByteArray;
 
+///TODO: DOCUMENT
 typedef AMediaDrmByteArray AMediaDrmSessionId;
+
+///TODO: DOCUMENT
 typedef AMediaDrmByteArray AMediaDrmScope;
+
+///TODO: DOCUMENT
 typedef AMediaDrmByteArray AMediaDrmKeySetId;
+
+///TODO: DOCUMENT
 typedef AMediaDrmByteArray AMediaDrmSecureStop;
 
 
+///TODO: DOCUMENT
 typedef enum AMediaDrmEventType {
     /**
      * This event type indicates that the app needs to request a certificate from
@@ -77,6 +94,7 @@ typedef enum AMediaDrmEventType {
     EVENT_VENDOR_DEFINED = 4
 } AMediaDrmEventType;
 
+///TODO: DOCUMENT
 typedef void (*AMediaDrmEventListener)(AMediaDrm *, const AMediaDrmSessionId *sessionId,
         AMediaDrmEventType eventType, int extra, const uint8_t *data, size_t dataSize);
 
@@ -123,6 +141,7 @@ media_status_t AMediaDrm_openSession(AMediaDrm *, AMediaDrmSessionId *sessionId)
  */
 media_status_t AMediaDrm_closeSession(AMediaDrm *, const AMediaDrmSessionId *sessionId);
 
+///TODO: DOCUMENT
 typedef enum AMediaDrmKeyType {
     /**
      * This key request type species that the keys will be for online use, they will
@@ -143,11 +162,11 @@ typedef enum AMediaDrmKeyType {
     KEY_TYPE_RELEASE = 3
 } AMediaDrmKeyType;
 
-/**
- *  Data type containing {key, value} pair
- */
+/// Data type containing {key, value} pair
 typedef struct AMediaDrmKeyValuePair {
+///TODO: DOCUMENT
     const char *mKey;
+///TODO: DOCUMENT
     const char *mValue;
 } AMediaDrmKeyValue;
 

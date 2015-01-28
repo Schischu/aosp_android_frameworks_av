@@ -1,3 +1,6 @@
+/**
+ * @file NdkMediaMuxer.h
+ */
 /*
  * Copyright (C) 2014 The Android Open Source Project
  *
@@ -38,11 +41,17 @@
 extern "C" {
 #endif
 
+/// TODO: DOCUMENT
 struct AMediaMuxer;
+
+/// TODO: DOCUMENT
 typedef struct AMediaMuxer AMediaMuxer;
 
+/// TODO: DOCUMENT
 typedef enum {
+/// TODO: DOCUMENT
     AMEDIAMUXER_OUTPUT_FORMAT_MPEG_4 = 0,
+/// TODO: DOCUMENT
     AMEDIAMUXER_OUTPUT_FORMAT_WEBM   = 1,
 } OutputFormat;
 

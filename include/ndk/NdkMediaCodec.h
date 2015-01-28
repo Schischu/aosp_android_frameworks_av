@@ -1,3 +1,6 @@
+/**
+ * @file NdkMediaCodec.h
+ */
 /*
  * Copyright (C) 2014 The Android Open Source Project
  *
@@ -39,22 +42,35 @@ extern "C" {
 
 
 struct AMediaCodec;
+///TODO: DOCUMENT
 typedef struct AMediaCodec AMediaCodec;
 
+/// TODO: DOCUMENT
 struct AMediaCodecBufferInfo {
+///TODO: DOCUMENT
     int32_t offset;
+///TODO: DOCUMENT
     int32_t size;
+///TODO: DOCUMENT
     int64_t presentationTimeUs;
+///TODO: DOCUMENT
     uint32_t flags;
 };
+///TODO: DOCUMENT
 typedef struct AMediaCodecBufferInfo AMediaCodecBufferInfo;
+///TODO: DOCUMENT
 typedef struct AMediaCodecCryptoInfo AMediaCodecCryptoInfo;
 
 enum {
+///TODO: DOCUMENT
     AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM = 4,
+///TODO: DOCUMENT
     AMEDIACODEC_CONFIGURE_FLAG_ENCODE = 1,
+///TODO: DOCUMENT
     AMEDIACODEC_INFO_OUTPUT_BUFFERS_CHANGED = -3,
+///TODO: DOCUMENT
     AMEDIACODEC_INFO_OUTPUT_FORMAT_CHANGED = -2,
+///TODO: DOCUMENT
     AMEDIACODEC_INFO_TRY_AGAIN_LATER = -1
 };
 
@@ -165,7 +181,9 @@ media_status_t AMediaCodec_releaseOutputBufferAtTime(
 
 
 typedef enum {
+///TODO: DOCUMENT
     AMEDIACODECRYPTOINFO_MODE_CLEAR = 0,
+///TODO: DOCUMENT
     AMEDIACODECRYPTOINFO_MODE_AES_CTR = 1
 } cryptoinfo_mode_t;
 

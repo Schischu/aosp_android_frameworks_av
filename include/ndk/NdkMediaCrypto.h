@@ -1,3 +1,6 @@
+/**
+ * @file NdkMediaCrypto.h
+ */
 /*
  * Copyright (C) 2014 The Android Open Source Project
  *
@@ -35,17 +38,25 @@
 extern "C" {
 #endif
 
+///TODO: DOCUMENT
 struct AMediaCrypto;
+
+///TODO: DOCUMENT
 typedef struct AMediaCrypto AMediaCrypto;
 
+///TODO: DOCUMENT
 typedef uint8_t AMediaUUID[16];
 
+///TODO: DOCUMENT
 bool AMediaCrypto_isCryptoSchemeSupported(const AMediaUUID uuid);
 
+///TODO: DOCUMENT
 bool AMediaCrypto_requiresSecureDecoderComponent(const char *mime);
 
+///TODO: DOCUMENT
 AMediaCrypto* AMediaCrypto_new(const AMediaUUID uuid, const void *initData, size_t initDataSize);
 
+///TODO: DOCUMENT
 void AMediaCrypto_delete(AMediaCrypto* crypto);
 
 

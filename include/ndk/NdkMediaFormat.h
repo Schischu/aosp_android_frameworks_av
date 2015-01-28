@@ -1,3 +1,6 @@
+/**
+ * @file NdkMediaFormat.h
+ */
 /*
  * Copyright (C) 2014 The Android Open Source Project
  *
@@ -35,10 +38,15 @@
 extern "C" {
 #endif
 
+///TODO: DOCUMENT
 struct AMediaFormat;
+
+///TODO: DOCUMENT
 typedef struct AMediaFormat AMediaFormat;
 
+///TODO: DOCUMENT
 AMediaFormat *AMediaFormat_new();
+///TODO: DOCUMENT
 media_status_t AMediaFormat_delete(AMediaFormat*);
 
 /**
@@ -47,8 +55,12 @@ media_status_t AMediaFormat_delete(AMediaFormat*);
  */
 const char* AMediaFormat_toString(AMediaFormat*);
 
+///TODO: DOCUMENT
 bool AMediaFormat_getInt32(AMediaFormat*, const char *name, int32_t *out);
+///TODO: DOCUMENT
 bool AMediaFormat_getInt64(AMediaFormat*, const char *name, int64_t *out);
+///TODO: DOCUMENT
+
 bool AMediaFormat_getFloat(AMediaFormat*, const char *name, float *out);
 /**
  * The returned data is owned by the format and remains valid as long as the named entry
@@ -62,8 +74,11 @@ bool AMediaFormat_getBuffer(AMediaFormat*, const char *name, void** data, size_t
 bool AMediaFormat_getString(AMediaFormat*, const char *name, const char **out);
 
 
+///TODO: DOCUMENT
 void AMediaFormat_setInt32(AMediaFormat*, const char* name, int32_t value);
+///TODO: DOCUMENT
 void AMediaFormat_setInt64(AMediaFormat*, const char* name, int64_t value);
+///TODO: DOCUMENT
 void AMediaFormat_setFloat(AMediaFormat*, const char* name, float value);
 /**
  * The provided string is copied into the format.
@@ -76,32 +91,53 @@ void AMediaFormat_setBuffer(AMediaFormat*, const char* name, void* data, size_t 
 
 
 
-/**
- * XXX should these be ints/enums that we look up in a table as needed?
- */
+/// TODO: DOCUMENT XXX should these be ints/enums that we look up in a table as needed?
 extern const char* AMEDIAFORMAT_KEY_AAC_PROFILE;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_BIT_RATE;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_CHANNEL_COUNT;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_CHANNEL_MASK;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_COLOR_FORMAT;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_DURATION;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_FLAC_COMPRESSION_LEVEL;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_FRAME_RATE;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_HEIGHT;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_IS_ADTS;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_IS_AUTOSELECT;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_IS_DEFAULT;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_IS_FORCED_SUBTITLE;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_I_FRAME_INTERVAL;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_LANGUAGE;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_MAX_HEIGHT;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_MAX_INPUT_SIZE;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_MAX_WIDTH;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_MIME;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_PUSH_BLANK_BUFFERS_ON_STOP;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_REPEAT_PREVIOUS_FRAME_AFTER;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_SAMPLE_RATE;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_WIDTH;
+///TODO: DOCUMENT
 extern const char* AMEDIAFORMAT_KEY_STRIDE;
 
 #ifdef __cplusplus

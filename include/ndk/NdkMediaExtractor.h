@@ -1,3 +1,6 @@
+/**
+ * @file NdkMediaExtractor.h
+ */
 /*
  * Copyright (C) 2014 The Android Open Source Project
  *
@@ -38,7 +41,10 @@
 extern "C" {
 #endif
 
+///TODO: DOCUMENT
 struct AMediaExtractor;
+
+///TODO: DOCUMENT
 typedef struct AMediaExtractor AMediaExtractor;
 
 
@@ -114,23 +120,28 @@ int64_t AMediaExtractor_getSampleTime(AMediaExtractor*);
  */
 bool AMediaExtractor_advance(AMediaExtractor*);
 
+///TODO: DOCUMENT
 typedef enum {
+///TODO: DOCUMENT
     AMEDIAEXTRACTOR_SEEK_PREVIOUS_SYNC,
+///TODO: DOCUMENT
     AMEDIAEXTRACTOR_SEEK_NEXT_SYNC,
+///TODO: DOCUMENT
     AMEDIAEXTRACTOR_SEEK_CLOSEST_SYNC
 } SeekMode;
 
-/**
- *
- */
+///TODO: DOCUMENT
 media_status_t AMediaExtractor_seekTo(AMediaExtractor*, int64_t seekPosUs, SeekMode mode);
 
 /**
  * mapping of crypto scheme uuid to the scheme specific data for that scheme
  */
 typedef struct PsshEntry {
+ ///TODO: DOCUMENT
     AMediaUUID uuid;
+ ///TODO: DOCUMENT
     size_t datalen;
+ ///TODO: DOCUMENT
     void *data;
 } PsshEntry;
 
@@ -138,7 +149,9 @@ typedef struct PsshEntry {
  * list of crypto schemes and their data
  */
 typedef struct PsshInfo {
+ ///TODO: DOCUMENT
     size_t numentries;
+ ///TODO: DOCUMENT
     PsshEntry entries[0];
 } PsshInfo;
 
@@ -148,11 +161,14 @@ typedef struct PsshInfo {
 PsshInfo* AMediaExtractor_getPsshInfo(AMediaExtractor*);
 
 
+///TODO: DOCUMENT
 AMediaCodecCryptoInfo *AMediaExtractor_getSampleCryptoInfo(AMediaExtractor *);
 
-
+///TODO: DOCUMENT
 enum {
+///TODO: DOCUMENT
     AMEDIAEXTRACTOR_SAMPLE_FLAG_SYNC = 1,
+///TODO: DOCUMENT
     AMEDIAEXTRACTOR_SAMPLE_FLAG_ENCRYPTED = 2,
 };
 
