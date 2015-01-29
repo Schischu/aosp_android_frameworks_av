@@ -21,6 +21,7 @@
 #include "TextRenderer.h"
 
 #include <assert.h>
+#include <malloc.h>
 
 namespace android {
 #include "FontBitmap.h"
