@@ -786,8 +786,17 @@ void PlaylistFetcher::onDownloadNext() {
 
     if (mSeqNumber < firstSeqNumberInPlaylist
             || mSeqNumber > lastSeqNumberInPlaylist) {
-        if (!mPlaylist->isComplete() && mNumRetries < kMaxNumRetries) {
+        if (!mPlaylist->isComplete()) {
             ++mNumRetries;
+
+            if (mNumRetries > kMaxNumRetries && !bufferAvailable()) {
+                ALOGE("Cannot find sequence number %d in playlist "
+                    "(contains %d - %d)", mSeqNumber, firstSeqNumberInPlaylist,
+                    lastSeqNumberInPlaylist);
+
+                notifyError(ERROR_END_OF_STREAM);
+                return;
+            }
 
             if (mSeqNumber > lastSeqNumberInPlaylist) {
                 // refresh in increasing fraction (1/2, 1/3, ...) of the
@@ -1661,6 +1670,20 @@ int64_t PlaylistFetcher::resumeThreshold(const sp<AMessage> &msg) {
     }
 
     return 500000ll;
+}
+
+bool PlaylistFetcher::bufferAvailable() {
+    status_t result = OK;
+    for (size_t i = 0; i < mPacketSources.size(); ++i) {
+        if ((mStreamTypeMask & mPacketSources.keyAt(i)) == 0) {
+            continue;
+        }
+
+        if (mPacketSources.valueAt(i)->hasBufferAvailable(&result)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 }  // namespace android

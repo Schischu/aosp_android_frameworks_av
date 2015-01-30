@@ -215,6 +215,8 @@ private:
     // returned by resumeThreshold.
     int64_t resumeThreshold(const sp<AMessage> &msg);
 
+    bool bufferAvailable();
+
     DISALLOW_EVIL_CONSTRUCTORS(PlaylistFetcher);
 };
 
