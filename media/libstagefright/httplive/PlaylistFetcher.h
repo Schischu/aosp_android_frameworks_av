@@ -153,6 +153,7 @@ private:
     int64_t mFirstTimeUs;
     int64_t mAbsoluteTimeAnchorUs;
     sp<AnotherPacketSource> mVideoBuffer;
+    bool mCheckBandwidth;
 
     // Stores the initialization vector to decrypt the next block of cipher text, which can
     // either be derived from the sequence number, read from the manifest, or copied from
