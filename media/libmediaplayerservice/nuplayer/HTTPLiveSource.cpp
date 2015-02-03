@@ -229,10 +229,6 @@ void NuPlayer::HTTPLiveSource::onSessionNotify(const sp<AMessage> &msg) {
                 flags |= FLAG_CAN_SEEK_FORWARD;
             }
 
-            if (mLiveSession->hasDynamicDuration()) {
-                flags |= FLAG_DYNAMIC_DURATION;
-            }
-
             notifyFlagsChanged(flags);
 
             notifyPrepared();
@@ -271,6 +267,18 @@ void NuPlayer::HTTPLiveSource::onSessionNotify(const sp<AMessage> &msg) {
 
         case LiveSession::kWhatError:
         {
+            break;
+        }
+
+        case LiveSession::kWhatDurationUpdate:
+        {
+            int64_t durationUs;
+            CHECK(msg->findInt64("durationUs", &durationUs));
+
+            sp<AMessage> notify = dupNotify();
+            notify->setInt32("what", kWhatDurationUpdate);
+            notify->setInt64("durationUs", durationUs);
+            notify->post();
             break;
         }
 

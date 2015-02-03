@@ -36,8 +36,7 @@ struct NuPlayer::Source : public AHandler {
         FLAG_CAN_SEEK_BACKWARD  = 2,  // the "10 sec back button"
         FLAG_CAN_SEEK_FORWARD   = 4,  // the "10 sec forward button"
         FLAG_CAN_SEEK           = 8,  // the "seek bar"
-        FLAG_DYNAMIC_DURATION   = 16,
-        FLAG_SECURE             = 32,
+        FLAG_SECURE             = 16,
     };
 
     enum {
@@ -51,6 +50,7 @@ struct NuPlayer::Source : public AHandler {
         kWhatTimedTextData,
         kWhatQueueDecoderShutdown,
         kWhatDrmNoLicense,
+        kWhatDurationUpdate,
     };
 
     // The provides message is used to notify the player about various

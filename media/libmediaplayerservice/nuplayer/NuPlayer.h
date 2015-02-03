@@ -148,7 +148,6 @@ private:
     bool mScanSourcesPending;
     int32_t mScanSourcesGeneration;
 
-    int32_t mPollDurationGeneration;
     int32_t mTimedTextGeneration;
 
     enum FlushStatus {
@@ -220,9 +219,6 @@ private:
     void updateDecoderFormatWithoutFlush(bool audio, const sp<AMessage> &format);
 
     void postScanSources();
-
-    void schedulePollDuration();
-    void cancelPollDuration();
 
     void processDeferredActions();
 

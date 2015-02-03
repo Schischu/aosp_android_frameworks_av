@@ -160,7 +160,6 @@ NuPlayer::NuPlayer()
       mVideoEOS(false),
       mScanSourcesPending(false),
       mScanSourcesGeneration(0),
-      mPollDurationGeneration(0),
       mTimedTextGeneration(0),
       mTimeDiscontinuityPending(false),
       mFlushingAudio(NONE),
@@ -500,28 +499,6 @@ void NuPlayer::onMessageReceived(const sp<AMessage> &msg) {
             break;
         }
 
-        case kWhatPollDuration:
-        {
-            int32_t generation;
-            CHECK(msg->findInt32("generation", &generation));
-
-            if (generation != mPollDurationGeneration) {
-                // stale
-                break;
-            }
-
-            int64_t durationUs;
-            if (mDriver != NULL && mSource->getDuration(&durationUs) == OK) {
-                sp<NuPlayerDriver> driver = mDriver.promote();
-                if (driver != NULL) {
-                    driver->notifyDuration(durationUs);
-                }
-            }
-
-            msg->post(1000000ll);  // poll again in a second.
-            break;
-        }
-
         case kWhatSetVideoNativeWindow:
         {
             ALOGV("kWhatSetVideoNativeWindow");
@@ -654,9 +631,6 @@ void NuPlayer::onMessageReceived(const sp<AMessage> &msg) {
             ALOGV("scanning sources haveAudio=%d, haveVideo=%d",
                  mAudioDecoder != NULL, mVideoDecoder != NULL);
 
-            bool mHadAnySourcesBefore =
-                (mAudioDecoder != NULL) || (mVideoDecoder != NULL);
-
             // initialize video before audio because successful initialization of
             // video may change deep buffer mode of audio.
             if (mNativeWindow != NULL) {
@@ -679,15 +653,6 @@ void NuPlayer::onMessageReceived(const sp<AMessage> &msg) {
                     openAudioSink(format, true /*offloadOnly*/);
                 }
                 instantiateDecoder(true, &mAudioDecoder);
-            }
-
-            if (!mHadAnySourcesBefore
-                    && (mAudioDecoder != NULL || mVideoDecoder != NULL)) {
-                // This is the first time we've found anything playable.
-
-                if (mSourceFlags & Source::FLAG_DYNAMIC_DURATION) {
-                    schedulePollDuration();
-                }
             }
 
             status_t err;
@@ -1716,16 +1681,6 @@ sp<MetaData> NuPlayer::getFileMeta() {
     return mSource->getFileFormatMeta();
 }
 
-void NuPlayer::schedulePollDuration() {
-    sp<AMessage> msg = new AMessage(kWhatPollDuration, id());
-    msg->setInt32("generation", mPollDurationGeneration);
-    msg->post();
-}
-
-void NuPlayer::cancelPollDuration() {
-    ++mPollDurationGeneration;
-}
-
 void NuPlayer::processDeferredActions() {
     while (!mDeferredActions.empty()) {
         // We won't execute any deferred actions until we're no longer in
@@ -1820,8 +1775,6 @@ void NuPlayer::performReset() {
 
     CHECK(mAudioDecoder == NULL);
     CHECK(mVideoDecoder == NULL);
-
-    cancelPollDuration();
 
     ++mScanSourcesGeneration;
     mScanSourcesPending = false;
@@ -1921,15 +1874,6 @@ void NuPlayer::onSourceNotify(const sp<AMessage> &msg) {
                 driver->notifyFlagsChanged(flags);
             }
 
-            if ((mSourceFlags & Source::FLAG_DYNAMIC_DURATION)
-                    && (!(flags & Source::FLAG_DYNAMIC_DURATION))) {
-                cancelPollDuration();
-            } else if (!(mSourceFlags & Source::FLAG_DYNAMIC_DURATION)
-                    && (flags & Source::FLAG_DYNAMIC_DURATION)
-                    && (mAudioDecoder != NULL || mVideoDecoder != NULL)) {
-                schedulePollDuration();
-            }
-
             mSourceFlags = flags;
             break;
         }
@@ -2022,6 +1966,20 @@ void NuPlayer::onSourceNotify(const sp<AMessage> &msg) {
         case Source::kWhatDrmNoLicense:
         {
             notifyListener(MEDIA_ERROR, MEDIA_ERROR_UNKNOWN, ERROR_DRM_NO_LICENSE);
+            break;
+        }
+
+        case Source::kWhatDurationUpdate:
+        {
+            int64_t durationUs;
+            CHECK(msg->findInt64("durationUs", &durationUs));
+
+            if (mDriver != NULL) {
+                sp<NuPlayerDriver> driver = mDriver.promote();
+                if (driver != NULL) {
+                    driver->notifyDuration(durationUs);
+                }
+            }
             break;
         }
 

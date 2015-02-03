@@ -75,13 +75,13 @@ struct LiveSession : public AHandler {
     status_t selectTrack(size_t index, bool select);
 
     bool isSeekable() const;
-    bool hasDynamicDuration() const;
 
     enum {
         kWhatStreamsChanged,
         kWhatError,
         kWhatPrepared,
         kWhatPreparationFailed,
+        kWhatDurationUpdate,
     };
 
     // create a format-change discontinuity

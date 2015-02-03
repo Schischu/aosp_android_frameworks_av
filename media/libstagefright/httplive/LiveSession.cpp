@@ -442,6 +442,16 @@ void LiveSession::onMessageReceived(const sp<AMessage> &msg) {
 
                     FetcherInfo *info = &mFetcherInfos.editValueFor(uri);
                     info->mDurationUs = durationUs;
+
+                    if (!mInPreparationPhase) {
+                        int64_t maxDurationUs;
+                        getDuration(&maxDurationUs);
+
+                        sp<AMessage> notify = mNotify->dup();
+                        notify->setInt32("what", kWhatDurationUpdate);
+                        notify->setInt64("durationUs", maxDurationUs);
+                        notify->post();
+                    }
                     break;
                 }
 
@@ -1127,10 +1137,6 @@ status_t LiveSession::getDuration(int64_t *durationUs) const {
 bool LiveSession::isSeekable() const {
     int64_t durationUs;
     return getDuration(&durationUs) == OK && durationUs >= 0;
-}
-
-bool LiveSession::hasDynamicDuration() const {
-    return false;
 }
 
 size_t LiveSession::getTrackCount() const {
