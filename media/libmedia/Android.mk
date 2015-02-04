@@ -58,6 +58,8 @@ LOCAL_SRC_FILES:= \
     AudioEffect.cpp \
     Visualizer.cpp \
     MemoryLeakTrackUtil.cpp \
+    SoundPool.cpp \
+    SoundPoolThread.cpp \
     StringArray.cpp
 
 LOCAL_SRC_FILES += ../libnbaio/roundup.c
