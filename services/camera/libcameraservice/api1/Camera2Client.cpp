@@ -761,12 +761,16 @@ status_t Camera2Client::startPreviewL(Parameters &params, bool restart) {
     // TODO: Find a better compromise, though this likely would involve HAL
     // changes.
     int lastJpegStreamId = mJpegProcessor->getStreamId();
-    res = updateProcessorStream(mJpegProcessor, params);
-    if (res != OK) {
-        ALOGE("%s: Camera %d: Can't pre-configure still image "
-                "stream: %s (%d)",
-                __FUNCTION__, mCameraId, strerror(-res), res);
-        return res;
+    char value[PROPERTY_VALUE_MAX];
+    property_get("ro.camera.disable_c2_init_jpeg", value, "0");
+    if (strncmp(value, "1", 2) != 0) {
+        res = updateProcessorStream(mJpegProcessor, params);
+        if (res != OK) {
+            ALOGE("%s: Camera %d: Can't pre-configure still image "
+                  "stream: %s (%d)",
+                  __FUNCTION__, mCameraId, strerror(-res), res);
+            return res;
+        }
     }
     bool jpegStreamChanged = mJpegProcessor->getStreamId() != lastJpegStreamId;
 
