@@ -117,6 +117,54 @@ status_t StagefrightMetadataRetriever::setDataSource(
     return OK;
 }
 
+// stolen from dalvik/vm/checkJni.cpp
+// check UTF8 character encoding type
+static bool isValidUtf8(const char* bytes) {
+    while (*bytes != '\0') {
+        unsigned char utf8 = *(bytes++);
+        // Switch on the high four bits.
+        switch (utf8 >> 4) {
+        case 0x00:
+        case 0x01:
+        case 0x02:
+        case 0x03:
+        case 0x04:
+        case 0x05:
+        case 0x06:
+        case 0x07:
+            // Bit pattern 0xxx. No need for any extra bytes.
+            break;
+        case 0x08:
+        case 0x09:
+        case 0x0a:
+        case 0x0b:
+        case 0x0f:
+            /*
+             * Bit pattern 10xx or 1111, which are illegal start bytes.
+             * Note: 1111 is valid for normal UTF-8, but not the
+             * modified UTF-8 used here.
+             */
+            return false;
+        case 0x0e:
+            // Bit pattern 1110, so there are two additional bytes.
+            utf8 = *(bytes++);
+            if ((utf8 & 0xc0) != 0x80) {
+                return false;
+            }
+            // Fall through to take care of the final byte.
+        case 0x0c:
+        case 0x0d:
+            // Bit pattern 110x, so there is one additional byte.
+            utf8 = *(bytes++);
+            if ((utf8 & 0xc0) != 0x80) {
+                return false;
+            }
+            break;
+        }
+    }
+    return true;
+}
+
 static bool isYUV420PlanarSupported(
             OMXClient *client,
             const sp<MetaData> &trackMeta) {
@@ -451,24 +499,25 @@ void StagefrightMetadataRetriever::parseMetaData() {
     struct Map {
         int from;
         int to;
+        int encType;
         const char *name;
     };
     static const Map kMap[] = {
-        { kKeyMIMEType, METADATA_KEY_MIMETYPE, NULL },
-        { kKeyCDTrackNumber, METADATA_KEY_CD_TRACK_NUMBER, "tracknumber" },
-        { kKeyDiscNumber, METADATA_KEY_DISC_NUMBER, "discnumber" },
-        { kKeyAlbum, METADATA_KEY_ALBUM, "album" },
-        { kKeyArtist, METADATA_KEY_ARTIST, "artist" },
-        { kKeyAlbumArtist, METADATA_KEY_ALBUMARTIST, "albumartist" },
-        { kKeyAuthor, METADATA_KEY_AUTHOR, NULL },
-        { kKeyComposer, METADATA_KEY_COMPOSER, "composer" },
-        { kKeyDate, METADATA_KEY_DATE, NULL },
-        { kKeyGenre, METADATA_KEY_GENRE, "genre" },
-        { kKeyTitle, METADATA_KEY_TITLE, "title" },
-        { kKeyYear, METADATA_KEY_YEAR, "year" },
-        { kKeyWriter, METADATA_KEY_WRITER, "writer" },
-        { kKeyCompilation, METADATA_KEY_COMPILATION, "compilation" },
-        { kKeyLocation, METADATA_KEY_LOCATION, NULL },
+        { kKeyMIMEType, METADATA_KEY_MIMETYPE, NULL, NULL },
+        { kKeyCDTrackNumber, METADATA_KEY_CD_TRACK_NUMBER, kKeyCDTrackNumberEncType, "tracknumber" },
+        { kKeyDiscNumber, METADATA_KEY_DISC_NUMBER, kKeyDiscNumberEncType, "discnumber" },
+        { kKeyAlbum, METADATA_KEY_ALBUM, kKeyAlbumEncType, "album" },
+        { kKeyArtist, METADATA_KEY_ARTIST, kKeyArtistEncType, "artist" },
+        { kKeyAlbumArtist, METADATA_KEY_ALBUMARTIST, kKeyAlbumArtistEncType, "albumartist" },
+        { kKeyAuthor, METADATA_KEY_AUTHOR, kKeyAuthorEncType, NULL },
+        { kKeyComposer, METADATA_KEY_COMPOSER, kKeyComposerEncType, "composer" },
+        { kKeyDate, METADATA_KEY_DATE, kKeyDateEncType, NULL },
+        { kKeyGenre, METADATA_KEY_GENRE, kKeyGenreEncType, "genre" },
+        { kKeyTitle, METADATA_KEY_TITLE, kKeyTitleEncType, "title" },
+        { kKeyYear, METADATA_KEY_YEAR, kKeyYearEncType, "year" },
+        { kKeyWriter, METADATA_KEY_WRITER, kKeyWriterEncType, "writer" },
+        { kKeyCompilation, METADATA_KEY_COMPILATION, kKeyCompilationEncType, "compilation" },
+        { kKeyLocation, METADATA_KEY_LOCATION, kKeyLocationEncType, NULL },
     };
 
     static const size_t kNumMapEntries = sizeof(kMap) / sizeof(kMap[0]);
@@ -477,8 +526,10 @@ void StagefrightMetadataRetriever::parseMetaData() {
 
     for (size_t i = 0; i < kNumMapEntries; ++i) {
         const char *value;
+        int encType = -1;
+        meta->findInt32(kMap[i].encType, &encType);
         if (meta->findCString(kMap[i].from, &value)) {
-            if (kMap[i].name) {
+            if (kMap[i].name && (encType <= 0 || !isValidUtf8(String8(value)))) {
                 // add to charset detector
                 detector->addTag(kMap[i].name, value);
             } else {

@@ -99,6 +99,22 @@ enum {
     kKeyLocation          = 'loc ',  // cstring
     kKeyTimeScale         = 'tmsl',  // int32_t
 
+    // character encoding type of metadata
+    kKeyAlbumEncType      = 'albE',  // int32_t
+    kKeyArtistEncType     = 'artE',  // int32_t
+    kKeyAlbumArtistEncType = 'alAE',  // int32_t
+    kKeyComposerEncType   = 'comE',  // int32_t
+    kKeyGenreEncType      = 'genE',  // int32_t
+    kKeyTitleEncType      = 'titE',  // int32_t
+    kKeyYearEncType       = 'yerE',  // int32_t
+    kKeyAuthorEncType     = 'autE',  // int32_t
+    kKeyCDTrackNumberEncType = 'cdtE',  // int32_t
+    kKeyDiscNumberEncType = 'dnuE',  // int32_t
+    kKeyDateEncType       = 'datE',  // int32_t
+    kKeyWriterEncType     = 'wrtE',  // int32_t
+    kKeyCompilationEncType = 'cpiE',  // int32_t
+    kKeyLocationEncType   = 'locE',  // int32_t
+
     // video profile and level
     kKeyVideoProfile      = 'vprf',  // int32_t
     kKeyVideoLevel        = 'vlev',  // int32_t

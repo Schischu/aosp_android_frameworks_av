@@ -51,7 +51,7 @@ struct ID3 {
 
         bool done() const;
         void getID(String8 *id) const;
-        void getString(String8 *s, String8 *ss = NULL) const;
+        void getString(String8 *s, String8 *ss = NULL, int *encType = NULL) const;
         const uint8_t *getData(size_t *length) const;
         void next();
 
@@ -66,7 +66,7 @@ struct ID3 {
         void findFrame();
 
         size_t getHeaderLength() const;
-        void getstring(String8 *s, bool secondhalf) const;
+        void getstring(String8 *s, bool secondhalf, int *encType = NULL) const;
 
         Iterator(const Iterator &);
         Iterator &operator=(const Iterator &);

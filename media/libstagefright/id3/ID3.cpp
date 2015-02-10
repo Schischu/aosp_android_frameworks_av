@@ -470,17 +470,17 @@ void ID3::Iterator::getID(String8 *id) const {
 
 
 // the 2nd argument is used to get the data following the \0 in a comment field
-void ID3::Iterator::getString(String8 *id, String8 *comment) const {
-    getstring(id, false);
+void ID3::Iterator::getString(String8 *id, String8 *comment, int *encType) const {
+    getstring(id, false, encType);
     if (comment != NULL) {
-        getstring(comment, true);
+        getstring(comment, true, encType);
     }
 }
 
 // comment fields (COM/COMM) contain an initial short descriptor, followed by \0,
 // followed by more data. The data following the \0 can be retrieved by setting
 // "otherdata" to true.
-void ID3::Iterator::getstring(String8 *id, bool otherdata) const {
+void ID3::Iterator::getstring(String8 *id, bool otherdata, int *encType) const {
     id->setTo("");
 
     const uint8_t *frameData = mFrameData;
@@ -542,7 +542,7 @@ void ID3::Iterator::getstring(String8 *id, bool otherdata) const {
         if (framedatacopy != NULL) {
             delete[] framedatacopy;
         }
-    } else if (encoding == 0x01) {
+    } else if(encoding == 0x01) {
         // UCS-2
         // API wants number of characters, not number of bytes...
         int len = n / 2;
@@ -561,30 +561,14 @@ void ID3::Iterator::getstring(String8 *id, bool otherdata) const {
             framedata++;
             len--;
         }
-
-        // check if the resulting data consists entirely of 8-bit values
-        bool eightBit = true;
-        for (int i = 0; i < len; i++) {
-            if (framedata[i] > 0xff) {
-                eightBit = false;
-                break;
-            }
-        }
-        if (eightBit) {
-            // collapse to 8 bit, then let the media scanner client figure out the real encoding
-            char *frame8 = new char[len];
-            for (int i = 0; i < len; i++) {
-                frame8[i] = framedata[i];
-            }
-            id->setTo(frame8, len);
-            delete [] frame8;
-        } else {
-            id->setTo(framedata, len);
-        }
-
+        id->setTo(framedata, len);
         if (framedatacopy != NULL) {
             delete[] framedatacopy;
         }
+    }
+
+    if(encType != NULL) {
+        *encType = encoding;
     }
 }
 
