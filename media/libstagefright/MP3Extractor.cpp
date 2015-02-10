@@ -598,21 +598,23 @@ sp<MetaData> MP3Extractor::getMetaData() {
 
     struct Map {
         int key;
+        // character encoding type of metadata
+        int encType;
         const char *tag1;
         const char *tag2;
     };
     static const Map kMap[] = {
-        { kKeyAlbum, "TALB", "TAL" },
-        { kKeyArtist, "TPE1", "TP1" },
-        { kKeyAlbumArtist, "TPE2", "TP2" },
-        { kKeyComposer, "TCOM", "TCM" },
-        { kKeyGenre, "TCON", "TCO" },
-        { kKeyTitle, "TIT2", "TT2" },
-        { kKeyYear, "TYE", "TYER" },
-        { kKeyAuthor, "TXT", "TEXT" },
-        { kKeyCDTrackNumber, "TRK", "TRCK" },
-        { kKeyDiscNumber, "TPA", "TPOS" },
-        { kKeyCompilation, "TCP", "TCMP" },
+        { kKeyAlbum, kKeyAlbumEncType, "TALB", "TAL" },
+        { kKeyArtist, kKeyArtistEncType, "TPE1", "TP1" },
+        { kKeyAlbumArtist, kKeyAlbumArtistEncType, "TPE2", "TP2" },
+        { kKeyComposer, kKeyComposerEncType, "TCOM", "TCM" },
+        { kKeyGenre, kKeyGenreEncType, "TCON", "TCO" },
+        { kKeyTitle, kKeyTitleEncType, "TIT2", "TT2" },
+        { kKeyYear, kKeyYearEncType, "TYE", "TYER" },
+        { kKeyAuthor, kKeyAuthorEncType, "TXT", "TEXT" },
+        { kKeyCDTrackNumber, kKeyCDTrackNumberEncType, "TRK", "TRCK" },
+        { kKeyDiscNumber, kKeyDiscNumberEncType, "TPA", "TPOS" },
+        { kKeyCompilation, kKeyCompilationEncType, "TCP", "TCMP" },
     };
     static const size_t kNumMapEntries = sizeof(kMap) / sizeof(kMap[0]);
 
@@ -629,9 +631,11 @@ sp<MetaData> MP3Extractor::getMetaData() {
         }
 
         String8 s;
-        it->getString(&s);
+        int encType = -1;
+        it->getString(&s, NULL, &encType);
         delete it;
 
+        meta->setInt32(kMap[i].encType, encType);
         meta->setCString(kMap[i].key, s);
     }
 
