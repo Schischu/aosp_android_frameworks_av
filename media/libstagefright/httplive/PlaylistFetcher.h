@@ -59,8 +59,7 @@ struct PlaylistFetcher : public AHandler {
             const sp<AnotherPacketSource> &videoSource,
             const sp<AnotherPacketSource> &subtitleSource,
             int64_t startTimeUs = -1ll,         // starting timestamps
-            int64_t segmentStartTimeUs = -1ll, // starting position within playlist
-            // startTimeUs!=segmentStartTimeUs only when playlist is live
+            int64_t fetcherStartTimeUs = -1ll, // starting position when fetcher is created
             int32_t startDiscontinuitySeq = 0,
             bool adaptive = false);
 
@@ -73,6 +72,8 @@ struct PlaylistFetcher : public AHandler {
     uint32_t getStreamTypeMask() const {
         return mStreamTypeMask;
     }
+
+    void postMonitorQueue(int64_t delayUs = 0, int64_t minDelayUs = 0);
 
 protected:
     virtual ~PlaylistFetcher();
@@ -108,15 +109,10 @@ private:
     AString mURI;
 
     uint32_t mStreamTypeMask;
+    uint32_t mCheckSyncMask;
     int64_t mStartTimeUs;
 
-    // Start time relative to the beginning of the first segment in the initial
-    // playlist. It's value is initialized to a non-negative value only when we are
-    // adapting or switching tracks.
-    int64_t mSegmentStartTimeUs;
-
     ssize_t mDiscontinuitySeq;
-    bool mStartTimeUsRelative;
     sp<AMessage> mStopParams; // message containing the latest timestamps we should fetch.
 
     KeyedVector<LiveSession::StreamType, sp<AnotherPacketSource> >
@@ -150,10 +146,10 @@ private:
 
     bool mFirstPTSValid;
     uint64_t mFirstPTS;
-    int64_t mFirstTimeUs;
     int64_t mAbsoluteTimeAnchorUs;
     sp<AnotherPacketSource> mVideoBuffer;
     bool mCheckBandwidth;
+    int64_t mFetcherStartTimeUs;
 
     // Stores the initialization vector to decrypt the next block of cipher text, which can
     // either be derived from the sequence number, read from the manifest, or copied from
@@ -173,7 +169,6 @@ private:
             bool first = true);
     status_t checkDecryptPadding(const sp<ABuffer> &buffer);
 
-    void postMonitorQueue(int64_t delayUs = 0, int64_t minDelayUs = 0);
     void cancelMonitorQueue();
 
     int64_t delayUsToRefreshPlaylist() const;
@@ -206,7 +201,7 @@ private:
     void queueDiscontinuity(
             ATSParser::DiscontinuityType type, const sp<AMessage> &extra);
 
-    int32_t getSeqNumberWithAnchorTime(int64_t anchorTimeUs) const;
+    int32_t getSynchronizedSeqValues(int64_t firstTimeUs, int64_t &sequenceStartTimeUs);
     int32_t getSeqNumberForDiscontinuity(size_t discontinuitySeq) const;
     int32_t getSeqNumberForTime(int64_t timeUs) const;
 
@@ -215,6 +210,24 @@ private:
     // Before resuming a fetcher in onResume, check the remaining duration is longer than that
     // returned by resumeThreshold.
     int64_t resumeThreshold(const sp<AMessage> &msg);
+
+    void synchronizeSeqNumber(int64_t timeUs);
+
+    bool adjustSequenceNumberIfNeeded(int64_t startTimeUs = -1);
+
+    void sendNotify();
+
+    int64_t getSegmentDuration(int32_t seqNumber);
+
+    void getPlaylistBorders(int32_t &first, int32_t &last);
+
+    void updateStartTime(int64_t firstTimeUs, const LiveSession::StreamType stream);
+
+    bool checkVideoLost();
+
+    bool fetcherContainsVideo();
+
+    int64_t getLowestStartTimeUs();
 
     DISALLOW_EVIL_CONSTRUCTORS(PlaylistFetcher);
 };

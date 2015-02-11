@@ -48,6 +48,10 @@ struct ATSParser : public RefBase {
             DISCONTINUITY_AUDIO_FORMAT
                 | DISCONTINUITY_VIDEO_FORMAT
                 | DISCONTINUITY_TIME,
+
+       DISCONTINUITY_FORMATCHANGEONLY      =
+            DISCONTINUITY_AUDIO_FORMAT
+                | DISCONTINUITY_VIDEO_FORMAT,
     };
 
     enum Flags {
