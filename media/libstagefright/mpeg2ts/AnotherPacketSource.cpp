@@ -97,10 +97,43 @@ sp<MetaData> AnotherPacketSource::getFormat() {
 
         sp<RefBase> object;
         if (buffer->meta()->findObject("format", &object)) {
-            return mFormat = static_cast<MetaData*>(object.get());
+            mFormat = static_cast<MetaData*>(object.get());
+            const char *mime;
+            CHECK(mFormat->findCString(kKeyMIMEType, &mime));
+
+            if (!strncasecmp("audio/", mime, 6)) {
+                mIsAudio = true;
+            } else if (!strncasecmp("video/", mime, 6)) {
+                mIsVideo = true;
+            } else {
+                CHECK(!strncasecmp("text/", mime, 5));
+            }
+
+            return mFormat;
         }
 
         ++it;
+    }
+    return NULL;
+}
+
+sp<MetaData> AnotherPacketSource::getLastFormat() {
+    Mutex::Autolock autoLock(mLock);
+    List<sp<ABuffer> >::iterator it = mBuffers.end();
+    it--;
+    while (it != mBuffers.begin()) {
+        sp<ABuffer> buffer = *it;
+        int32_t discontinuity;
+        if (buffer->meta()->findInt32("discontinuity", &discontinuity)) {
+            break;
+        }
+
+        sp<RefBase> object;
+        if (buffer->meta()->findObject("format", &object)) {
+            return static_cast<MetaData*>(object.get());
+        }
+
+        --it;
     }
     return NULL;
 }
@@ -315,6 +348,10 @@ int64_t AnotherPacketSource::getBufferedDurationUs_l(status_t *finalResult) {
 
         int64_t timeUs;
         if (buffer->meta()->findInt64("timeUs", &timeUs)) {
+            if (timeUs < 0) {
+                ++it;
+                continue;
+            }
             if (time1 < 0 || timeUs < time1) {
                 time1 = timeUs;
             }
