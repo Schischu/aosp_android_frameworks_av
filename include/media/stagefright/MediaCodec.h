@@ -28,6 +28,7 @@ namespace android {
 struct ABuffer;
 struct AMessage;
 struct AString;
+struct AudioTrack;
 struct CodecBase;
 struct ICrypto;
 struct IBatteryStats;
@@ -65,6 +66,8 @@ struct MediaCodec : public AHandler {
             const sp<Surface> &nativeWindow,
             const sp<ICrypto> &crypto,
             uint32_t flags);
+
+    status_t setAudioTrack(const sp<AudioTrack> &audioTrack);
 
     status_t setCallback(const sp<AMessage> &callback);
 
@@ -170,6 +173,7 @@ private:
     enum {
         kWhatInit                           = 'init',
         kWhatConfigure                      = 'conf',
+        kWhatSetAudioTrack                  = 'setA',
         kWhatCreateInputSurface             = 'cisf',
         kWhatStart                          = 'strt',
         kWhatStop                           = 'stop',
@@ -211,6 +215,7 @@ private:
         uint32_t mBufferID;
         sp<ABuffer> mData;
         sp<ABuffer> mEncryptedData;
+        sp<ABuffer> mProtectedOutputBuffer;
         sp<AMessage> mNotify;
         sp<AMessage> mFormat;
         bool mOwnedByClient;
@@ -225,6 +230,7 @@ private:
     uint32_t mFlags;
     status_t mStickyError;
     sp<Surface> mNativeWindow;
+    sp<AudioTrack> mAudioTrack;
     SoftwareRenderer *mSoftRenderer;
     sp<AMessage> mOutputFormat;
     sp<AMessage> mInputFormat;
@@ -260,6 +266,8 @@ private:
     sp<AMessage> mActivityNotify;
 
     bool mHaveInputSurface;
+
+    bool mBlockOutputBuffers;
 
     MediaCodec(const sp<ALooper> &looper);
 
