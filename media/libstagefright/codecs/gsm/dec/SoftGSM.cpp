@@ -64,7 +64,7 @@ void SoftGSM::initPorts() {
     def.eDir = OMX_DirInput;
     def.nBufferCountMin = kNumBuffers;
     def.nBufferCountActual = def.nBufferCountMin;
-    def.nBufferSize = sizeof(gsm_frame);
+    def.nBufferSize = 1024 / 65 * 65;
     def.bEnabled = OMX_TRUE;
     def.bPopulated = OMX_FALSE;
     def.eDomain = OMX_PortDomainAudio;
@@ -257,6 +257,25 @@ int SoftGSM::DecodeGSM(gsm handle,
     }
     return ret;
 }
+
+void SoftGSM::onPortFlushCompleted(OMX_U32 portIndex) {
+    if (portIndex == 0) {
+        gsm_destroy(mGsm);
+        mGsm = gsm_create();
+        int msopt = 1;
+        gsm_option(mGsm, GSM_OPT_WAV49, &msopt);
+    }
+}
+
+void SoftGSM::onReset() {
+    gsm_destroy(mGsm);
+    mGsm = gsm_create();
+    int msopt = 1;
+    gsm_option(mGsm, GSM_OPT_WAV49, &msopt);
+    mSignalledError = false;
+}
+
+
 
 
 }  // namespace android
