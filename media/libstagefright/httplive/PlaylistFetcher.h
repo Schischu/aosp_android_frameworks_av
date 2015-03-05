@@ -74,6 +74,8 @@ struct PlaylistFetcher : public AHandler {
         return mStreamTypeMask;
     }
 
+    void postMonitorQueue(int64_t delayUs = 0, int64_t minDelayUs = 0);
+
 protected:
     virtual ~PlaylistFetcher();
     virtual void onMessageReceived(const sp<AMessage> &msg);
@@ -108,12 +110,14 @@ private:
     AString mURI;
 
     uint32_t mStreamTypeMask;
+    uint32_t mCheckSyncMask;
     int64_t mStartTimeUs;
 
     // Start time relative to the beginning of the first segment in the initial
     // playlist. It's value is initialized to a non-negative value only when we are
     // adapting or switching tracks.
     int64_t mSegmentStartTimeUs;
+    int64_t mFetcherStartTimeUs;
 
     ssize_t mDiscontinuitySeq;
     bool mStartTimeUsRelative;
@@ -173,7 +177,6 @@ private:
             bool first = true);
     status_t checkDecryptPadding(const sp<ABuffer> &buffer);
 
-    void postMonitorQueue(int64_t delayUs = 0, int64_t minDelayUs = 0);
     void cancelMonitorQueue();
 
     int64_t delayUsToRefreshPlaylist() const;
@@ -206,15 +209,34 @@ private:
     void queueDiscontinuity(
             ATSParser::DiscontinuityType type, const sp<AMessage> &extra);
 
-    int32_t getSeqNumberWithAnchorTime(int64_t anchorTimeUs) const;
+    int32_t getSynchronizedSeqValues(int64_t firstTimeUs, int64_t &sequenceStartTimeUs);
     int32_t getSeqNumberForDiscontinuity(size_t discontinuitySeq) const;
     int32_t getSeqNumberForTime(int64_t timeUs) const;
+    size_t getDiscontinuityForSeqNumber(size_t seq) const;
 
     void updateDuration();
 
     // Before resuming a fetcher in onResume, check the remaining duration is longer than that
     // returned by resumeThreshold.
     int64_t resumeThreshold(const sp<AMessage> &msg);
+
+    void synchronizeSeqNumber(int64_t timeUs);
+
+    bool adjustSequenceNumberIfNeeded(int64_t startTimeUs);
+
+    void sendNotify();
+
+    int64_t getSegmentDuration(int32_t seqNumber);
+
+    void getPlaylistBorders(int32_t &first, int32_t &last);
+
+    void updateStartTime(int64_t firstTimeUs, const LiveSession::StreamType stream);
+
+    bool checkVideoLost();
+
+    bool fetcherContainsVideo();
+
+    int64_t getLowestStartTimeUs();
 
     DISALLOW_EVIL_CONSTRUCTORS(PlaylistFetcher);
 };
