@@ -61,7 +61,6 @@ LiveSession::LiveSession(
       mOldFetcherBandwidthIndex(-1),
       mStreamMask(0),
       mNewStreamMask(0),
-      mSwapMask(0),
       mSwitchGeneration(0),
       mSubtitleGeneration(0),
       mLastDequeuedTimeUs(0ll),
@@ -81,7 +80,6 @@ LiveSession::LiveSession(
     for (size_t i = 0; i < kMaxStreams; ++i) {
         mDiscontinuities.add(indexToType(i), new AnotherPacketSource(NULL /* meta */));
         mPacketSources.add(indexToType(i), new AnotherPacketSource(NULL /* meta */));
-        mPacketSources2.add(indexToType(i), new AnotherPacketSource(NULL /* meta */));
         mBuffering[i] = false;
     }
 }
@@ -89,22 +87,12 @@ LiveSession::LiveSession(
 LiveSession::~LiveSession() {
 }
 
-sp<ABuffer> LiveSession::createFormatChangeBuffer(bool swap) {
+sp<ABuffer> LiveSession::createFormatChangeBuffer() {
     ABuffer *discontinuity = new ABuffer(0);
     discontinuity->meta()->setInt32("discontinuity", ATSParser::DISCONTINUITY_FORMATCHANGEONLY);
-    discontinuity->meta()->setInt32("swapPacketSource", swap);
     discontinuity->meta()->setInt32("switchGeneration", mSwitchGeneration);
     discontinuity->meta()->setInt64("timeUs", -1);
     return discontinuity;
-}
-
-void LiveSession::swapPacketSource(StreamType stream) {
-    sp<AnotherPacketSource> &aps = mPacketSources.editValueFor(stream);
-    sp<AnotherPacketSource> &aps2 = mPacketSources2.editValueFor(stream);
-    sp<AnotherPacketSource> tmp = aps;
-    aps = aps2;
-    aps2 = tmp;
-    aps2->clear();
 }
 
 status_t LiveSession::dequeueAccessUnit(
@@ -212,41 +200,24 @@ status_t LiveSession::dequeueAccessUnit(
               type,
               extra == NULL ? "NULL" : extra->debugString().c_str());
 
-        int32_t swap;
-        if ((*accessUnit)->meta()->findInt32("swapPacketSource", &swap) && swap) {
-            int32_t switchGeneration;
-            CHECK((*accessUnit)->meta()->findInt32("switchGeneration", &switchGeneration));
-            {
-                Mutex::Autolock lock(mSwapMutex);
-                if (switchGeneration == mSwitchGeneration) {
-                    swapPacketSource(stream);
-                    sp<AMessage> msg = new AMessage(kWhatSwapped, id());
-                    msg->setInt32("stream", stream);
-                    msg->setInt32("switchGeneration", switchGeneration);
-                    msg->post();
-                }
-            }
+        size_t seq = strm.mCurDiscontinuitySeq;
+        int64_t offsetTimeUs;
+        if (mDiscontinuityOffsetTimesUs.indexOfKey(seq) >= 0) {
+            offsetTimeUs = mDiscontinuityOffsetTimesUs.valueFor(seq);
         } else {
-            size_t seq = strm.mCurDiscontinuitySeq;
-            int64_t offsetTimeUs;
-            if (mDiscontinuityOffsetTimesUs.indexOfKey(seq) >= 0) {
-                offsetTimeUs = mDiscontinuityOffsetTimesUs.valueFor(seq);
-            } else {
-                offsetTimeUs = 0;
-            }
-
-            seq += 1;
-            if (mDiscontinuityAbsStartTimesUs.indexOfKey(strm.mCurDiscontinuitySeq) >= 0) {
-                int64_t firstTimeUs;
-                firstTimeUs = mDiscontinuityAbsStartTimesUs.valueFor(strm.mCurDiscontinuitySeq);
-                offsetTimeUs += strm.mLastDequeuedTimeUs - firstTimeUs;
-                offsetTimeUs += strm.mLastSampleDurationUs;
-            } else {
-                offsetTimeUs += strm.mLastSampleDurationUs;
-            }
-
-            mDiscontinuityOffsetTimesUs.add(seq, offsetTimeUs);
+            offsetTimeUs = 0;
         }
+
+        if (mDiscontinuityAbsStartTimesUs.indexOfKey(strm.mCurDiscontinuitySeq) >= 0) {
+            int64_t firstTimeUs;
+            firstTimeUs = mDiscontinuityAbsStartTimesUs.valueFor(strm.mCurDiscontinuitySeq);
+            offsetTimeUs += strm.mLastDequeuedTimeUs - firstTimeUs;
+            offsetTimeUs += strm.mLastSampleDurationUs;
+        } else {
+            offsetTimeUs += strm.mLastSampleDurationUs;
+        }
+
+        mDiscontinuityOffsetTimesUs.add(++seq, offsetTimeUs);
     } else if (err == OK) {
 
         if (stream == STREAMTYPE_AUDIO || stream == STREAMTYPE_VIDEO) {
@@ -307,7 +278,6 @@ status_t LiveSession::dequeueAccessUnit(
 }
 
 status_t LiveSession::getStreamFormat(StreamType stream, sp<AMessage> *format) {
-    // No swapPacketSource race condition; called from the same thread as dequeueAccessUnit.
     if (!(mStreamMask & stream)) {
         return UNKNOWN_ERROR;
     }
@@ -575,12 +545,6 @@ void LiveSession::onMessageReceived(const sp<AMessage> &msg) {
             break;
         }
 
-        case kWhatSwapped:
-        {
-            onSwapped(msg);
-            break;
-        }
-
         default:
             TRESPASS();
             break;
@@ -699,8 +663,6 @@ void LiveSession::onConnect(const sp<AMessage> &msg) {
 }
 
 void LiveSession::finishDisconnect() {
-    // Protect mPacketSources from a swapPacketSource race condition through disconnect.
-    // (finishDisconnect, onFinishDisconnect2)
     cancelBandwidthSwitch();
     mReconfigurationState = DISCONNECTING;
 
@@ -1140,19 +1102,6 @@ status_t LiveSession::selectTrack(size_t index, bool select) {
     return err;
 }
 
-bool LiveSession::canSwitchUp() {
-    // Allow upwards bandwidth switch when a stream has buffered at least 10 seconds.
-    status_t err = OK;
-    for (size_t i = 0; i < mPacketSources.size(); ++i) {
-        sp<AnotherPacketSource> source = mPacketSources.valueAt(i);
-        int64_t dur = source->getBufferedDurationUs(&err);
-        if (err == OK && dur > 10000000) {
-            return true;
-        }
-    }
-    return false;
-}
-
 void LiveSession::onSelectTrack(const sp<AMessage> &msg) {
     if (mReconfigurationState == NONE) {
         int32_t pickTrack = 0;
@@ -1165,8 +1114,6 @@ void LiveSession::onSelectTrack(const sp<AMessage> &msg) {
 
 void LiveSession::changeConfiguration(
         int64_t timeUs, size_t bandwidthIndex, bool pickTrack) {
-    // Protect mPacketSources from a swapPacketSource race condition through reconfiguration.
-    // (changeConfiguration, onChangeConfiguration2, onChangeConfiguration3).
     cancelBandwidthSwitch();
 
     CHECK_NE(mReconfigurationState, RECONFIGURATION_IN_PROGRESS);
@@ -1361,9 +1308,6 @@ void LiveSession::onChangeConfiguration3(const sp<AMessage> &msg) {
     }
 
     mNewStreamMask = streamMask | resumeMask;
-    if (switching) {
-        mSwapMask = mStreamMask & ~resumeMask;
-    }
 
     // Of all existing fetchers:
     // * Resume fetchers that are still needed and assign them original packet sources.
@@ -1491,11 +1435,10 @@ void LiveSession::onChangeConfiguration3(const sp<AMessage> &msg) {
                                 ATSParser::DISCONTINUITY_FORMATCHANGE, NULL, true);
                     } else {
                         // adapting, queue discontinuities after resume
-                        sources[j] = mPacketSources2.valueFor(indexToType(j));
-                        sources[j]->clear();
                         uint32_t extraStreams = mNewStreamMask & (~mStreamMask);
-                        if (extraStreams & indexToType(j)) {
-                            sources[j]->queueAccessUnit(createFormatChangeBuffer(/*swap*/ false));
+                        if ((extraStreams & indexToType(j)) &&
+                                sources[j]->getLatestEnqueuedMeta() != NULL) {
+                            sources[j]->queueAccessUnit(createFormatChangeBuffer());
                         }
                     }
                 }
@@ -1530,49 +1473,6 @@ void LiveSession::onChangeConfiguration3(const sp<AMessage> &msg) {
     }
 }
 
-void LiveSession::onSwapped(const sp<AMessage> &msg) {
-    int32_t switchGeneration;
-    CHECK(msg->findInt32("switchGeneration", &switchGeneration));
-    if (switchGeneration != mSwitchGeneration) {
-        return;
-    }
-
-    int32_t stream;
-    CHECK(msg->findInt32("stream", &stream));
-
-    ssize_t idx = typeToIndex(stream);
-    CHECK(idx >= 0);
-    if ((mNewStreamMask & stream) && mStreams[idx].mNewUri.empty()) {
-        ALOGW("swapping stream type %d %s to empty stream", stream, mStreams[idx].mUri.c_str());
-    }
-    mStreams[idx].mUri = mStreams[idx].mNewUri;
-    mStreams[idx].mNewUri.clear();
-
-    mSwapMask &= ~stream;
-    if (mSwapMask != 0) {
-        return;
-    }
-
-    // Check if new variant contains extra streams.
-    uint32_t extraStreams = mNewStreamMask & (~mStreamMask);
-    while (extraStreams) {
-        StreamType extraStream = (StreamType) (extraStreams & ~(extraStreams - 1));
-        swapPacketSource(extraStream);
-        extraStreams &= ~extraStream;
-
-        idx = typeToIndex(extraStream);
-        CHECK(idx >= 0);
-        if (mStreams[idx].mNewUri.empty()) {
-            ALOGW("swapping extra stream type %d %s to empty stream",
-                    extraStream, mStreams[idx].mUri.c_str());
-        }
-        mStreams[idx].mUri = mStreams[idx].mNewUri;
-        mStreams[idx].mNewUri.clear();
-    }
-
-    tryToFinishBandwidthSwitch();
-}
-
 // Mark switch done when:
 //   1. all old buffers are swapped out
 void LiveSession::tryToFinishBandwidthSwitch() {
@@ -1588,7 +1488,7 @@ void LiveSession::tryToFinishBandwidthSwitch() {
         }
     }
 
-    if (!needToRemoveFetchers && mSwapMask == 0) {
+    if (!needToRemoveFetchers) {
         ALOGI("mSwitchInProgress = false");
         mStreamMask = mNewStreamMask;
         mSwitchInProgress = false;
@@ -1596,14 +1496,19 @@ void LiveSession::tryToFinishBandwidthSwitch() {
         for (size_t i = 0; i < mFetcherInfos.size(); ++i) {
             mFetcherInfos.valueAt(i).mFetcher->postMonitorQueue();
         }
+
+        for (size_t i = 0; i < kMaxStreams; ++i) {
+            if (!mStreams[i].mNewUri.empty()) {
+                mStreams[i].mUri = mStreams[i].mNewUri;
+                mStreams[i].mNewUri.clear();
+            }
+        }
     }
 }
 
 void LiveSession::cancelBandwidthSwitch() {
-    Mutex::Autolock lock(mSwapMutex);
     mSwitchGeneration++;
     mSwitchInProgress = false;
-    mSwapMask = 0;
 
     for (size_t i = 0; i < mFetcherInfos.size(); ++i) {
         FetcherInfo& info = mFetcherInfos.editValueAt(i);
@@ -1625,24 +1530,6 @@ void LiveSession::cancelBandwidthSwitch() {
             mFetcherInfos.removeItemsAt(j);
             mStreams[i].mNewUri.clear();
         }
-    }
-}
-
-bool LiveSession::canSwitchBandwidthTo(size_t bandwidthIndex) {
-    if (mReconfigurationState != NONE || mSwitchInProgress) {
-        return false;
-    }
-
-    if (mCurBandwidthIndex < 0) {
-        return true;
-    }
-
-    if (bandwidthIndex == (size_t)mCurBandwidthIndex) {
-        return false;
-    } else if (bandwidthIndex > (size_t)mCurBandwidthIndex) {
-        return canSwitchUp();
-    } else {
-        return true;
     }
 }
 
@@ -1676,7 +1563,7 @@ bool LiveSession::isReconfiguring() {
 
 bool LiveSession::bandwidthChanged() {
     size_t bandwidthIndex = getBandwidthIndex();
-    if (canSwitchBandwidthTo(bandwidthIndex)) {
+    if (bandwidthIndex != (size_t)mCurBandwidthIndex) {
         sp<AMessage> msg = new AMessage(kWhatChangeConfiguration, id());
         msg->setInt32("bandwidthIndex", bandwidthIndex);
         msg->post();

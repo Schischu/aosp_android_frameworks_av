@@ -97,7 +97,19 @@ sp<MetaData> AnotherPacketSource::getFormat() {
 
         sp<RefBase> object;
         if (buffer->meta()->findObject("format", &object)) {
-            return mFormat = static_cast<MetaData*>(object.get());
+            mFormat = static_cast<MetaData*>(object.get());
+            const char *mime;
+            CHECK(mFormat->findCString(kKeyMIMEType, &mime));
+
+            if (!strncasecmp("audio/", mime, 6)) {
+                mIsAudio = true;
+            } else if (!strncasecmp("video/", mime, 6)) {
+                mIsVideo = true;
+            } else {
+                CHECK(!strncasecmp("text/", mime, 5));
+            }
+
+            return mFormat;
         }
 
         ++it;
@@ -315,6 +327,10 @@ int64_t AnotherPacketSource::getBufferedDurationUs_l(status_t *finalResult) {
 
         int64_t timeUs;
         if (buffer->meta()->findInt64("timeUs", &timeUs)) {
+            if (timeUs < 0) {
+                ++it;
+                continue;
+            }
             if (time1 < 0 || timeUs < time1) {
                 time1 = timeUs;
             }
