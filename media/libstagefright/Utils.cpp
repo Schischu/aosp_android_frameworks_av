@@ -103,6 +103,13 @@ status_t convertMetaDataToMessage(
         msg->setInt32("width", width);
         msg->setInt32("height", height);
 
+        int32_t stride, sliceHeight;
+        if (meta->findInt32(kKeyStride, &stride)
+                && meta->findInt32(kKeySliceHeight, &sliceHeight)) {
+            msg->setInt32("stride", stride);
+            msg->setInt32("slice-height", sliceHeight);
+        }
+
         int32_t sarWidth, sarHeight;
         if (meta->findInt32(kKeySARWidth, &sarWidth)
                 && meta->findInt32(kKeySARHeight, &sarHeight)) {

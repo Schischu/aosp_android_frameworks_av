@@ -4376,6 +4376,8 @@ void OMXCodec::initOutputFormat(const sp<MetaData> &inputFormat) {
             mOutputFormat->setInt32(kKeyWidth, video_def->nFrameWidth);
             mOutputFormat->setInt32(kKeyHeight, video_def->nFrameHeight);
             mOutputFormat->setInt32(kKeyColorFormat, video_def->eColorFormat);
+            mOutputFormat->setInt32(kKeyStride, video_def->nStride);
+            mOutputFormat->setInt32(kKeySliceHeight, video_def->nSliceHeight);
 
             if (!mIsEncoder) {
                 OMX_CONFIG_RECTTYPE rect;
@@ -4389,6 +4391,10 @@ void OMXCodec::initOutputFormat(const sp<MetaData> &inputFormat) {
                 CODEC_LOGI(
                         "video dimensions are %ld x %ld",
                         video_def->nFrameWidth, video_def->nFrameHeight);
+
+                CODEC_LOGI(
+                        "Stride/Slice dimensions are %ld x %ld",
+                        video_def->nStride, video_def->nSliceHeight);
 
                 if (err == OK) {
                     CHECK_GE(rect.nLeft, 0);
