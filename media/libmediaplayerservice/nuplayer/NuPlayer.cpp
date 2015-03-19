@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+//testing
+
 //#define LOG_NDEBUG 0
 #define LOG_TAG "NuPlayer"
 #include <utils/Log.h>
