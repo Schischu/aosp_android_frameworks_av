@@ -47,7 +47,7 @@
 namespace android {
 
 // static
-const int64_t PlaylistFetcher::kMinBufferedDurationUs = 10000000ll;
+const int64_t PlaylistFetcher::kMinBufferedDurationUs = 30000000ll;
 const int64_t PlaylistFetcher::kMaxMonitorDelayUs = 3000000ll;
 // LCM of 188 (size of a TS packet) & 1k works well
 const int32_t PlaylistFetcher::kDownloadBlockSize = 47 * 1024;
@@ -658,12 +658,6 @@ void PlaylistFetcher::onMonitorQueue() {
         targetDurationUs = targetDurationSecs * 1000000ll;
     }
 
-    // buffer at least 3 times the target duration, or up to 10 seconds
-    int64_t durationToBufferUs = targetDurationUs * 3;
-    if (durationToBufferUs > kMinBufferedDurationUs)  {
-        durationToBufferUs = kMinBufferedDurationUs;
-    }
-
     int64_t bufferedDurationUs = 0ll;
     status_t finalResult = NOT_ENOUGH_DATA;
     if (mStreamTypeMask == LiveSession::STREAMTYPE_SUBTITLES) {
@@ -674,9 +668,7 @@ void PlaylistFetcher::onMonitorQueue() {
                 packetSource->getBufferedDurationUs(&finalResult);
         finalResult = OK;
     } else {
-        // Use max stream duration to prevent us from waiting on a non-existent stream;
-        // when we cannot make out from the manifest what streams are included in a playlist
-        // we might assume extra streams.
+        bool first = true;
         for (size_t i = 0; i < mPacketSources.size(); ++i) {
             if ((mStreamTypeMask & mPacketSources.keyAt(i)) == 0) {
                 continue;
@@ -686,27 +678,17 @@ void PlaylistFetcher::onMonitorQueue() {
                 mPacketSources.valueAt(i)->getBufferedDurationUs(&finalResult);
             ALOGV("buffered %" PRId64 " for stream %d",
                     bufferedStreamDurationUs, mPacketSources.keyAt(i));
-            if (bufferedStreamDurationUs > bufferedDurationUs) {
+            if (first || bufferedStreamDurationUs < bufferedDurationUs) {
                 bufferedDurationUs = bufferedStreamDurationUs;
+                first = false;
             }
         }
     }
-    downloadMore = (bufferedDurationUs < durationToBufferUs);
-
-    // signal start if buffered up at least the target size
-    if (!mPrepared && bufferedDurationUs > targetDurationUs && downloadMore) {
-        mPrepared = true;
-
-        ALOGV("prepared, buffered=%" PRId64 " > %" PRId64 "",
-                bufferedDurationUs, targetDurationUs);
-        sp<AMessage> msg = mNotify->dup();
-        msg->setInt32("what", kWhatTemporarilyDoneFetching);
-        msg->post();
-    }
+    downloadMore = (bufferedDurationUs < kMinBufferedDurationUs);
 
     if ((finalResult == OK && downloadMore) || mCheckSyncMask != 0) {
         ALOGV("monitoring, buffered=%" PRId64 " < %" PRId64 "",
-                bufferedDurationUs, durationToBufferUs);
+                bufferedDurationUs, kMinBufferedDurationUs);
         // delay the next download slightly; hopefully this gives other concurrent fetchers
         // a better chance to run.
         // onDownloadNext();
@@ -716,16 +698,12 @@ void PlaylistFetcher::onMonitorQueue() {
     } else {
         // Nothing to do yet, try again in a second.
 
-        sp<AMessage> msg = mNotify->dup();
-        msg->setInt32("what", kWhatTemporarilyDoneFetching);
-        msg->post();
+        ALOGV("pausing for %" PRId64 ", buffered=%" PRId64 "", kMaxMonitorDelayUs,
+            bufferedDurationUs);
 
-        int64_t delayUs = mPrepared ? kMaxMonitorDelayUs : targetDurationUs / 2;
-        ALOGV("pausing for %" PRId64 ", buffered=%" PRId64 " > %" PRId64 "",
-                delayUs, bufferedDurationUs, durationToBufferUs);
         // :TRICKY: need to enforce minimum delay because the delay to
         // refresh the playlist will become 0
-        postMonitorQueue(delayUs, mPrepared ? targetDurationUs * 2 : 0);
+        postMonitorQueue(kMaxMonitorDelayUs, targetDurationUs * 2);
     }
 }
 
@@ -1192,6 +1170,13 @@ void PlaylistFetcher::onDownloadNext() {
 
     mStartup = false;
     ++mSeqNumber;
+
+    if (!mPrepared) {
+        mPrepared = true;
+        sp<AMessage> msg = mNotify->dup();
+        msg->setInt32("what", kWhatTemporarilyDoneFetching);
+        msg->post();
+    }
 
     postMonitorQueue();
 }
