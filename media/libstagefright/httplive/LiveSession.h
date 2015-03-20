@@ -104,6 +104,7 @@ private:
         kWhatConnect                    = 'conn',
         kWhatDisconnect                 = 'disc',
         kWhatSeek                       = 'seek',
+        kWhatSelectTrack                = 'strk',
         kWhatFetcherNotify              = 'notf',
         kWhatChangeConfiguration        = 'chC0',
         kWhatChangeConfiguration2       = 'chC2',
@@ -208,7 +209,13 @@ private:
     int64_t mLastDequeuedTimeUs;
     int64_t mRealTimeBaseUs;
 
-    bool mReconfigurationInProgress;
+    enum ReconfigurationState {
+        NONE,
+        RECONFIGURATION_PENDING,
+        RECONFIGURATION_IN_PROGRESS,
+        DISCONNECTING
+    };
+    ReconfigurationState mReconfigurationState;
     bool mSwitchInProgress;
     uint32_t mDisconnectReplyID;
     uint32_t mSeekReplyID;
@@ -284,6 +291,8 @@ private:
     bool canSwitchUp();
     bool isReconfiguring();
     bool bandwidthChanged();
+
+    void onSelectTrack(const sp<AMessage> &msg);
 
     DISALLOW_EVIL_CONSTRUCTORS(LiveSession);
 };

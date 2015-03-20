@@ -69,7 +69,7 @@ LiveSession::LiveSession(
       mSubtitleGeneration(0),
       mLastDequeuedTimeUs(0ll),
       mRealTimeBaseUs(0ll),
-      mReconfigurationInProgress(false),
+      mReconfigurationState(NONE),
       mSwitchInProgress(false),
       mDisconnectReplyID(0),
       mSeekReplyID(0),
@@ -392,7 +392,7 @@ void LiveSession::onMessageReceived(const sp<AMessage> &msg) {
         {
             CHECK(msg->senderAwaitsResponse(&mDisconnectReplyID));
 
-            if (mReconfigurationInProgress) {
+            if (mReconfigurationState == RECONFIGURATION_IN_PROGRESS) {
                 break;
             }
 
@@ -412,6 +412,12 @@ void LiveSession::onMessageReceived(const sp<AMessage> &msg) {
             if (err != OK) {
                 msg->post(50000);
             }
+            break;
+        }
+
+        case kWhatSelectTrack:
+        {
+            onSelectTrack(msg);
             break;
         }
 
@@ -720,6 +726,7 @@ void LiveSession::finishDisconnect() {
     // Protect mPacketSources from a swapPacketSource race condition through disconnect.
     // (finishDisconnect, onFinishDisconnect2)
     cancelBandwidthSwitch();
+    mReconfigurationState = DISCONNECTING;
 
     for (size_t i = 0; i < mFetcherInfos.size(); ++i) {
         mFetcherInfos.valueAt(i).mFetcher->stopAsync();
@@ -1121,7 +1128,7 @@ status_t LiveSession::onSeek(const sp<AMessage> &msg) {
     int64_t timeUs;
     CHECK(msg->findInt64("timeUs", &timeUs));
 
-    if (!mReconfigurationInProgress) {
+    if (mReconfigurationState == NONE || mReconfigurationState == RECONFIGURATION_PENDING) {
         changeConfiguration(timeUs, mCurBandwidthIndex);
         return OK;
     } else {
@@ -1177,7 +1184,7 @@ status_t LiveSession::selectTrack(size_t index, bool select) {
     ++mSubtitleGeneration;
     status_t err = mPlaylist->selectTrack(index, select);
     if (err == OK) {
-        sp<AMessage> msg = new AMessage(kWhatChangeConfiguration, id());
+        sp<AMessage> msg = new AMessage(kWhatSelectTrack, id());
         msg->setInt32("bandwidthIndex", mCurBandwidthIndex);
         msg->setInt32("pickTrack", select);
         msg->post();
@@ -1206,14 +1213,24 @@ bool LiveSession::canSwitchUp() {
     return false;
 }
 
+void LiveSession::onSelectTrack(const sp<AMessage> &msg) {
+    if (mReconfigurationState == NONE) {
+        int32_t pickTrack = 0;
+        msg->findInt32("pickTrack", &pickTrack);
+        changeConfiguration(-1ll /* timeUs */, mCurBandwidthIndex, pickTrack);
+    } else if (mReconfigurationState != RECONFIGURATION_PENDING) {
+        msg->post(1000000ll); // retry in 1 sec
+    }
+}
+
 void LiveSession::changeConfiguration(
         int64_t timeUs, size_t bandwidthIndex, bool pickTrack) {
     // Protect mPacketSources from a swapPacketSource race condition through reconfiguration.
     // (changeConfiguration, onChangeConfiguration2, onChangeConfiguration3).
     cancelBandwidthSwitch();
 
-    CHECK(!mReconfigurationInProgress);
-    mReconfigurationInProgress = true;
+    CHECK_NE(mReconfigurationState, RECONFIGURATION_IN_PROGRESS);
+    mReconfigurationState = RECONFIGURATION_IN_PROGRESS;
 
     mOldFetcherBandwidthIndex = mCurBandwidthIndex;
     mCurBandwidthIndex = bandwidthIndex;
@@ -1301,13 +1318,11 @@ void LiveSession::changeConfiguration(
 }
 
 void LiveSession::onChangeConfiguration(const sp<AMessage> &msg) {
-    if (!mReconfigurationInProgress) {
+    if (mReconfigurationState == RECONFIGURATION_PENDING) {
         int32_t pickTrack = 0, bandwidthIndex = mCurBandwidthIndex;
         msg->findInt32("pickTrack", &pickTrack);
         msg->findInt32("bandwidthIndex", &bandwidthIndex);
         changeConfiguration(-1ll /* timeUs */, bandwidthIndex, pickTrack);
-    } else {
-        msg->post(1000000ll); // retry in 1 sec
     }
 }
 
@@ -1563,7 +1578,7 @@ void LiveSession::onChangeConfiguration3(const sp<AMessage> &msg) {
     // has completed.
 
     ALOGV("XXX configuration change completed.");
-    mReconfigurationInProgress = false;
+    mReconfigurationState = NONE;
     if (switching) {
         mSwitchInProgress = true;
     } else {
@@ -1674,7 +1689,7 @@ void LiveSession::cancelBandwidthSwitch() {
 }
 
 bool LiveSession::canSwitchBandwidthTo(size_t bandwidthIndex) {
-    if (mReconfigurationInProgress || mSwitchInProgress) {
+    if (mReconfigurationState != NONE || mSwitchInProgress) {
         return false;
     }
 
@@ -1716,7 +1731,7 @@ void LiveSession::postPrepared(status_t err) {
 }
 
 bool LiveSession::isReconfiguring() {
-    return mReconfigurationInProgress;
+    return mReconfigurationState != NONE;
 }
 
 bool LiveSession::bandwidthChanged() {
@@ -1725,6 +1740,7 @@ bool LiveSession::bandwidthChanged() {
         sp<AMessage> msg = new AMessage(kWhatChangeConfiguration, id());
         msg->setInt32("bandwidthIndex", bandwidthIndex);
         msg->post();
+        mReconfigurationState = RECONFIGURATION_PENDING;
         return true;
     }
     return false;
