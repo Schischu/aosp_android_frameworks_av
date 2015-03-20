@@ -88,10 +88,7 @@ struct LiveSession : public AHandler {
     };
 
     // create a format-change discontinuity
-    //
-    // swap:
-    //   whether is format-change discontinuity should trigger a buffer swap
-    sp<ABuffer> createFormatChangeBuffer(bool swap = true);
+    sp<ABuffer> createFormatChangeBuffer();
 protected:
     virtual ~LiveSession();
 
@@ -110,7 +107,6 @@ private:
         kWhatChangeConfiguration2       = 'chC2',
         kWhatChangeConfiguration3       = 'chC3',
         kWhatFinishDisconnect2          = 'fin2',
-        kWhatSwapped                    = 'swap',
     };
 
     static const size_t kBandwidthHistoryBytes;
@@ -185,19 +181,8 @@ private:
     // we don't want to immediately overwrite the original value.
     uint32_t mNewStreamMask;
 
-    // mSwapMask: streams that have started to playback content in the new variant playlist;
-    // we use this to track reconfiguration progress.
-    uint32_t mSwapMask;
-
     KeyedVector<StreamType, sp<AnotherPacketSource> > mDiscontinuities;
     KeyedVector<StreamType, sp<AnotherPacketSource> > mPacketSources;
-    // A second set of packet sources that buffer content for the variant we're switching to.
-    KeyedVector<StreamType, sp<AnotherPacketSource> > mPacketSources2;
-
-    // A mutex used to serialize two sets of events:
-    // * the swapping of packet sources in dequeueAccessUnit on the player thread, AND
-    // * a forced bandwidth switch termination in cancelSwitch on the live looper.
-    Mutex mSwapMutex;
 
     int32_t mSwitchGeneration;
     int32_t mSubtitleGeneration;
@@ -272,23 +257,17 @@ private:
     void onChangeConfiguration(const sp<AMessage> &msg);
     void onChangeConfiguration2(const sp<AMessage> &msg);
     void onChangeConfiguration3(const sp<AMessage> &msg);
-    void onSwapped(const sp<AMessage> &msg);
+
     void tryToFinishBandwidthSwitch();
 
-    // cancelBandwidthSwitch is atomic wrt swapPacketSource; call it to prevent packet sources
-    // from being swapped out on stale discontinuities while manipulating
-    // mPacketSources/mPacketSources2.
     void cancelBandwidthSwitch();
 
-    bool canSwitchBandwidthTo(size_t bandwidthIndex);
     void getBandwidths(unsigned long &oldBandwidth, unsigned long &newBandwidth);
 
     void finishDisconnect();
 
     void postPrepared(status_t err);
 
-    void swapPacketSource(StreamType stream);
-    bool canSwitchUp();
     bool isReconfiguring();
     bool bandwidthChanged();
 

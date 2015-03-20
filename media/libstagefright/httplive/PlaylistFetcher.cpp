@@ -1584,7 +1584,16 @@ status_t PlaylistFetcher::extractAndQueueAccessUnits(
     sp<AnotherPacketSource> packetSource =
         mPacketSources.valueFor(LiveSession::STREAMTYPE_AUDIO);
 
-    if (packetSource->getFormat() == NULL && buffer->size() >= 7) {
+    sp<MetaData> meta;
+    sp<AMessage> latestMeta(packetSource->getLatestEnqueuedMeta());
+    if (latestMeta != NULL) {
+        sp<RefBase> object;
+        if (latestMeta->findObject("format", &object)) {
+            meta = static_cast<MetaData*>(object.get());
+        }
+    }
+
+    if ((mStartup || meta == NULL) && buffer->size() >= 7) {
         ABitReader bits(buffer->data(), buffer->size());
 
         // adts_fixed_header
@@ -1601,17 +1610,15 @@ status_t PlaylistFetcher::extractAndQueueAccessUnits(
         CHECK_NE(channel_configuration, 0u);
         bits.skipBits(2);  // original_copy, home
 
-        sp<MetaData> meta = MakeAACCodecSpecificData(
+        meta = MakeAACCodecSpecificData(
                 profile, sampling_freq_index, channel_configuration);
 
         meta->setInt32(kKeyIsADTS, true);
-
-        packetSource->setFormat(meta);
     }
 
     int64_t numSamples = 0ll;
     int32_t sampleRate;
-    CHECK(packetSource->getFormat()->findInt32(kKeySampleRate, &sampleRate));
+    CHECK(meta->findInt32(kKeySampleRate, &sampleRate));
 
     int64_t timeUs = (PTS * 100ll) / 9ll;
     if (!mFirstPTSValid) {
@@ -1709,7 +1716,10 @@ status_t PlaylistFetcher::extractAndQueueAccessUnits(
         memcpy(unit->data(), adtsHeader, aac_frame_length);
 
         unit->meta()->setInt64("timeUs", unitTimeUs);
-        setAccessUnitProperties(unit, packetSource);
+        unit->meta()->setObject("format", meta);
+        unit->meta()->setInt32("discontinuitySeq", mDiscontinuitySeq);
+        unit->meta()->setInt64("segmentStartTimeUs", getSegmentStartTimeUs(mSeqNumber));
+        unit->meta()->setInt64("fetcherStartTimeUs", mFetcherStartTimeUs);
         packetSource->queueAccessUnit(unit);
     }
 
