@@ -79,7 +79,8 @@ PlaylistFetcher::PlaylistFetcher(
       mRefreshState(INITIAL_MINIMUM_RELOAD_DELAY),
       mFirstPTSValid(false),
       mAbsoluteTimeAnchorUs(0ll),
-      mVideoBuffer(new AnotherPacketSource(NULL)) {
+      mVideoBuffer(new AnotherPacketSource(NULL)),
+      mCheckBandwidth(false) {
     memset(mPlaylistHash, 0, sizeof(mPlaylistHash));
     mStartTimeUsNotify->setInt32("what", kWhatStartedAt);
     mStartTimeUsNotify->setInt32("streamMask", 0);
@@ -470,6 +471,8 @@ status_t PlaylistFetcher::onStart(const sp<AMessage> &msg) {
         mPacketSources.add(
                 LiveSession::STREAMTYPE_AUDIO,
                 static_cast<AnotherPacketSource *>(ptr));
+
+        mCheckBandwidth = true;
     }
 
     if (streamTypeMask & LiveSession::STREAMTYPE_VIDEO) {
@@ -479,6 +482,8 @@ status_t PlaylistFetcher::onStart(const sp<AMessage> &msg) {
         mPacketSources.add(
                 LiveSession::STREAMTYPE_VIDEO,
                 static_cast<AnotherPacketSource *>(ptr));
+
+        mCheckBandwidth = true;
     }
 
     if (streamTypeMask & LiveSession::STREAMTYPE_SUBTITLES) {
@@ -581,6 +586,7 @@ status_t PlaylistFetcher::onResumeUntil(const sp<AMessage> &msg) {
     }
 
     mStopParams = params;
+    mCheckBandwidth = false;
     postMonitorQueue();
 
     return OK;
@@ -740,6 +746,11 @@ void PlaylistFetcher::onDownloadNext() {
 
         lastSeqNumberInPlaylist =
                 firstSeqNumberInPlaylist + (int32_t)mPlaylist->size() - 1;
+
+        if (mSeqNumber <= lastSeqNumberInPlaylist && (mSession->isReconfiguring() ||
+                (!mStartup && mCheckBandwidth && mSession->bandwidthChanged()))) {
+            return;
+        }
 
         if (mDiscontinuitySeq < 0) {
             mDiscontinuitySeq = mPlaylist->getDiscontinuitySeq();

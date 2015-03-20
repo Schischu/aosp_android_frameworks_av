@@ -103,14 +103,11 @@ private:
         kWhatDisconnect                 = 'disc',
         kWhatSeek                       = 'seek',
         kWhatFetcherNotify              = 'notf',
-        kWhatCheckBandwidth             = 'bndw',
         kWhatChangeConfiguration        = 'chC0',
         kWhatChangeConfiguration2       = 'chC2',
         kWhatChangeConfiguration3       = 'chC3',
         kWhatFinishDisconnect2          = 'fin2',
         kWhatSwapped                    = 'swap',
-        kWhatCheckSwitchDown            = 'ckSD',
-        kWhatSwitchDown                 = 'sDwn',
     };
 
     static const size_t kBandwidthHistoryBytes;
@@ -190,7 +187,6 @@ private:
     // * a forced bandwidth switch termination in cancelSwitch on the live looper.
     Mutex mSwapMutex;
 
-    int32_t mCheckBandwidthGeneration;
     int32_t mSwitchGeneration;
     int32_t mSubtitleGeneration;
 
@@ -209,7 +205,6 @@ private:
     bool mFirstTimeUsValid;
     int64_t mFirstTimeUs;
     int64_t mLastSeekTimeUs;
-    sp<AMessage> mSwitchDownMonitor;
     KeyedVector<size_t, int64_t> mDiscontinuityAbsStartTimesUs;
     KeyedVector<size_t, int64_t> mDiscontinuityOffsetTimesUs;
 
@@ -256,12 +251,7 @@ private:
     void onChangeConfiguration2(const sp<AMessage> &msg);
     void onChangeConfiguration3(const sp<AMessage> &msg);
     void onSwapped(const sp<AMessage> &msg);
-    void onCheckSwitchDown();
-    void onSwitchDown();
     void tryToFinishBandwidthSwitch();
-
-    void scheduleCheckBandwidthEvent();
-    void cancelCheckBandwidthEvent();
 
     // cancelBandwidthSwitch is atomic wrt swapPacketSource; call it to prevent packet sources
     // from being swapped out on stale discontinuities while manipulating
@@ -269,7 +259,6 @@ private:
     void cancelBandwidthSwitch();
 
     bool canSwitchBandwidthTo(size_t bandwidthIndex);
-    void onCheckBandwidth(const sp<AMessage> &msg);
 
     void finishDisconnect();
 
@@ -277,6 +266,8 @@ private:
 
     void swapPacketSource(StreamType stream);
     bool canSwitchUp();
+    bool isReconfiguring();
+    bool bandwidthChanged();
 
     DISALLOW_EVIL_CONSTRUCTORS(LiveSession);
 };

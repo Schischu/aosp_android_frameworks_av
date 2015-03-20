@@ -64,7 +64,6 @@ LiveSession::LiveSession(
       mStreamMask(0),
       mNewStreamMask(0),
       mSwapMask(0),
-      mCheckBandwidthGeneration(0),
       mSwitchGeneration(0),
       mSubtitleGeneration(0),
       mLastDequeuedTimeUs(0ll),
@@ -569,19 +568,6 @@ void LiveSession::onMessageReceived(const sp<AMessage> &msg) {
             break;
         }
 
-        case kWhatCheckBandwidth:
-        {
-            int32_t generation;
-            CHECK(msg->findInt32("generation", &generation));
-
-            if (generation != mCheckBandwidthGeneration) {
-                break;
-            }
-
-            onCheckBandwidth(msg);
-            break;
-        }
-
         case kWhatChangeConfiguration:
         {
             onChangeConfiguration(msg);
@@ -609,18 +595,6 @@ void LiveSession::onMessageReceived(const sp<AMessage> &msg) {
         case kWhatSwapped:
         {
             onSwapped(msg);
-            break;
-        }
-
-        case kWhatCheckSwitchDown:
-        {
-            onCheckSwitchDown();
-            break;
-        }
-
-        case kWhatSwitchDown:
-        {
-            onSwitchDown();
             break;
         }
 
@@ -742,16 +716,9 @@ void LiveSession::onConnect(const sp<AMessage> &msg) {
 }
 
 void LiveSession::finishDisconnect() {
-    // No reconfiguration is currently pending, make sure none will trigger
-    // during disconnection either.
-    cancelCheckBandwidthEvent();
-
     // Protect mPacketSources from a swapPacketSource race condition through disconnect.
     // (finishDisconnect, onFinishDisconnect2)
     cancelBandwidthSwitch();
-
-    // cancel switch down monitor
-    mSwitchDownMonitor.clear();
 
     for (size_t i = 0; i < mFetcherInfos.size(); ++i) {
         mFetcherInfos.valueAt(i).mFetcher->stopAsync();
@@ -1564,9 +1531,6 @@ void LiveSession::onChangeConfiguration3(const sp<AMessage> &msg) {
     // All fetchers have now been started, the configuration change
     // has completed.
 
-    cancelCheckBandwidthEvent();
-    scheduleCheckBandwidthEvent();
-
     ALOGV("XXX configuration change completed.");
     mReconfigurationInProgress = false;
     if (switching) {
@@ -1623,49 +1587,6 @@ void LiveSession::onSwapped(const sp<AMessage> &msg) {
     tryToFinishBandwidthSwitch();
 }
 
-void LiveSession::onCheckSwitchDown() {
-    if (mSwitchDownMonitor == NULL) {
-        return;
-    }
-
-    if (mSwitchInProgress || mReconfigurationInProgress) {
-        ALOGV("Switch/Reconfig in progress, defer switch down");
-        mSwitchDownMonitor->post(1000000ll);
-        return;
-    }
-
-    for (size_t i = 0; i < kMaxStreams; ++i) {
-        int32_t targetDuration;
-        sp<AnotherPacketSource> packetSource = mPacketSources.valueFor(indexToType(i));
-        sp<AMessage> meta = packetSource->getLatestDequeuedMeta();
-
-        if (meta != NULL && meta->findInt32("targetDuration", &targetDuration) ) {
-            int64_t bufferedDurationUs = packetSource->getEstimatedDurationUs();
-            int64_t targetDurationUs = targetDuration * 1000000ll;
-
-            if (bufferedDurationUs < targetDurationUs / 3) {
-                (new AMessage(kWhatSwitchDown, id()))->post();
-                break;
-            }
-        }
-    }
-
-    mSwitchDownMonitor->post(1000000ll);
-}
-
-void LiveSession::onSwitchDown() {
-    if (mReconfigurationInProgress || mSwitchInProgress || mCurBandwidthIndex == 0) {
-        return;
-    }
-
-    ssize_t bandwidthIndex = getBandwidthIndex();
-    if (bandwidthIndex < mCurBandwidthIndex) {
-        changeConfiguration(-1, bandwidthIndex, false);
-        return;
-    }
-
-}
-
 // Mark switch done when:
 //   1. all old buffers are swapped out
 void LiveSession::tryToFinishBandwidthSwitch() {
@@ -1686,16 +1607,6 @@ void LiveSession::tryToFinishBandwidthSwitch() {
         mStreamMask = mNewStreamMask;
         mSwitchInProgress = false;
     }
-}
-
-void LiveSession::scheduleCheckBandwidthEvent() {
-    sp<AMessage> msg = new AMessage(kWhatCheckBandwidth, id());
-    msg->setInt32("generation", mCheckBandwidthGeneration);
-    msg->post(10000000ll);
-}
-
-void LiveSession::cancelCheckBandwidthEvent() {
-    ++mCheckBandwidthGeneration;
 }
 
 void LiveSession::cancelBandwidthSwitch() {
@@ -1745,18 +1656,6 @@ bool LiveSession::canSwitchBandwidthTo(size_t bandwidthIndex) {
     }
 }
 
-void LiveSession::onCheckBandwidth(const sp<AMessage> &msg) {
-    size_t bandwidthIndex = getBandwidthIndex();
-    if (canSwitchBandwidthTo(bandwidthIndex)) {
-        changeConfiguration(-1ll /* timeUs */, bandwidthIndex);
-    } else {
-        // Come back and check again 10 seconds later in case there is nothing to do now.
-        // If we DO change configuration, once that completes it'll schedule a new
-        // check bandwidth event with an incremented mCheckBandwidthGeneration.
-        msg->post(10000000ll);
-    }
-}
-
 void LiveSession::postPrepared(status_t err) {
     CHECK(mInPreparationPhase);
 
@@ -1772,8 +1671,21 @@ void LiveSession::postPrepared(status_t err) {
 
     mInPreparationPhase = false;
 
-    mSwitchDownMonitor = new AMessage(kWhatCheckSwitchDown, id());
-    mSwitchDownMonitor->post();
+}
+
+bool LiveSession::isReconfiguring() {
+    return mReconfigurationInProgress;
+}
+
+bool LiveSession::bandwidthChanged() {
+    size_t bandwidthIndex = getBandwidthIndex();
+    if (canSwitchBandwidthTo(bandwidthIndex)) {
+        sp<AMessage> msg = new AMessage(kWhatChangeConfiguration, id());
+        msg->setInt32("bandwidthIndex", bandwidthIndex);
+        msg->post();
+        return true;
+    }
+    return false;
 }
 
 }  // namespace android
