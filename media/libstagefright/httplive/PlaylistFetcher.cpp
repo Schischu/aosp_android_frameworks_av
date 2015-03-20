@@ -967,14 +967,25 @@ void PlaylistFetcher::onDownloadNext() {
     int64_t segmentDurationUs;
     CHECK(itemMeta->findInt64("durationUs", &segmentDurationUs));
     segmentDurationUs = mCheckBandwidth ? segmentDurationUs : -1;
-    int64_t startDownloading = 0;
+    int64_t startDownloading = ALooper::GetNowUs();
+    int64_t targetDownloadTimeUs = 0, startTime = 0, connectTimeUs = 0, abortTime = 0;
+    size_t alreadyDownloaded = 0;
+    int64_t targetDurationUs = getTargetDurationUs();
+    bool forceDrop = false, connectDone = false;
     do {
         bytesRead = mSession->fetchFile(
                 uri.c_str(), &buffer, range_offset, range_length, kDownloadBlockSize, &source,
                 NULL, segmentDurationUs);
 
-        if (startDownloading == 0) {
-            startDownloading = ALooper::GetNowUs();
+        int64_t now = ALooper::GetNowUs();
+
+        if (!connectDone) {
+            connectTimeUs = now - startDownloading;
+            startDownloading = now;
+            targetDownloadTimeUs = mSession->getTargetTime(segmentDurationUs);
+            startTime = now;
+            alreadyDownloaded = buffer->size();
+            connectDone = true;
         }
 
         if (bytesRead < 0) {
@@ -1052,6 +1063,51 @@ void PlaylistFetcher::onDownloadNext() {
         } else if (err != OK) {
             notifyError(err);
             return;
+        }
+
+        if (mSession->getCurrentbufferDuration() > targetDurationUs * 2) {
+            startTime = -1;
+            connectTimeUs = 0;
+        } else if (startTime < 0) {
+            startTime = now;
+            alreadyDownloaded = size;
+        }
+
+        if (targetDownloadTimeUs > 0 && startTime > 0) {
+            size_t dataDownloaded = size - alreadyDownloaded;
+            size_t capacity = buffer->capacity() - alreadyDownloaded;
+            int64_t readTimeUs = now - startTime;
+
+            double downloadedPercentage = (double)dataDownloaded / (double)capacity * 100;
+
+            double timePercentage = (double)readTimeUs / (double)targetDownloadTimeUs * 100;
+
+            if (dataDownloaded > 0 && timePercentage > downloadedPercentage) {
+                ALOGV("downloaded: %f, time: %f", downloadedPercentage, timePercentage);
+
+                if (abortTime == 0) {
+                    abortTime = now;
+                } else if (now > abortTime + 1000000) { // Give stream 1 second to recover
+                    if (mSession->abortCurrentRead(dataDownloaded, capacity,
+                            readTimeUs + connectTimeUs, segmentDurationUs,
+                            forceDrop, targetDownloadTimeUs)) {
+                        return;
+                    }
+
+                    // If forceDrop flag is set, the targetTime is updated with the estimated
+                    // download time for the remaining data. This means that the startTime needs to
+                    // be reset and the calculation must take the alreadyDownloaded data into
+                    // consideration.
+                    if (forceDrop) {
+                        startTime = now;
+                        connectTimeUs = 0;
+                        alreadyDownloaded = size;
+                    }
+                }
+            } else {
+                abortTime = 0;
+                forceDrop = false;
+            }
         }
 
     } while (bytesRead != 0);

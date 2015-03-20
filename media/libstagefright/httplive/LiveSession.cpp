@@ -1633,6 +1633,58 @@ bool LiveSession::bandwidthChanged() {
     return false;
 }
 
+bool LiveSession::abortCurrentRead(size_t bufferSize, size_t bufferCapacity, int64_t readTimeUs,
+        int64_t segmentDuration, bool &forceDrop, int64_t &targetTime) {
+
+    // Clear estimate list since it cannot be trusted anymore
+    mBandwidthEstimateItems.clear();
+
+    if (forceDrop) {
+        sp<AMessage> msg = new AMessage(kWhatChangeConfiguration, id());
+        msg->setInt32("bandwidthIndex", 0);
+        msg->post();
+
+        mReconfigurationState = RECONFIGURATION_PENDING;
+
+        return true;
+    }
+
+    addBandwidthMeasurement(bufferSize, readTimeUs, segmentDuration);
+
+    int32_t bandwidthBps;
+    estimateBandwidth(bandwidthBps);
+
+    size_t index = getBandwidthIndex();
+
+    mBandwidthEstimateItems.clear();
+
+    size_t remainingSize = bufferCapacity - bufferSize;
+
+    if (index != (size_t)mCurBandwidthIndex) {
+
+        size_t lowerSize = mBandwidthItems.itemAt(index).mBandwidth * segmentDuration / 8E6;
+
+        if (lowerSize < remainingSize) {
+            ALOGV("Quicker to switch to a lower bandwidth");
+            sp<AMessage> msg = new AMessage(kWhatChangeConfiguration, id());
+            msg->setInt32("bandwidthIndex", index);
+            msg->post();
+
+            mReconfigurationState = RECONFIGURATION_PENDING;
+
+            return true;
+        }
+    }
+
+    targetTime = (remainingSize * 8E6 / bandwidthBps) * 1.3;
+    // We will only allow the segment to abort once
+    forceDrop = true;
+
+    ALOGV("Quicker to proceed with the current bandwidth");
+
+    return false;
+}
+
 void LiveSession::addBandwidthMeasurement(size_t numBytes, int64_t delayUs,
         int32_t segmentDuration) {
     BandwidthEstimateItem entry;
@@ -1715,6 +1767,14 @@ int64_t LiveSession::getCurrentbufferDuration() const {
     }
 
     return minBufferedDurationUs;
+}
+
+int64_t LiveSession::getTargetTime(int64_t segmentDuration) {
+    if (!mInPreparationPhase && mCurBandwidthIndex > 0 && segmentDuration > 0) {
+        return segmentDuration * 1.3;
+    } else {
+        return -1;
+    }
 }
 
 }  // namespace android

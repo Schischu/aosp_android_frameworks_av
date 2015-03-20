@@ -273,6 +273,11 @@ private:
 
     void onSelectTrack(const sp<AMessage> &msg);
 
+    bool abortCurrentRead(size_t bufferSize, size_t bufferCapacity, int64_t delayUs,
+            int64_t segmentDuration, bool &forceDrop, int64_t &targetTime);
+
+    int64_t getTargetTime(int64_t segmentDuration);
+
     DISALLOW_EVIL_CONSTRUCTORS(LiveSession);
 };
 
