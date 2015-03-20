@@ -63,8 +63,10 @@ PlaylistFetcher::PlaylistFetcher(
       mSession(session),
       mURI(uri),
       mStreamTypeMask(0),
+      mCheckSyncMask(0),
       mStartTimeUs(-1ll),
       mSegmentStartTimeUs(-1ll),
+      mFetcherStartTimeUs(-1ll),
       mDiscontinuitySeq(-1ll),
       mStartTimeUsRelative(false),
       mLastPlaylistFetchTimeUs(-1ll),
@@ -515,6 +517,9 @@ status_t PlaylistFetcher::onStart(const sp<AMessage> &msg) {
         mStartup = true;
         mPrepared = false;
         mAdaptive = adaptive;
+        if (segmentStartTimeUs >= 0 && adaptive) {
+            mCheckSyncMask = streamTypeMask;
+        }
     }
 
     postMonitorQueue();
@@ -540,6 +545,7 @@ void PlaylistFetcher::onStop(const sp<AMessage> &msg) {
 
     mPacketSources.clear();
     mStreamTypeMask = 0;
+    mCheckSyncMask = 0;
 }
 
 // Resume until we have reached the boundary timestamps listed in `msg`; when
@@ -548,6 +554,13 @@ void PlaylistFetcher::onStop(const sp<AMessage> &msg) {
 status_t PlaylistFetcher::onResumeUntil(const sp<AMessage> &msg) {
     sp<AMessage> params;
     CHECK(msg->findMessage("params", &params));
+
+    int32_t discontinuitySeq;
+    if (params->findInt32("discontinuitySeq", &discontinuitySeq) &&
+            discontinuitySeq != mDiscontinuitySeq) {
+        stopAsync(/* clear = */ false);
+        return OK;
+    }
 
     bool stop = false;
     for (size_t i = 0; i < mPacketSources.size(); i++) {
@@ -572,9 +585,20 @@ status_t PlaylistFetcher::onResumeUntil(const sp<AMessage> &msg) {
             TRESPASS();
         }
 
+        int64_t stopTimeUs = 0;
+        // Check that a stop time is received for all sources otherwise
+        // set Audio stop time. Use case = Audio/Video to Audio only
+        if (mStreamTypeMask & LiveSession::STREAMTYPE_VIDEO &&
+                mStreamTypeMask & LiveSession::STREAMTYPE_AUDIO) {
+            if (!params->findInt64("timeUsVideo", &stopTimeUs)) {
+                params->findInt64("timeUsAudio", &stopTimeUs);
+                params->setInt64("timeUsVideo", stopTimeUs);
+            }
+        }
+
         // Don't resume if we would stop within a resume threshold.
         int32_t discontinuitySeq;
-        int64_t latestTimeUs = 0, stopTimeUs = 0;
+        int64_t latestTimeUs = 0;
         sp<AMessage> latestMeta = packetSource->getLatestEnqueuedMeta();
         if (latestMeta != NULL
                 && latestMeta->findInt32("discontinuitySeq", &discontinuitySeq)
@@ -680,7 +704,7 @@ void PlaylistFetcher::onMonitorQueue() {
         msg->post();
     }
 
-    if (finalResult == OK && downloadMore) {
+    if ((finalResult == OK && downloadMore) || mCheckSyncMask != 0) {
         ALOGV("monitoring, buffered=%" PRId64 " < %" PRId64 "",
                 bufferedDurationUs, durationToBufferUs);
         // delay the next download slightly; hopefully this gives other concurrent fetchers
@@ -782,6 +806,7 @@ void PlaylistFetcher::onDownloadNext() {
                 // and relative position inside a segment
                 mSeqNumber = getSeqNumberForTime(mStartTimeUs);
                 mStartTimeUs -= getSegmentStartTimeUs(mSeqNumber);
+                mDiscontinuitySeq = getDiscontinuityForSeqNumber(mSeqNumber);
             }
             mStartTimeUsRelative = true;
             ALOGV("Initial sequence number for time %" PRId64 " is %d from (%d .. %d)",
@@ -809,8 +834,9 @@ void PlaylistFetcher::onDownloadNext() {
             if (mSeqNumber > lastSeqNumberInPlaylist) {
                 mSeqNumber = lastSeqNumberInPlaylist;
             }
-            ALOGV("Initial sequence number for live event %d from (%d .. %d)",
-                    mSeqNumber, firstSeqNumberInPlaylist,
+
+            ALOGV("Initial sequence number for time %" PRId64 " is %d from (%d .. %d)",
+                    mStartTimeUs, mSeqNumber, firstSeqNumberInPlaylist,
                     lastSeqNumberInPlaylist);
         }
     }
@@ -899,8 +925,13 @@ void PlaylistFetcher::onDownloadNext() {
 
     int32_t val;
     if (itemMeta->findInt32("discontinuity", &val) && val != 0) {
-        mDiscontinuitySeq++;
-        discontinuity = true;
+        if (mDiscontinuitySeq < val) {
+            mDiscontinuitySeq = val;
+            discontinuity = true;
+            mCheckSyncMask = 0;
+            mStartTimeUs = 0;
+            mFetcherStartTimeUs = -1ll;
+        }
     }
 
     int64_t range_offset, range_length;
@@ -984,7 +1015,7 @@ void PlaylistFetcher::onDownloadNext() {
                 ALOGI("queueing discontinuity (explicit=%d)", discontinuity);
 
                 queueDiscontinuity(
-                        ATSParser::DISCONTINUITY_FORMATCHANGE,
+                        ATSParser::DISCONTINUITY_FORMATCHANGEONLY,
                         NULL /* extra */);
 
                 discontinuity = false;
@@ -1010,13 +1041,9 @@ void PlaylistFetcher::onDownloadNext() {
         }
 
         if (err == -EAGAIN) {
-            // starting sequence number too low/high
+            // Let the other fetcher resume first, the PostMonitorQueue will be
+            // sent from LiveSession.
             mTSParser.clear();
-            for (size_t i = 0; i < mPacketSources.size(); i++) {
-                sp<AnotherPacketSource> packetSource = mPacketSources.valueAt(i);
-                packetSource->clear();
-            }
-            postMonitorQueue();
             return;
         } else if (err == ERROR_OUT_OF_RANGE) {
             // reached stopping point
@@ -1050,6 +1077,12 @@ void PlaylistFetcher::onDownloadNext() {
                 ALOGW("MPEG2 Transport stream does not contain %s data.",
                       srcType == ATSParser::VIDEO ? "video" : "audio");
 
+                if (checkVideoLost()) {
+                    ALOGV("Need to force a sequence synchronization since video is lost");
+                    mTSParser.clear();
+                    return;
+                }
+
                 mStreamTypeMask &= ~streamType;
                 mPacketSources.removeItem(streamType);
             }
@@ -1080,8 +1113,8 @@ void PlaylistFetcher::onDownloadNext() {
     if (tsBuffer == NULL) {
         err = extractAndQueueAccessUnits(buffer, itemMeta);
         if (err == -EAGAIN) {
-            // starting sequence number too low/high
-            postMonitorQueue();
+            // Let the other fetcher resume first, the PostMonitorQueue will be
+            // sent from LiveSession.
             return;
         } else if (err == ERROR_OUT_OF_RANGE) {
             // reached stopping point
@@ -1101,37 +1134,10 @@ void PlaylistFetcher::onDownloadNext() {
                 segmentDurationUs);
     }
 
+    mStartup = false;
     ++mSeqNumber;
 
     postMonitorQueue();
-}
-
-int32_t PlaylistFetcher::getSeqNumberWithAnchorTime(int64_t anchorTimeUs) const {
-    int32_t firstSeqNumberInPlaylist, lastSeqNumberInPlaylist;
-    if (mPlaylist->meta() == NULL
-            || !mPlaylist->meta()->findInt32("media-sequence", &firstSeqNumberInPlaylist)) {
-        firstSeqNumberInPlaylist = 0;
-    }
-    lastSeqNumberInPlaylist = firstSeqNumberInPlaylist + mPlaylist->size() - 1;
-
-    int32_t index = mSeqNumber - firstSeqNumberInPlaylist - 1;
-    while (index >= 0 && anchorTimeUs > mStartTimeUs) {
-        sp<AMessage> itemMeta;
-        CHECK(mPlaylist->itemAt(index, NULL /* uri */, &itemMeta));
-
-        int64_t itemDurationUs;
-        CHECK(itemMeta->findInt64("durationUs", &itemDurationUs));
-
-        anchorTimeUs -= itemDurationUs;
-        --index;
-    }
-
-    int32_t newSeqNumber = firstSeqNumberInPlaylist + index + 1;
-    if (newSeqNumber <= lastSeqNumberInPlaylist) {
-        return newSeqNumber;
-    } else {
-        return lastSeqNumberInPlaylist;
-    }
 }
 
 int32_t PlaylistFetcher::getSeqNumberForDiscontinuity(size_t discontinuitySeq) const {
@@ -1151,8 +1157,8 @@ int32_t PlaylistFetcher::getSeqNumberForDiscontinuity(size_t discontinuitySeq) c
         sp<AMessage> itemMeta;
         CHECK(mPlaylist->itemAt( index, NULL /* uri */, &itemMeta));
 
-        int64_t discontinuity;
-        if (itemMeta->findInt64("discontinuity", &discontinuity)) {
+        int32_t discontinuity;
+        if (itemMeta->findInt32("discontinuity", &discontinuity)) {
             curDiscontinuitySeq++;
         }
 
@@ -1198,6 +1204,36 @@ int32_t PlaylistFetcher::getSeqNumberForTime(int64_t timeUs) const {
     return firstSeqNumberInPlaylist + index;
 }
 
+size_t PlaylistFetcher::getDiscontinuityForSeqNumber(size_t seq) const {
+    int32_t firstSeqNumberInPlaylist;
+    if (mPlaylist->meta() == NULL || !mPlaylist->meta()->findInt32(
+                "media-sequence", &firstSeqNumberInPlaylist)) {
+        firstSeqNumberInPlaylist = 0;
+    }
+
+    size_t index = 0;
+    int64_t segmentStartUs = 0;
+    size_t currectDiscontinuitySeq = mPlaylist->getDiscontinuitySeq();
+    while (index < mPlaylist->size()) {
+        sp<AMessage> itemMeta;
+        CHECK(mPlaylist->itemAt(
+                    index, NULL /* uri */, &itemMeta));
+
+        int32_t val;
+        if (itemMeta->findInt32("discontinuity", &val)) {
+            currectDiscontinuitySeq = val;
+        }
+
+        if (seq == index) {
+            break;
+        }
+
+        ++index;
+    }
+
+    return currectDiscontinuitySeq;
+}
+
 const sp<ABuffer> &PlaylistFetcher::setAccessUnitProperties(
         const sp<ABuffer> &accessUnit, const sp<AnotherPacketSource> &source, bool discard) {
     sp<MetaData> format = source->getFormat();
@@ -1217,6 +1253,7 @@ const sp<ABuffer> &PlaylistFetcher::setAccessUnitProperties(
 
     accessUnit->meta()->setInt32("discontinuitySeq", mDiscontinuitySeq);
     accessUnit->meta()->setInt64("segmentStartTimeUs", getSegmentStartTimeUs(mSeqNumber));
+    accessUnit->meta()->setInt64("fetcherStartTimeUs", mFetcherStartTimeUs);
     return accessUnit;
 }
 
@@ -1293,12 +1330,42 @@ status_t PlaylistFetcher::extractAndQueueAccessUnitsFromTs(const sp<ABuffer> &bu
         int64_t timeUs;
         sp<ABuffer> accessUnit;
         status_t finalResult;
+        // mStartup
+        //   mStartup is true until we have queued a packet for all the streams
+        //   we are fetching. We queue packets whose timestamps are greater than
+        //   mStartTimeUs.
+        // Synchronize
+        //   When a BW switch occurs will there be a check if the fetchers are in
+        //   sync with each other or if the sequence number needs to be changed
+        //   in either direction. This is calculating by fetching the first
+        //   timeUs in the segment and add the duration of the segment and then
+        //   see if the mStartTimeUs is included in the sequence or if the sequence
+        //   needs to be adjusted in either direction.
+        //   When the correct sequence is found then is the mStartTimeUs updated and
+        //   and a notify is sent to the other fetcher that will resume and if
+        //   needed download some extra data to the segment border. This fetcher
+        //   will wait until the other fetcher is finished with the resume and then
+        //   start the download.
         while (source->hasBufferAvailable(&finalResult)
                 && source->dequeueAccessUnit(&accessUnit) == OK) {
 
             CHECK(accessUnit->meta()->findInt64("timeUs", &timeUs));
 
             if (mStartup) {
+                if (mCheckSyncMask != 0) {
+                    source->clear();
+                    if (mCheckSyncMask & stream) {
+                        updateStartTime(timeUs, stream);
+                        mCheckSyncMask &= ~stream;
+                    }
+                    if (mCheckSyncMask != 0) {
+                        break;
+                    } else {
+                        synchronizeSeqNumber(getLowestStartTimeUs());
+                        return -EAGAIN;
+                    }
+                }
+
                 if (!mFirstPTSValid) {
                     mFirstTimeUs = timeUs;
                     mFirstPTSValid = true;
@@ -1330,71 +1397,9 @@ status_t PlaylistFetcher::extractAndQueueAccessUnitsFromTs(const sp<ABuffer> &bu
 
                     continue;
                 }
-            }
 
-            CHECK(accessUnit->meta()->findInt64("timeUs", &timeUs));
-            if (mStartTimeUsNotify != NULL && timeUs > mStartTimeUs) {
-                int32_t firstSeqNumberInPlaylist;
-                if (mPlaylist->meta() == NULL || !mPlaylist->meta()->findInt32(
-                            "media-sequence", &firstSeqNumberInPlaylist)) {
-                    firstSeqNumberInPlaylist = 0;
-                }
-
-                int32_t targetDurationSecs;
-                CHECK(mPlaylist->meta()->findInt32("target-duration", &targetDurationSecs));
-                int64_t targetDurationUs = targetDurationSecs * 1000000ll;
-                // mStartup
-                //   mStartup is true until we have queued a packet for all the streams
-                //   we are fetching. We queue packets whose timestamps are greater than
-                //   mStartTimeUs.
-                // mSegmentStartTimeUs >= 0
-                //   mSegmentStartTimeUs is non-negative when adapting or switching tracks
-                // mSeqNumber > firstSeqNumberInPlaylist
-                //   don't decrement mSeqNumber if it already points to the 1st segment
-                // timeUs - mStartTimeUs > targetDurationUs:
-                //   This and the 2 above conditions should only happen when adapting in a live
-                //   stream; the old fetcher has already fetched to mStartTimeUs; the new fetcher
-                //   would start fetching after timeUs, which should be greater than mStartTimeUs;
-                //   the old fetcher would then continue fetching data until timeUs. We don't want
-                //   timeUs to be too far ahead of mStartTimeUs because we want the old fetcher to
-                //   stop as early as possible. The definition of being "too far ahead" is
-                //   arbitrary; here we use targetDurationUs as threshold.
-                if (mStartup && mSegmentStartTimeUs >= 0
-                        && mSeqNumber > firstSeqNumberInPlaylist
-                        && timeUs - mStartTimeUs > targetDurationUs) {
-                    // we just guessed a starting timestamp that is too high when adapting in a
-                    // live stream; re-adjust based on the actual timestamp extracted from the
-                    // media segment; if we didn't move backward after the re-adjustment
-                    // (newSeqNumber), start at least 1 segment prior.
-                    int32_t newSeqNumber = getSeqNumberWithAnchorTime(timeUs);
-                    if (newSeqNumber >= mSeqNumber) {
-                        --mSeqNumber;
-                    } else {
-                        mSeqNumber = newSeqNumber;
-                    }
-                    mStartTimeUsNotify = mNotify->dup();
-                    mStartTimeUsNotify->setInt32("what", kWhatStartedAt);
-                    return -EAGAIN;
-                }
-
-                int32_t seq;
-                if (!mStartTimeUsNotify->findInt32("discontinuitySeq", &seq)) {
-                    mStartTimeUsNotify->setInt32("discontinuitySeq", mDiscontinuitySeq);
-                }
-                int64_t startTimeUs;
-                if (!mStartTimeUsNotify->findInt64(key, &startTimeUs)) {
-                    mStartTimeUsNotify->setInt64(key, timeUs);
-
-                    uint32_t streamMask = 0;
-                    mStartTimeUsNotify->findInt32("streamMask", (int32_t *) &streamMask);
-                    streamMask |= mPacketSources.keyAt(i);
-                    mStartTimeUsNotify->setInt32("streamMask", streamMask);
-
-                    if (streamMask == mStreamTypeMask) {
-                        mStartup = false;
-                        mStartTimeUsNotify->post();
-                        mStartTimeUsNotify.clear();
-                    }
+                if (mStartTimeUsNotify != NULL) {
+                    sendNotify();
                 }
             }
 
@@ -1412,6 +1417,10 @@ status_t PlaylistFetcher::extractAndQueueAccessUnitsFromTs(const sp<ABuffer> &bu
                     mPacketSources.removeItemsAt(i);
                     break;
                 }
+            }
+
+            if (mFetcherStartTimeUs < 0) {
+                mFetcherStartTimeUs = timeUs;
             }
 
             // Note that we do NOT dequeue any discontinuities except for format change.
@@ -1494,6 +1503,7 @@ status_t PlaylistFetcher::extractAndQueueAccessUnits(
         buffer->meta()->setInt64("timeUs", getSegmentStartTimeUs(mSeqNumber));
         buffer->meta()->setInt64("durationUs", durationUs);
         buffer->meta()->setInt64("segmentStartTimeUs", getSegmentStartTimeUs(mSeqNumber));
+        buffer->meta()->setInt64("fetcherStartTimeUs", mFetcherStartTimeUs);
         buffer->meta()->setInt32("discontinuitySeq", mDiscontinuitySeq);
         buffer->meta()->setInt32("subtitleGeneration", mSubtitleGeneration);
 
@@ -1640,6 +1650,26 @@ status_t PlaylistFetcher::extractAndQueueAccessUnits(
         numSamples += 1024;
 
         if (mStartup) {
+            if (mCheckSyncMask != 0) {
+                mCheckSyncMask = 0;
+                updateStartTime(unitTimeUs, LiveSession::STREAMTYPE_AUDIO);
+                if (fetcherContainsVideo()) {
+                    sp<AnotherPacketSource> videoSource =
+                            mPacketSources.valueFor(LiveSession::STREAMTYPE_VIDEO);
+                    if (videoSource != NULL) {
+                        updateStartTime(unitTimeUs, LiveSession::STREAMTYPE_VIDEO);
+                    }
+                }
+                synchronizeSeqNumber(unitTimeUs);
+
+                if (mStreamTypeMask & LiveSession::STREAMTYPE_VIDEO) {
+                    mStreamTypeMask &= ~LiveSession::STREAMTYPE_VIDEO;
+                    mPacketSources.removeItem(LiveSession::STREAMTYPE_VIDEO);
+                }
+
+                return -EAGAIN;
+            }
+
             int64_t startTimeUs = unitTimeUs;
             if (mStartTimeUsRelative) {
                 startTimeUs -= mFirstTimeUs;
@@ -1652,28 +1682,7 @@ status_t PlaylistFetcher::extractAndQueueAccessUnits(
             }
 
             if (mStartTimeUsNotify != NULL) {
-                int32_t targetDurationSecs;
-                CHECK(mPlaylist->meta()->findInt32("target-duration", &targetDurationSecs));
-                int64_t targetDurationUs = targetDurationSecs * 1000000ll;
-
-                // Duplicated logic from how we handle .ts playlists.
-                if (mStartup && mSegmentStartTimeUs >= 0
-                        && timeUs - mStartTimeUs > targetDurationUs) {
-                    int32_t newSeqNumber = getSeqNumberWithAnchorTime(timeUs);
-                    if (newSeqNumber >= mSeqNumber) {
-                        --mSeqNumber;
-                    } else {
-                        mSeqNumber = newSeqNumber;
-                    }
-                    return -EAGAIN;
-                }
-
-                mStartTimeUsNotify->setInt64("timeUsAudio", timeUs);
-                mStartTimeUsNotify->setInt32("discontinuitySeq", mDiscontinuitySeq);
-                mStartTimeUsNotify->setInt32("streamMask", LiveSession::STREAMTYPE_AUDIO);
-                mStartTimeUsNotify->post();
-                mStartTimeUsNotify.clear();
-                mStartup = false;
+                sendNotify();
             }
         }
 
@@ -1690,6 +1699,10 @@ status_t PlaylistFetcher::extractAndQueueAccessUnits(
                 mPacketSources.clear();
                 return ERROR_OUT_OF_RANGE;
             }
+        }
+
+        if (mFetcherStartTimeUs < 0) {
+            mFetcherStartTimeUs = unitTimeUs;
         }
 
         sp<ABuffer> unit = new ABuffer(aac_frame_length);
@@ -1749,6 +1762,253 @@ int64_t PlaylistFetcher::resumeThreshold(const sp<AMessage> &msg) {
     }
 
     return 500000ll;
+}
+
+void PlaylistFetcher::synchronizeSeqNumber(int64_t timeUs) {
+    int64_t newSequenceStartTimeUs = 0;
+    int32_t oldSeqNumber = mSeqNumber;
+    int32_t newSeqNumber = getSynchronizedSeqValues(timeUs, newSequenceStartTimeUs);
+
+    if (newSeqNumber == -1) {
+        if (!mPlaylist->isComplete()) {
+            postMonitorQueue(kMaxMonitorDelayUs);
+            mCheckSyncMask = mStreamTypeMask;
+        } else {
+            notifyError(ERROR_END_OF_STREAM);
+        }
+        return;
+    }
+
+    bool adjustStartTime = false;
+    if (newSeqNumber != mSeqNumber) {
+        mSeqNumber = newSeqNumber;
+        adjustStartTime = true;
+    }
+
+    if (adjustSequenceNumberIfNeeded(newSequenceStartTimeUs)) {
+        if (oldSeqNumber == mSeqNumber) {
+            adjustStartTime = false;
+        } else {
+            size_t discontinuitySeq = getDiscontinuityForSeqNumber(mSeqNumber);
+            if ((ssize_t)discontinuitySeq != mDiscontinuitySeq) {
+                mStartTimeUsNotify->setInt32("discontinuitySeq", discontinuitySeq);
+                sendNotify();
+                return;
+            }
+            adjustStartTime = true;
+        }
+    }
+
+    if (adjustStartTime) {
+        for (size_t i = mPacketSources.size(); i-- > 0;) {
+            sp < AnotherPacketSource > packetSource = mPacketSources.valueAt(i);
+            const LiveSession::StreamType stream = mPacketSources.keyAt(i);
+            updateStartTime(mStartTimeUs, stream);
+        }
+    }
+
+    sendNotify();
+}
+
+// Will find the seqNumber that contains the requested time or any of the borders
+// are hit.
+int32_t PlaylistFetcher::getSynchronizedSeqValues(int64_t firstTimeUs,
+        int64_t &sequenceStartTimeUs) {
+
+    int32_t seqNumber = mSeqNumber;
+
+    // The synchronization is only done if a start time is
+    // set, ie synchronization is not used on initial setup
+    if (mStartTimeUs > 0) {
+
+        int32_t firstSeqNumberInPlaylist;
+        int32_t lastSeqNumberInPlaylist;
+        getPlaylistBorders(firstSeqNumberInPlaylist, lastSeqNumberInPlaylist);
+
+        bool correctSeqFound = false;
+        int64_t accumulatedDurationUs = 0;
+        int64_t segmentDurationUs = 0;
+
+        while (!correctSeqFound) {
+            segmentDurationUs = getSegmentDuration(seqNumber);
+            sequenceStartTimeUs = firstTimeUs + accumulatedDurationUs;
+            if (mStartTimeUs > sequenceStartTimeUs + segmentDurationUs) {
+                seqNumber++;
+                if (seqNumber > lastSeqNumberInPlaylist) {
+                    return -1;
+                }
+                accumulatedDurationUs = accumulatedDurationUs + segmentDurationUs;
+            } else if (mStartTimeUs < sequenceStartTimeUs) {
+                seqNumber--;
+                if (seqNumber < firstSeqNumberInPlaylist) {
+                    seqNumber = firstSeqNumberInPlaylist;
+                    correctSeqFound = true;
+                }
+                segmentDurationUs = getSegmentDuration(seqNumber);
+                accumulatedDurationUs = accumulatedDurationUs - segmentDurationUs;
+            } else {
+                correctSeqFound = true;
+            }
+        }
+    }
+
+    return seqNumber;
+}
+
+// Checks if it is quicker to download on old fetcher, this is only used
+// for BW decrease where it is needed to be fast. On BW increase is
+// it wanted to increase the quality as soon as possible but old fetcher
+// might continue to download if it is only a few access units that needs
+// to be downloaded.
+bool PlaylistFetcher::adjustSequenceNumberIfNeeded(int64_t startTimeUs) {
+    int32_t firstSeqNumberInPlaylist;
+    int32_t lastSeqNumberInPlaylist;
+    getPlaylistBorders(firstSeqNumberInPlaylist, lastSeqNumberInPlaylist);
+
+    // Need to calculate the lastTimeUs and mStartTimeUs
+    if (startTimeUs < 0) {
+        startTimeUs = 0;
+    }
+    int64_t lastTimeUs = startTimeUs + getSegmentDuration(mSeqNumber);
+
+    // Fetch bandwidth information for old and new fetcher
+    unsigned long oldBandwidth = 0, newBandwidth = 0;
+    mSession->getBandwidths(oldBandwidth, newBandwidth);
+
+    // Need to download in old fetcher
+    int64_t timeToSegmentEndUs = lastTimeUs - mStartTimeUs;
+
+    // Calculate download size for old and new fetcher
+    int64_t segmentDurationUs = getSegmentDuration(mSeqNumber);
+    size_t downloadNewFetcherSize = newBandwidth * segmentDurationUs / 8E6;
+    size_t downloadOldFetcherSize = oldBandwidth * timeToSegmentEndUs / 8E6;
+
+    if (newBandwidth < oldBandwidth) {
+        // Check if it is faster to download the complete new segment in
+        // the new fetcher or download upto new segment border in old
+        // fetcher. If it is faster to download more data on the old
+        // fetcher, then step the sequence number and update the
+        // start time.
+
+        if (downloadOldFetcherSize < downloadNewFetcherSize
+                && mSeqNumber < lastSeqNumberInPlaylist) {
+
+            mStartTimeUs = lastTimeUs;
+            mSeqNumber++;
+            ALOGV("Faster to download data to segment end in old fetcher, step sequence to %d",
+                mSeqNumber);
+            return true;
+        }
+    } else {
+        // Check if old fetcher only needs to download data close to border
+        // If that is the case, let the old fetcher load the data to the segment border.
+        if (timeToSegmentEndUs < segmentDurationUs * 0.2) {
+            if (mSeqNumber < lastSeqNumberInPlaylist) {
+                mStartTimeUs = lastTimeUs;
+                mSeqNumber++;
+                ALOGV("Close to border, download data to segment end in old fetcher,"
+                    " step sequence to %d", mSeqNumber);
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void PlaylistFetcher::sendNotify() {
+    if (mStartTimeUsNotify != NULL) {
+
+        int32_t seq;
+        if (!mStartTimeUsNotify->findInt32("discontinuitySeq", &seq)) {
+            mStartTimeUsNotify->setInt32("discontinuitySeq", mDiscontinuitySeq);
+        }
+
+        mStartTimeUsNotify->post();
+        mStartTimeUsNotify.clear();
+    }
+}
+
+void PlaylistFetcher::updateStartTime(int64_t firstTimeUs, const LiveSession::StreamType stream) {
+    const char *key;
+    switch (stream) {
+    case LiveSession::STREAMTYPE_VIDEO:
+        key = "timeUsVideo";
+        break;
+
+    case LiveSession::STREAMTYPE_AUDIO:
+        key = "timeUsAudio";
+        break;
+
+    case LiveSession::STREAMTYPE_SUBTITLES: {
+        key = "timeUsSubtitle";
+        break;
+    }
+
+    default:
+        TRESPASS();
+    }
+    mStartTimeUsNotify->setInt64(key, firstTimeUs);
+}
+
+int64_t PlaylistFetcher::getSegmentDuration(int32_t seqNumber) {
+    int32_t firstSeqNumberInPlaylist;
+    int32_t lastSeqNumberInPlaylist;
+    getPlaylistBorders(firstSeqNumberInPlaylist, lastSeqNumberInPlaylist);
+
+    // Get the segment duration
+    AString uri;
+    sp<AMessage> itemMeta;
+    int64_t segmentDurationUs;
+    CHECK(mPlaylist->itemAt(seqNumber - firstSeqNumberInPlaylist, &uri,
+            &itemMeta));
+    CHECK(itemMeta->findInt64("durationUs", &segmentDurationUs));
+
+    return segmentDurationUs;
+}
+
+void PlaylistFetcher::getPlaylistBorders(int32_t &first, int32_t &last) {
+    if (mPlaylist->meta() == NULL
+            || !mPlaylist->meta()->findInt32("media-sequence",
+                    &first)) {
+        first = 0;
+    }
+
+    last = first + (int32_t) mPlaylist->size() - 1;
+}
+
+bool PlaylistFetcher::checkVideoLost() {
+    if (mCheckSyncMask & LiveSession::STREAMTYPE_VIDEO && mStartTimeUs > 0) {
+        mCheckSyncMask = 0;
+        int64_t timeUs = 0;
+        mStartTimeUsNotify->findInt64("timeUsAudio", &timeUs);
+
+        synchronizeSeqNumber(timeUs);
+        return true;
+    }
+    return false;
+}
+
+bool PlaylistFetcher::fetcherContainsVideo() {
+    for (size_t i = 0; i < mPacketSources.size(); i++) {
+        if (mPacketSources.keyAt(i) == LiveSession::STREAMTYPE_VIDEO) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int64_t PlaylistFetcher::getLowestStartTimeUs() {
+    int64_t audioStartTimeUs = 0;
+    int64_t videoStartTimeUs = 0;
+    mStartTimeUsNotify->findInt64("timeUsAudio", &audioStartTimeUs);
+    mStartTimeUsNotify->findInt64("timeUsVideo", &videoStartTimeUs);
+
+    if (audioStartTimeUs == 0) {
+        return videoStartTimeUs;
+    } else if (videoStartTimeUs == 0) {
+        return audioStartTimeUs;
+    }
+    return videoStartTimeUs < audioStartTimeUs ? videoStartTimeUs : audioStartTimeUs;
 }
 
 }  // namespace android

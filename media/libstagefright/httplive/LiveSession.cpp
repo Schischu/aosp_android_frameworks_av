@@ -61,6 +61,7 @@ LiveSession::LiveSession(
       mInPreparationPhase(true),
       mHTTPDataSource(new MediaHTTP(mHTTPService->makeHTTPConnection())),
       mCurBandwidthIndex(-1),
+      mOldFetcherBandwidthIndex(-1),
       mStreamMask(0),
       mNewStreamMask(0),
       mSwapMask(0),
@@ -100,7 +101,7 @@ LiveSession::~LiveSession() {
 
 sp<ABuffer> LiveSession::createFormatChangeBuffer(bool swap) {
     ABuffer *discontinuity = new ABuffer(0);
-    discontinuity->meta()->setInt32("discontinuity", ATSParser::DISCONTINUITY_FORMATCHANGE);
+    discontinuity->meta()->setInt32("discontinuity", ATSParser::DISCONTINUITY_FORMATCHANGEONLY);
     discontinuity->meta()->setInt32("swapPacketSource", swap);
     discontinuity->meta()->setInt32("switchGeneration", mSwitchGeneration);
     discontinuity->meta()->setInt64("timeUs", -1);
@@ -1214,6 +1215,7 @@ void LiveSession::changeConfiguration(
     CHECK(!mReconfigurationInProgress);
     mReconfigurationInProgress = true;
 
+    mOldFetcherBandwidthIndex = mCurBandwidthIndex;
     mCurBandwidthIndex = bandwidthIndex;
 
     ALOGV("changeConfiguration => timeUs:%" PRId64 " us, bwIndex:%zu, pickTrack:%d",
@@ -1463,11 +1465,12 @@ void LiveSession::onChangeConfiguration3(const sp<AMessage> &msg) {
 
         int64_t startTimeUs = -1;
         int64_t segmentStartTimeUs = -1ll;
+        int64_t fetcherStartTimeUs = -1ll;
         int32_t discontinuitySeq = -1;
         sp<AnotherPacketSource> sources[kMaxStreams];
 
         if (i == kSubtitleIndex) {
-            segmentStartTimeUs = latestMediaSegmentStartTimeUs();
+            segmentStartTimeUs = fetcherStartTimeUs = latestMediaSegmentStartTimeUs();
         }
 
         // TRICKY: looping from i as earlier streams are already removed from streamMask
@@ -1498,22 +1501,26 @@ void LiveSession::onChangeConfiguration3(const sp<AMessage> &msg) {
                     }
 
                     if (meta != NULL && !meta->findInt32("discontinuity", &type)) {
-                        int64_t tmpUs;
-                        int64_t tmpSegmentUs;
+                        int64_t tmpUs, tmpSegmentUs, tmpFetcherUs;
 
                         CHECK(meta->findInt64("timeUs", &tmpUs));
                         CHECK(meta->findInt64("segmentStartTimeUs", &tmpSegmentUs));
-                        if (startTimeUs < 0 || tmpSegmentUs < segmentStartTimeUs) {
-                            startTimeUs = tmpUs;
-                            segmentStartTimeUs = tmpSegmentUs;
-                        } else if (tmpSegmentUs == segmentStartTimeUs && tmpUs < startTimeUs) {
-                            startTimeUs = tmpUs;
-                        }
+                        CHECK(meta->findInt64("fetcherStartTimeUs", &tmpFetcherUs));
 
                         int32_t seq;
                         CHECK(meta->findInt32("discontinuitySeq", &seq));
-                        if (discontinuitySeq < 0 || seq < discontinuitySeq) {
+
+                        // Use latest start time if fetcher was started later.
+                        // Happens when switching from audio only to audio/video.
+                        if (startTimeUs < 0 || seq > discontinuitySeq ||
+                                (seq == discontinuitySeq && tmpFetcherUs > fetcherStartTimeUs)) {
+                            startTimeUs = tmpUs;
+                            segmentStartTimeUs = tmpSegmentUs;
+                            fetcherStartTimeUs = tmpFetcherUs;
                             discontinuitySeq = seq;
+                        } else if (seq == discontinuitySeq &&
+                                tmpFetcherUs == fetcherStartTimeUs && tmpUs < startTimeUs) {
+                            startTimeUs = tmpUs;
                         }
                     }
 
@@ -1630,6 +1637,10 @@ void LiveSession::tryToFinishBandwidthSwitch() {
         ALOGI("mSwitchInProgress = false");
         mStreamMask = mNewStreamMask;
         mSwitchInProgress = false;
+
+        for (size_t i = 0; i < mFetcherInfos.size(); ++i) {
+            mFetcherInfos.valueAt(i).mFetcher->postMonitorQueue();
+        }
     }
 }
 
@@ -1677,6 +1688,13 @@ bool LiveSession::canSwitchBandwidthTo(size_t bandwidthIndex) {
         return canSwitchUp();
     } else {
         return true;
+    }
+}
+
+void LiveSession::getBandwidths(unsigned long &oldBandwidth, unsigned long &newBandwidth) {
+    if (mOldFetcherBandwidthIndex > -1) {
+        oldBandwidth = mBandwidthItems.itemAt(mOldFetcherBandwidthIndex).mBandwidth;
+        newBandwidth = mBandwidthItems.itemAt(mCurBandwidthIndex).mBandwidth;
     }
 }
 

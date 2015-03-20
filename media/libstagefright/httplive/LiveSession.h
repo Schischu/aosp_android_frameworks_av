@@ -172,6 +172,7 @@ private:
     Vector<BandwidthItem> mBandwidthItems;
     Vector<BandwidthEstimateItem> mBandwidthEstimateItems;
     ssize_t mCurBandwidthIndex;
+    ssize_t mOldFetcherBandwidthIndex;
 
     sp<M3UParser> mPlaylist;
 
@@ -273,6 +274,7 @@ private:
     void cancelBandwidthSwitch();
 
     bool canSwitchBandwidthTo(size_t bandwidthIndex);
+    void getBandwidths(unsigned long &oldBandwidth, unsigned long &newBandwidth);
 
     void finishDisconnect();
 

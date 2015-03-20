@@ -251,6 +251,7 @@ M3UParser::M3UParser(
       mIsComplete(false),
       mIsEvent(false),
       mDiscontinuitySeq(0),
+      mDiscontinuityIndex(0),
       mSelectedIndex(-1) {
     mInitCheck = parse(data, size);
 }
@@ -581,7 +582,8 @@ status_t M3UParser::parse(const void *_data, size_t size) {
                 if (itemMeta == NULL) {
                     itemMeta = new AMessage;
                 }
-                itemMeta->setInt32("discontinuity", true);
+                mDiscontinuityIndex++;
+                itemMeta->setInt32("discontinuity", mDiscontinuitySeq + mDiscontinuityIndex);
             } else if (line.startsWith("#EXT-X-STREAM-INF")) {
                 if (mMeta != NULL) {
                     return ERROR_MALFORMED;
