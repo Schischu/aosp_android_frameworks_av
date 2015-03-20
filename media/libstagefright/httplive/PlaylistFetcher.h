@@ -71,6 +71,8 @@ struct PlaylistFetcher : public AHandler {
 
     void stopAsync(bool clear = true);
 
+    int64_t getTargetDurationUs();
+
     void resumeUntilAsync(const sp<AMessage> &params);
 
     uint32_t getStreamTypeMask() const {

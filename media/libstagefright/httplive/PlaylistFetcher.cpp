@@ -380,6 +380,15 @@ void PlaylistFetcher::stopAsync(bool clear) {
     msg->post();
 }
 
+int64_t PlaylistFetcher::getTargetDurationUs() {
+    if (mCheckBandwidth && mPlaylist != NULL) {
+        int32_t targetDurationSecs;
+        CHECK(mPlaylist->meta()->findInt32("target-duration", &targetDurationSecs));
+        return targetDurationSecs * 1000000ll;
+    }
+    return 0;
+}
+
 void PlaylistFetcher::resumeUntilAsync(const sp<AMessage> &params) {
     AMessage* msg = new AMessage(kWhatResumeUntil, id());
     msg->setMessage("params", params);
@@ -924,9 +933,18 @@ void PlaylistFetcher::onDownloadNext() {
     // block-wise download
     bool startup = mStartup;
     ssize_t bytesRead;
+    int64_t segmentDurationUs;
+    CHECK(itemMeta->findInt64("durationUs", &segmentDurationUs));
+    segmentDurationUs = mCheckBandwidth ? segmentDurationUs : -1;
+    int64_t startDownloading = 0;
     do {
         bytesRead = mSession->fetchFile(
-                uri.c_str(), &buffer, range_offset, range_length, kDownloadBlockSize, &source);
+                uri.c_str(), &buffer, range_offset, range_length, kDownloadBlockSize, &source,
+                NULL, segmentDurationUs);
+
+        if (startDownloading == 0) {
+            startDownloading = ALooper::GetNowUs();
+        }
 
         if (bytesRead < 0) {
             status_t err = bytesRead;
@@ -1075,6 +1093,12 @@ void PlaylistFetcher::onDownloadNext() {
     if (err != OK) {
         notifyError(err);
         return;
+    }
+
+    if (segmentDurationUs > 0) {
+        int64_t downloadTimeUs = ALooper::GetNowUs() - startDownloading;
+        mSession->addBandwidthMeasurement(buffer->size() - kDownloadBlockSize, downloadTimeUs,
+                segmentDurationUs);
     }
 
     ++mSeqNumber;

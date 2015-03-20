@@ -794,7 +794,7 @@ ssize_t LiveSession::fetchFile(
         int64_t range_offset, int64_t range_length,
         uint32_t block_size, /* download block size */
         sp<DataSource> *source, /* to return and reuse source */
-        String8 *actualUrl) {
+        String8 *actualUrl, int64_t segmentDuration) {
     off64_t size;
     sp<DataSource> temp_source;
     if (source == NULL) {
@@ -830,9 +830,22 @@ ssize_t LiveSession::fetchFile(
         }
     }
 
-    status_t getSizeErr = (*source)->getSize(&size);
-    if (getSizeErr != OK) {
-        size = 65536;
+    status_t getSizeErr = OK;
+    if (range_length > 0) {
+        size = range_length;
+    } else {
+        getSizeErr = (*source)->getSize(&size);
+
+        if (getSizeErr != OK) {
+            if (segmentDuration > 0 &&
+                    mBandwidthItems.size() != 0 &&
+                    mCurBandwidthIndex < (ssize_t) mBandwidthItems.size()) {
+                size = mBandwidthItems.itemAt(mCurBandwidthIndex).mBandwidth *
+                        segmentDuration / 8E6;
+            } else {
+                size = 65536;
+            }
+        }
     }
 
     sp<ABuffer> buffer = *out != NULL ? *out : new ABuffer(size);
@@ -980,10 +993,9 @@ size_t LiveSession::getBandwidthIndex() {
         }
     }
 
+    int32_t bandwidthBps;
     if (index < 0) {
-        int32_t bandwidthBps;
-        if (mHTTPDataSource != NULL
-                && mHTTPDataSource->estimateBandwidth(&bandwidthBps)) {
+        if (estimateBandwidth(bandwidthBps)) {
             ALOGV("bandwidth estimated at %.2f kbps", bandwidthBps / 1024.0f);
         } else {
             ALOGV("no bandwidth estimate.");
@@ -1002,23 +1014,35 @@ size_t LiveSession::getBandwidthIndex() {
             }
         }
 
-        // Pick the highest bandwidth stream below or equal to estimated bandwidth.
-
         index = mBandwidthItems.size() - 1;
-        while (index > 0) {
-            // consider only 80% of the available bandwidth, but if we are switching up,
-            // be even more conservative (70%) to avoid overestimating and immediately
-            // switching back.
-            size_t adjustedBandwidthBps = bandwidthBps;
-            if (index > mCurBandwidthIndex) {
-                adjustedBandwidthBps = adjustedBandwidthBps * 7 / 10;
-            } else {
-                adjustedBandwidthBps = adjustedBandwidthBps * 8 / 10;
-            }
-            if (mBandwidthItems.itemAt(index).mBandwidth <= adjustedBandwidthBps) {
+
+        int64_t targetDuration = 0;
+        for (size_t i = 0; i < mFetcherInfos.size(); ++i) {
+            targetDuration = mFetcherInfos.valueAt(i).mFetcher->getTargetDurationUs();
+            if (targetDuration > 0) {
                 break;
             }
-            --index;
+        }
+
+        int64_t currentBufferDuration = getCurrentbufferDuration();
+        while (index > 0) {
+            int64_t estimatedDownloadTimeUs =
+                    mBandwidthItems.itemAt(index).mBandwidth * targetDuration / bandwidthBps;
+
+            if (mBandwidthItems.itemAt(index).mBandwidth *
+                    (index > mCurBandwidthIndex ? 1.3 : 1) * 0.95 > (size_t)bandwidthBps ||
+                    currentBufferDuration < estimatedDownloadTimeUs) {
+                --index;
+            } else {
+                break;
+            }
+        }
+
+        if (index < mCurBandwidthIndex) {
+            // No need to downswitch if we have enough buffer
+            if (currentBufferDuration > targetDuration * 2) {
+                index = mCurBandwidthIndex;
+            }
         }
     }
 #elif 0
@@ -1686,6 +1710,90 @@ bool LiveSession::bandwidthChanged() {
         return true;
     }
     return false;
+}
+
+void LiveSession::addBandwidthMeasurement(size_t numBytes, int64_t delayUs,
+        int32_t segmentDuration) {
+    BandwidthEstimateItem entry;
+
+    entry.bytes = numBytes;
+    entry.fetchTime = delayUs;
+    entry.targetDuration = segmentDuration;
+    entry.clockTime = ALooper::GetNowUs();
+    mBandwidthEstimateItems.push_back(entry);
+
+    // Remove entries that exceed 61 sec in targetDuration
+    int32_t totTargetDuration = 0;
+    size_t i = mBandwidthEstimateItems.size();
+    while (i > 0) {
+        totTargetDuration += mBandwidthEstimateItems[--i].targetDuration;
+
+        if (totTargetDuration > 61000000) {
+            break;
+        }
+    }
+    while (i > 0 && mBandwidthEstimateItems.size() > 1) {
+        mBandwidthEstimateItems.erase(mBandwidthEstimateItems.begin());
+        i--;
+    }
+}
+
+bool LiveSession::estimateBandwidth(int32_t &bandwidth_bps) {
+
+    bandwidth_bps = 0;
+    if (mBandwidthEstimateItems.size() < 1) {
+        return false;
+    }
+
+    BandwidthEstimateItem* entry;
+    int64_t totWeighting = 0;
+    int64_t totbandwidth = 0;
+
+    for (size_t i = 0; i < mBandwidthEstimateItems.size(); ++i) {
+        entry = &mBandwidthEstimateItems.editItemAt(i);
+
+        int32_t weighting = (entry->clockTime - mBandwidthEstimateItems[0].clockTime) / 20000000;
+        if (weighting == 0) {
+            weighting = 1;
+        } else if (weighting > 20) {
+            weighting = 20;
+        }
+
+        totbandwidth += weighting * (double)entry->bytes * 8E6 / entry->fetchTime;
+
+        totWeighting += weighting;
+    }
+
+    // Consider only 95% of the available bandwidth usable.
+    bandwidth_bps = (totbandwidth / totWeighting) * 0.95;
+
+    return true;
+}
+
+int64_t LiveSession::getCurrentbufferDuration() const {
+    uint32_t streamTypeMask = 0;
+    for (size_t i = 0; i < mFetcherInfos.size(); ++i) {
+        streamTypeMask |= mFetcherInfos.valueAt(i).mFetcher->getStreamTypeMask();
+    }
+
+    status_t finalResult;
+    int64_t minBufferedDurationUs = 0;
+    if (streamTypeMask & STREAMTYPE_AUDIO) {
+        int64_t bufferedDurationUs =
+                mPacketSources.valueFor(STREAMTYPE_AUDIO)->getBufferedDurationUs(&finalResult);
+        if (minBufferedDurationUs == 0 || bufferedDurationUs < minBufferedDurationUs) {
+            minBufferedDurationUs = bufferedDurationUs;
+        }
+    }
+    if (streamTypeMask & STREAMTYPE_VIDEO) {
+        int64_t bufferedDurationUs =
+                mPacketSources.valueFor(STREAMTYPE_VIDEO)->getBufferedDurationUs(&finalResult);
+        if (minBufferedDurationUs == 0 || bufferedDurationUs < minBufferedDurationUs) {
+            minBufferedDurationUs = bufferedDurationUs;
+        }
+    }
+
+    return minBufferedDurationUs;
 }
 
 }  // namespace android

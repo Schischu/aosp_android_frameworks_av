@@ -78,6 +78,8 @@ struct LiveSession : public AHandler {
     bool isSeekable() const;
     bool hasDynamicDuration() const;
 
+    int64_t getCurrentbufferDuration() const;
+
     enum {
         kWhatStreamsChanged,
         kWhatError,
@@ -115,6 +117,13 @@ private:
     struct BandwidthItem {
         size_t mPlaylistIndex;
         unsigned long mBandwidth;
+    };
+
+    struct BandwidthEstimateItem {
+        int64_t clockTime;
+        int64_t fetchTime;
+        size_t bytes;
+        int32_t targetDuration;
     };
 
     struct FetcherInfo {
@@ -161,6 +170,7 @@ private:
     AString mMasterURL;
 
     Vector<BandwidthItem> mBandwidthItems;
+    Vector<BandwidthEstimateItem> mBandwidthEstimateItems;
     ssize_t mCurBandwidthIndex;
 
     sp<M3UParser> mPlaylist;
@@ -233,13 +243,17 @@ private:
             uint32_t block_size = 0,
             /* reuse DataSource if doing partial fetch */
             sp<DataSource> *source = NULL,
-            String8 *actualUrl = NULL);
+            String8 *actualUrl = NULL,
+            int64_t segmentDuration = -1);
 
     sp<M3UParser> fetchPlaylist(
             const char *url, uint8_t *curPlaylistHash, bool *unchanged);
 
     size_t getBandwidthIndex();
     int64_t latestMediaSegmentStartTimeUs();
+
+    bool estimateBandwidth(int32_t &bandwidth_bps);
+    void addBandwidthMeasurement(size_t numBytes, int64_t delayUs, int32_t segmentDuration);
 
     static int SortByBandwidth(const BandwidthItem *, const BandwidthItem *);
     static StreamType indexToType(int idx);
