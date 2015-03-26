@@ -1237,7 +1237,6 @@ status_t AudioPolicyManager::startOutput(audio_io_handle_t output,
                                              audio_stream_type_t stream,
                                              audio_session_t session)
 {
-    ALOGV("startOutput() output %d, stream %d, session %d", output, stream, session);
     ssize_t index = mOutputs.indexOfKey(output);
     if (index < 0) {
         ALOGW("startOutput() unknown output %d", output);
@@ -1249,6 +1248,7 @@ status_t AudioPolicyManager::startOutput(audio_io_handle_t output,
     if (stream == AUDIO_STREAM_TTS) {
         ALOGV("\t found BEACON stream");
         if (isAnyOutputActive(AUDIO_STREAM_TTS /*streamToIgnore*/)) {
+            ALOGV("startOutput() output for AUDIO_STREAM_TTS is not available");
             return INVALID_OPERATION;
         } else {
             beaconMuteLatency = handleEventForBeacon(STARTING_BEACON);
@@ -1259,6 +1259,17 @@ status_t AudioPolicyManager::startOutput(audio_io_handle_t output,
     }
 
     sp<AudioOutputDescriptor> outputDesc = mOutputs.valueAt(index);
+    if(outputDesc->isDuplicated()) {
+        ALOGV("startOutput() duplicate output1 %s->(%s)(%d), output2 %s->(%s)(%d), stream %d, session %d",
+           outputDesc->mOutput1->mProfile->mModule->mName,
+           outputDesc->mOutput1->mProfile->mName.string(), output,
+           outputDesc->mOutput2->mProfile->mModule->mName,
+           outputDesc->mOutput2->mProfile->mName.string(),
+           output, stream, session);
+    } else {
+        ALOGV("startOutput() output %s->(%s)(%d), stream %d, session %d",
+            outputDesc->mProfile->mModule->mName, outputDesc->mProfile->mName.string(), output, stream, session);
+    }
 
     // increment usage count for this stream on the requested output:
     // NOTE that the usage count is the same for duplicated output and hardware output which is
@@ -1618,13 +1629,14 @@ status_t AudioPolicyManager::getInputForAttr(const audio_attributes_t *attr,
 status_t AudioPolicyManager::startInput(audio_io_handle_t input,
                                         audio_session_t session)
 {
-    ALOGV("startInput() input %d", input);
     ssize_t index = mInputs.indexOfKey(input);
     if (index < 0) {
         ALOGW("startInput() unknown input %d", input);
         return BAD_VALUE;
     }
     sp<AudioInputDescriptor> inputDesc = mInputs.valueAt(index);
+    ALOGV("startInput() module %s->input %s(%d)",
+            inputDesc->mProfile->mModule->mName, inputDesc->mProfile->mName.string(), input);
 
     index = inputDesc->mSessions.indexOf(session);
     if (index < 0) {
