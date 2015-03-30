@@ -5209,6 +5209,12 @@ audio_devices_t AudioPolicyManager::getDeviceForInputSource(audio_source_t input
     } else if ((mForceUse[AUDIO_POLICY_FORCE_FOR_RECORD] == AUDIO_POLICY_FORCE_BT_SCO) &&
         (availableDeviceTypes & AUDIO_DEVICE_IN_BLUETOOTH_SCO_HEADSET)) {
         device = AUDIO_DEVICE_IN_BLUETOOTH_SCO_HEADSET;
+    } else if (mForceUse[AUDIO_POLICY_FORCE_FOR_COMMUNICATION] == AUDIO_POLICY_FORCE_SPEAKER) {
+        if (availableDeviceTypes & AUDIO_DEVICE_IN_BACK_MIC) {
+            device = AUDIO_DEVICE_IN_BACK_MIC;
+        } else if (availableDeviceTypes & AUDIO_DEVICE_IN_BUILTIN_MIC) {
+            device = AUDIO_DEVICE_IN_BUILTIN_MIC;
+        }
     } else if (availableDeviceTypes & AUDIO_DEVICE_IN_WIRED_HEADSET) {
         device = AUDIO_DEVICE_IN_WIRED_HEADSET;
     } else if (availableDeviceTypes & AUDIO_DEVICE_IN_USB_DEVICE) {
