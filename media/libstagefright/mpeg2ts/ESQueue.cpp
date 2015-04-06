@@ -1282,4 +1282,14 @@ sp<ABuffer> ElementaryStreamQueue::dequeueAccessUnitMPEG4Video() {
     return NULL;
 }
 
+void ElementaryStreamQueue::signalEOS() {
+    if (!mEOSReached) {
+        mEOSReached = true;
+        const char *theEnd = "\x00\x00\x01\x00";
+        ALOGI("appending end data");
+        appendData(theEnd, 4, 0);
+    }
+}
+
+
 }  // namespace android
