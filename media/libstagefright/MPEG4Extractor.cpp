@@ -2636,6 +2636,11 @@ status_t MPEG4Extractor::verifyTrack(Track *track) {
         return ERROR_MALFORMED;
     }
 
+    if (track->timescale == 0) {
+        ALOGE("timescale invalid.");
+        return ERROR_MALFORMED;
+    }
+
     return OK;
 }
 
