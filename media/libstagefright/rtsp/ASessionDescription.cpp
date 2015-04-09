@@ -53,6 +53,7 @@ bool ASessionDescription::parse(const void *data, size_t size) {
     mFormats.push(AString("[root]"));
 
     AString desc((const char *)data, size);
+    unsigned int rtpmapAttributeCount = 0;
 
     size_t i = 0;
     for (;;) {
@@ -102,6 +103,10 @@ bool ASessionDescription::parse(const void *data, size_t size) {
                 } else {
                     key.setTo(line, 0, colonPos);
 
+                    // Check if rtsp server has sent rtpmap attribute for media format
+                    if (key == "a=rtpmap") {
+                        rtpmapAttributeCount++;
+                    }
                     if (key == "a=fmtp" || key == "a=rtpmap"
                             || key == "a=framesize") {
                         ssize_t spacePos = line.find(" ", colonPos + 1);
@@ -158,7 +163,9 @@ bool ASessionDescription::parse(const void *data, size_t size) {
         i = eolPos + 1;
     }
 
-    return true;
+    // the string "[root]" is always present in mFormats. After this, ensure that
+    // one rtpmap attribute is received for each media format, as response to DESCRIBE request
+    return (rtpmapAttributeCount != (mFormats.size() - 1));
 }
 
 bool ASessionDescription::isValid() const {
