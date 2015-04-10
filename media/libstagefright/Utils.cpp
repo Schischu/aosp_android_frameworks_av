@@ -615,11 +615,17 @@ status_t sendMetaDataToHal(sp<MediaPlayerBase::AudioSink>& sink,
     if (meta->findInt32(kKeyBitRate, &bitRate)) {
         param.addInt(String8(AUDIO_OFFLOAD_CODEC_AVG_BIT_RATE), bitRate);
     }
+    // If meta data does not contain encoding delay and padding samples,
+    // set them as zero.
     if (meta->findInt32(kKeyEncoderDelay, &delaySamples)) {
         param.addInt(String8(AUDIO_OFFLOAD_CODEC_DELAY_SAMPLES), delaySamples);
+    } else {
+        param.addInt(String8(AUDIO_OFFLOAD_CODEC_DELAY_SAMPLES), 0);
     }
     if (meta->findInt32(kKeyEncoderPadding, &paddingSamples)) {
         param.addInt(String8(AUDIO_OFFLOAD_CODEC_PADDING_SAMPLES), paddingSamples);
+    } else {
+        param.addInt(String8(AUDIO_OFFLOAD_CODEC_PADDING_SAMPLES), 0);
     }
 
     ALOGV("sendMetaDataToHal: bitRate %d, sampleRate %d, chanMask %d,"
