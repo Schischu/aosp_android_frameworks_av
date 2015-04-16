@@ -391,7 +391,9 @@ void NuPlayer::Renderer::onMessageReceived(const sp<AMessage> &msg) {
 
             mDrainAudioQueuePending = false;
 
-            if (onDrainAudioQueue()) {
+            if ((mFlags & FLAG_HAS_VIDEO_TRACK) && false == mVideoRenderingStarted) {
+                postDrainAudioQueue_l(mAudioSink->msecsPerFrame()*1000ll);
+            } else if (onDrainAudioQueue()) {
                 uint32_t numFramesPlayed;
                 CHECK_EQ(mAudioSink->getPosition(&numFramesPlayed),
                          (status_t)OK);

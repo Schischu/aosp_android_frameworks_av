@@ -625,6 +625,9 @@ void NuPlayer::onMessageReceived(const sp<AMessage> &msg) {
             // video may change deep buffer mode of audio.
             if (mNativeWindow != NULL) {
                 instantiateDecoder(false, &mVideoDecoder);
+                if (mVideoDecoder != NULL && NULL != mRenderer.get()) {
+                    mRenderer->setFlag(NuPlayer::Renderer::FLAG_HAS_VIDEO_TRACK);
+                }
             }
 
             // Don't try to re-open audio sink if there's an existing decoder.
@@ -1065,6 +1068,11 @@ void NuPlayer::onStart() {
     sp<AMessage> notify = new AMessage(kWhatRendererNotify, id());
     ++mRendererGeneration;
     notify->setInt32("generation", mRendererGeneration);
+
+    if (mVideoDecoder != NULL) {
+        flags |= NuPlayer::Renderer::FLAG_HAS_VIDEO_TRACK;
+    }
+
     mRenderer = new Renderer(mAudioSink, notify, flags);
 
     mRendererLooper = new ALooper;

@@ -30,6 +30,7 @@ struct NuPlayer::Renderer : public AHandler {
     enum Flags {
         FLAG_REAL_TIME = 1,
         FLAG_OFFLOAD_AUDIO = 2,
+        FLAG_HAS_VIDEO_TRACK = 4,
     };
     Renderer(const sp<MediaPlayerBase::AudioSink> &sink,
              const sp<AMessage> &notify,
@@ -79,6 +80,10 @@ struct NuPlayer::Renderer : public AHandler {
             uint32_t flags,
             bool *isOffloaded);
     void closeAudioSink();
+
+    void setFlag(uint32_t flag) {
+        mFlags |= flag;
+    }
 
     enum {
         kWhatEOS                 = 'eos ',
