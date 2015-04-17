@@ -156,7 +156,7 @@ status_t SoftMPEG2::setParams(size_t stride) {
     s_ctl_ip.u4_size = sizeof(ivd_ctl_set_config_ip_t);
     s_ctl_op.u4_size = sizeof(ivd_ctl_set_config_op_t);
 
-    ALOGV("Set the run-time (dynamic) parameters stride = %u", stride);
+    ALOGV("Set the run-time (dynamic) parameters stride = %zu", stride);
     status = ivdec_api_function(mCodecCtx, (void *)&s_ctl_ip, (void *)&s_ctl_op);
 
     if (status != IV_SUCCESS) {
@@ -245,6 +245,7 @@ status_t SoftMPEG2::setFlushMode() {
         return UNKNOWN_ERROR;
     }
 
+    mWaitForI = true;
     mIsInFlush = true;
     return OK;
 }
@@ -257,6 +258,7 @@ status_t SoftMPEG2::initDecoder() {
     UWORD32 u4_share_disp_buf;
 
     mNumCores = GetCPUCoreCount();
+    mWaitForI = true;
 
     /* Initialize number of ref and reorder modes (for MPEG2) */
     u4_num_reorder_frames = 16;
@@ -394,7 +396,7 @@ status_t SoftMPEG2::initDecoder() {
     uint32_t bufferSize = displaySizeY * 3 / 2;
     mFlushOutBuffer = (uint8_t *)ivd_aligned_malloc(128, bufferSize);
     if (NULL == mFlushOutBuffer) {
-        ALOGE("Could not allocate flushOutputBuffer of size %zu", bufferSize);
+        ALOGE("Could not allocate flushOutputBuffer of size %u", bufferSize);
         return NO_MEMORY;
     }
 
@@ -447,6 +449,8 @@ status_t SoftMPEG2::reInitDecoder() {
 
 void SoftMPEG2::onReset() {
     SoftVideoDecoderOMXComponent::onReset();
+
+    mWaitForI = true;
 
     resetDecoder();
     resetPlugin();
@@ -710,11 +714,22 @@ void SoftMPEG2::onQueueFilled(OMX_U32 portIndex) {
                 outHeader->nTimeStamp = mTimeStamps[timeStampIdx];
                 mTimeStampsValid[timeStampIdx] = false;
 
-                outInfo->mOwnedByUs = false;
-                outQueue.erase(outQueue.begin());
-                outInfo = NULL;
-                notifyFillBufferDone(outHeader);
-                outHeader = NULL;
+                /* mWaitForI waits for the first I picture. Once made FALSE, it
+                   has to remain false till explicitly set to TRUE. */
+                mWaitForI = mWaitForI && !(IV_I_FRAME == s_dec_op.e_pic_type);
+
+                if (mWaitForI) {
+                    s_dec_op.u4_output_present = false;
+                } else {
+                    ALOGV("Output timestamp: %lld, res: %ux%u",
+                            (long long)outHeader->nTimeStamp, mWidth, mHeight);
+                    DUMP_TO_FILE(mOutFile, outHeader->pBuffer, outHeader->nFilledLen);
+                    outInfo->mOwnedByUs = false;
+                    outQueue.erase(outQueue.begin());
+                    outInfo = NULL;
+                    notifyFillBufferDone(outHeader);
+                    outHeader = NULL;
+                }
             } else {
                 /* If in flush mode and no output is returned by the codec,
                  * then come out of flush mode */

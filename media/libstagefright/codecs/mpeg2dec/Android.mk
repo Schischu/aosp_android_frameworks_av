@@ -21,6 +21,7 @@ LOCAL_SHARED_LIBRARIES  += libutils
 LOCAL_SHARED_LIBRARIES  += liblog
 
 LOCAL_LDFLAGS := -Wl,-Bsymbolic
+LOCAL_CFLAGS += -Werror
 
 include $(BUILD_SHARED_LIBRARY)
 
