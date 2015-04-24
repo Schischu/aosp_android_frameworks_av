@@ -20,6 +20,7 @@ LOCAL_SHARED_LIBRARIES := \
 	libcameraservice \
 	libmedialogservice \
 	libcutils \
+	libdl \
 	libnbaio \
 	libmedia \
 	libmediaplayerservice \
