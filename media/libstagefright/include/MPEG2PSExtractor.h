@@ -58,6 +58,7 @@ private:
     bool mScanning;
 
     bool mProgramStreamMapValid;
+    bool mpeg1Stream;
     KeyedVector<unsigned, unsigned> mStreamTypeByESID;
 
     status_t feedMore();
@@ -66,6 +67,7 @@ private:
     ssize_t dequeuePack();
     ssize_t dequeueSystemHeader();
     ssize_t dequeuePES();
+    ssize_t dequeueMPEG1PES();
 
     DISALLOW_EVIL_CONSTRUCTORS(MPEG2PSExtractor);
 };
