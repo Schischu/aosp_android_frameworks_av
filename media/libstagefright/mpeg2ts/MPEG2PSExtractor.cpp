@@ -100,6 +100,7 @@ MPEG2PSExtractor::MPEG2PSExtractor(const sp<DataSource> &source)
       mFinalResult(OK),
       mBuffer(new ABuffer(0)),
       mScanning(true),
+      mpeg1Stream(false),
       mProgramStreamMapValid(false) {
     for (size_t i = 0; i < 500; ++i) {
         if (feedMore() != OK) {
@@ -220,7 +221,11 @@ status_t MPEG2PSExtractor::dequeueChunk() {
 
         default:
         {
+            if(mpeg1Stream)
+              res = dequeueMPEG1PES();
+            else
             res = dequeuePES();
+
             break;
         }
     }
@@ -238,10 +243,18 @@ status_t MPEG2PSExtractor::dequeueChunk() {
 }
 
 ssize_t MPEG2PSExtractor::dequeuePack() {
-    // 32 + 2 + 3 + 1 + 15 + 1 + 15+ 1 + 9 + 1 + 22 + 1 + 1 | +5
+    // 32 + 2 + 3 + 1 + 15 + 1 + 15+ 1 + 9 + 1 + 22 + 1 + 1 | +5    for mpeg2 Program stream
+    //32 + 4 + 3 + 1+ 15 + 1 + 15 + 1 + 1 + 22 + 1                  for mpeg1 program stream
 
     if (mBuffer->size() < 14) {
         return -EAGAIN;
+    }
+
+    unsigned chunkType = mBuffer->data()[4];
+
+    if ((chunkType >> 6) != 1) {
+        mpeg1Stream = true;
+        return 12;
     }
 
     unsigned pack_stuffing_length = mBuffer->data()[13] & 7;
@@ -257,6 +270,172 @@ ssize_t MPEG2PSExtractor::dequeueSystemHeader() {
     unsigned header_length = U16_AT(mBuffer->data() + 4);
 
     return header_length + 6;
+}
+
+ssize_t MPEG2PSExtractor::dequeueMPEG1PES() {
+    unsigned dataLength = 0;
+    unsigned stream_type = 0;
+
+    if (mBuffer->size() < 6) {
+        return -EAGAIN;
+    }
+
+    unsigned PES_packet_length = U16_AT(mBuffer->data() + 4);
+
+    size_t n = PES_packet_length + 6;
+
+    if (PES_packet_length <= 0)
+        return n;
+
+    dataLength = PES_packet_length;
+
+    if (mBuffer->size() < n) {
+        return -EAGAIN;
+    }
+
+    ABitReader br(mBuffer->data(), n);
+
+    unsigned packet_startcode_prefix = br.getBits(24);
+
+    LOGV("packet_startcode_prefix = 0x%08x", packet_startcode_prefix);
+
+    if (packet_startcode_prefix != 1) {
+        LOGV("Supposedly payload_unit_start=1 unit does not start "
+             "with startcode.");
+
+        return ERROR_MALFORMED;
+    }
+
+    CHECK_EQ(packet_startcode_prefix, 0x000001u);
+
+    unsigned stream_id = br.getBits(8);
+    LOGV("stream_id = 0x%02x", stream_id);
+
+    if (stream_id == 0xe0)
+         stream_type = 0x01;
+
+    if (stream_id == 0xc0)
+        stream_type = 0x03;
+
+    if (stream_id == 0xbd)
+        stream_type = 0x81;
+
+    /* unsigned PES_packet_length = */br.getBits(16);
+
+    if (stream_id != 0xbe  // padding_stream                              // packetlength - 2 - 5 -5-
+            && stream_id != 0xbf  // private_stream_2
+            && stream_id != 0xf0  // ECM
+            && stream_id != 0xf1  // EMM
+            && stream_id != 0xff  // program_stream_directory
+            && stream_id != 0xf2  // DSMCC
+            && stream_id != 0xf8) {  // H.222.1 type E
+
+        unsigned nextbits = mBuffer->data()[6];
+
+        uint32_t i = 6;
+        while(nextbits == 0xff) {
+            br.skipBits(8);
+            dataLength = dataLength - 1;
+            i++;
+            nextbits = mBuffer->data()[i];
+        }
+
+        nextbits = nextbits & 0x40;
+
+        if(nextbits == 0x40) {
+            br.skipBits(2);
+            unsigned STD_buffer_scale = br.getBits(1);
+            unsigned STD_buffer_size = br.getBits(13);
+            dataLength = dataLength - 2;
+        }
+
+        unsigned PTS_DTS_flags = br.getBits(4);
+
+        uint64_t PTS = 0, DTS = 0;
+
+        if (PTS_DTS_flags == 2 || PTS_DTS_flags == 3) {
+            PTS = ((uint64_t)br.getBits(3)) << 30;
+            CHECK_EQ(br.getBits(1), 1u);
+            PTS |= ((uint64_t)br.getBits(15)) << 15;
+            CHECK_EQ(br.getBits(1), 1u);
+            PTS |= br.getBits(15);
+            CHECK_EQ(br.getBits(1), 1u);
+            dataLength = dataLength - 5;
+
+            LOGV("PTS = %llu", PTS);
+
+            if (PTS_DTS_flags == 3) {
+                CHECK_EQ(br.getBits(4), 1u);
+                DTS = ((uint64_t)br.getBits(3)) << 30;
+                CHECK_EQ(br.getBits(1), 1u);
+                DTS |= ((uint64_t)br.getBits(15)) << 15;
+                CHECK_EQ(br.getBits(1), 1u);
+                DTS |= br.getBits(15);
+                CHECK_EQ(br.getBits(1), 1u);
+                dataLength = dataLength - 5;
+                LOGV("DTS = %llu", DTS);
+            }
+        }  else {
+            CHECK_EQ(br.getBits(4), 15u);
+            dataLength = dataLength - 1;
+        }
+
+       if (br.numBitsLeft() < dataLength * 8) {
+            LOGE("PES packet does not carry enough data to contain "
+                 "payload. (numBitsLeft = %d, required = %d)",
+                 br.numBitsLeft(), dataLength * 8);
+
+            return ERROR_MALFORMED;
+        }
+
+        ssize_t index = mTracks.indexOfKey(stream_id);
+        if (index < 0 && mScanning) {
+            unsigned streamType;
+
+            mStreamTypeByESID.add(stream_id, stream_type);
+            ssize_t streamTypeIndex;
+            if ((streamTypeIndex =
+                            mStreamTypeByESID.indexOfKey(stream_id)) >= 0) {
+                streamType = mStreamTypeByESID.valueAt(streamTypeIndex);
+            } else if ((stream_id & ~0x1f) == 0xc0) {
+                // ISO/IEC 13818-3 or ISO/IEC 11172-3 or ISO/IEC 13818-7
+                // or ISO/IEC 14496-3 audio
+                streamType = ATSParser::STREAMTYPE_MPEG2_AUDIO;
+            } else if ((stream_id & ~0x0f) == 0xe0) {
+                // ISO/IEC 13818-2 or ISO/IEC 11172-2 or ISO/IEC 14496-2 video
+                streamType = ATSParser::STREAMTYPE_MPEG2_VIDEO;
+            } else if (stream_id  == 0xbd) {
+                  streamType = ATSParser::STREAMTYPE_AUDIO_AC3;
+            } else {
+                streamType = ATSParser::STREAMTYPE_RESERVED;
+            }
+
+            index = mTracks.add(
+                    stream_id, new Track(this, stream_id, streamType));
+        }
+
+        status_t err = OK;
+
+        if (index >= 0) {
+            err =
+                mTracks.editValueAt(index)->appendPESData(
+                    PTS_DTS_flags, PTS, DTS, br.data(), dataLength);
+        }
+
+        br.skipBits(dataLength * 8);
+
+        if (err != OK) {
+            return n;  // no sufficeient data in PES packet...going for next pack
+        }
+    } else if (stream_id == 0xbe) {  // padding_stream
+        CHECK_NE(PES_packet_length, 0u);
+        br.skipBits(PES_packet_length * 8);
+    } else {
+        CHECK_NE(PES_packet_length, 0u);
+        br.skipBits(PES_packet_length * 8);
+    }
+
+    return n;
 }
 
 ssize_t MPEG2PSExtractor::dequeuePES() {
@@ -704,7 +883,7 @@ bool SniffMPEG2PS(
         return false;
     }
 
-    if (memcmp("\x00\x00\x01\xba", header, 4) || (header[4] >> 6) != 1) {
+   if (memcmp("\x00\x00\x01\xba", header, 4)) {             //|| (header[4] >> 6) != 1
         return false;
     }
 
