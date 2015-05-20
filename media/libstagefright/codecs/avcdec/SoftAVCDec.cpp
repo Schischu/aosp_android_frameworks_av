@@ -730,7 +730,7 @@ void SoftAVC::onQueueFilled(OMX_U32 portIndex) {
 
             if (unsupportedLevel && !mFlushNeeded) {
 
-                mNewLevel = 51;
+                mNewLevel = 52;
 
                 CHECK_EQ(reInitDecoder(), (status_t)OK);
 
@@ -769,7 +769,7 @@ void SoftAVC::onQueueFilled(OMX_U32 portIndex) {
                     setFlushMode();
                 }
 
-                mNewLevel = 51;
+                mNewLevel = 52;
                 mInitNeeded = true;
                 continue;
             }
