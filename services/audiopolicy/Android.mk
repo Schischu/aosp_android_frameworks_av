@@ -44,6 +44,7 @@ LOCAL_STATIC_LIBRARIES := \
 LOCAL_MODULE:= libaudiopolicyservice
 
 LOCAL_CFLAGS += -fvisibility=hidden
+LOCAL_CFLAGS += -fno-strict-aliasing
 
 include $(BUILD_SHARED_LIBRARY)
 

@@ -83,6 +83,9 @@ LOCAL_C_INCLUDES := \
     $(call include-path-for, audio-effects) \
     $(call include-path-for, audio-utils)
 
+# Various aliasing rule violations in Visualizer.cpp and AudioEffect.cpp
+LOCAL_CFLAGS += -fno-strict-aliasing
+
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)

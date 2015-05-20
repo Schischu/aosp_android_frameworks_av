@@ -14,6 +14,8 @@ LOCAL_SRC_FILES := cc_helper.cpp \
                    ICommonClock.cpp \
                    ICommonTimeConfig.cpp \
                    utils.cpp
+# dereferencing type-punned pointer in serializeSockAddr()
+LOCAL_CFLAGS += -fno-strict-aliasing
 LOCAL_SHARED_LIBRARIES := libbinder \
                           libhardware \
                           libutils \

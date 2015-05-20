@@ -172,21 +172,27 @@ ANetworkSession::Session::Session(
       mUDPRetries(kMaxUDPRetries),
       mLastStallReportUs(-1ll) {
     if (mState == CONNECTED) {
-        struct sockaddr_in localAddr;
+        union {
+            struct sockaddr sa;
+            struct sockaddr_in in;
+        } localAddr;
         socklen_t localAddrLen = sizeof(localAddr);
 
         int res = getsockname(
-                mSocket, (struct sockaddr *)&localAddr, &localAddrLen);
+                mSocket, &localAddr.sa, &localAddrLen);
         CHECK_GE(res, 0);
 
-        struct sockaddr_in remoteAddr;
+        union {
+            struct sockaddr sa;
+            struct sockaddr_in in;
+        } remoteAddr;
         socklen_t remoteAddrLen = sizeof(remoteAddr);
 
         res = getpeername(
-                mSocket, (struct sockaddr *)&remoteAddr, &remoteAddrLen);
+                mSocket, &remoteAddr.sa, &remoteAddrLen);
         CHECK_GE(res, 0);
 
-        in_addr_t addr = ntohl(localAddr.sin_addr.s_addr);
+        in_addr_t addr = ntohl(localAddr.in.sin_addr.s_addr);
         AString localAddrString = AStringPrintf(
                 "%d.%d.%d.%d",
                 (addr >> 24),
@@ -194,7 +200,7 @@ ANetworkSession::Session::Session(
                 (addr >> 8) & 0xff,
                 addr & 0xff);
 
-        addr = ntohl(remoteAddr.sin_addr.s_addr);
+        addr = ntohl(remoteAddr.in.sin_addr.s_addr);
         AString remoteAddrString = AStringPrintf(
                 "%d.%d.%d.%d",
                 (addr >> 24),
@@ -206,9 +212,9 @@ ANetworkSession::Session::Session(
         msg->setInt32("sessionID", mSessionID);
         msg->setInt32("reason", kWhatClientConnected);
         msg->setString("server-ip", localAddrString.c_str());
-        msg->setInt32("server-port", ntohs(localAddr.sin_port));
+        msg->setInt32("server-port", ntohs(localAddr.in.sin_port));
         msg->setString("client-ip", remoteAddrString.c_str());
-        msg->setInt32("client-port", ntohs(remoteAddr.sin_port));
+        msg->setInt32("client-port", ntohs(remoteAddr.in.sin_port));
         msg->post();
     }
 }
@@ -273,14 +279,17 @@ status_t ANetworkSession::Session::readMore() {
         do {
             sp<ABuffer> buf = new ABuffer(kMaxUDPSize);
 
-            struct sockaddr_in remoteAddr;
+            union {
+                struct sockaddr sa;
+                struct sockaddr_in in;
+            } remoteAddr;
             socklen_t remoteAddrLen = sizeof(remoteAddr);
 
             ssize_t n;
             do {
                 n = recvfrom(
                         mSocket, buf->data(), buf->capacity(), 0,
-                        (struct sockaddr *)&remoteAddr, &remoteAddrLen);
+                        &remoteAddr.sa, &remoteAddrLen);
             } while (n < 0 && errno == EINTR);
 
             err = OK;
@@ -298,7 +307,7 @@ status_t ANetworkSession::Session::readMore() {
                 notify->setInt32("sessionID", mSessionID);
                 notify->setInt32("reason", kWhatDatagram);
 
-                uint32_t ip = ntohl(remoteAddr.sin_addr.s_addr);
+                uint32_t ip = ntohl(remoteAddr.in.sin_addr.s_addr);
                 notify->setString(
                         "fromAddr",
                         AStringPrintf(
@@ -308,7 +317,7 @@ status_t ANetworkSession::Session::readMore() {
                             (ip >> 8) & 0xff,
                             ip & 0xff).c_str());
 
-                notify->setInt32("fromPort", ntohs(remoteAddr.sin_port));
+                notify->setInt32("fromPort", ntohs(remoteAddr.in.sin_port));
 
                 notify->setBuffer("data", buf);
                 notify->post();
@@ -1035,9 +1044,12 @@ status_t ANetworkSession::createClientOrServer(
         goto bail2;
     }
 
-    struct sockaddr_in addr;
-    memset(addr.sin_zero, 0, sizeof(addr.sin_zero));
-    addr.sin_family = AF_INET;
+    union {
+        struct sockaddr sa;
+        struct sockaddr_in in;
+    } addr;
+    memset(addr.in.sin_zero, 0, sizeof(addr.in.sin_zero));
+    addr.in.sin_family = AF_INET;
 
     if (mode == kModeCreateRTSPClient
             || mode == kModeCreateTCPDatagramSessionActive) {
@@ -1047,35 +1059,35 @@ status_t ANetworkSession::createClientOrServer(
             goto bail2;
         }
 
-        addr.sin_addr.s_addr = *(in_addr_t *)ent->h_addr;
-        addr.sin_port = htons(remotePort);
+        addr.in.sin_addr.s_addr = *(in_addr_t *)ent->h_addr;
+        addr.in.sin_port = htons(remotePort);
     } else if (localAddr != NULL) {
-        addr.sin_addr = *localAddr;
-        addr.sin_port = htons(port);
+        addr.in.sin_addr = *localAddr;
+        addr.in.sin_port = htons(port);
     } else {
-        addr.sin_addr.s_addr = htonl(INADDR_ANY);
-        addr.sin_port = htons(port);
+        addr.in.sin_addr.s_addr = htonl(INADDR_ANY);
+        addr.in.sin_port = htons(port);
     }
 
     if (mode == kModeCreateRTSPClient
             || mode == kModeCreateTCPDatagramSessionActive) {
-        in_addr_t x = ntohl(addr.sin_addr.s_addr);
+        in_addr_t x = ntohl(addr.in.sin_addr.s_addr);
         ALOGI("connecting socket %d to %d.%d.%d.%d:%d",
               s,
               (x >> 24),
               (x >> 16) & 0xff,
               (x >> 8) & 0xff,
               x & 0xff,
-              ntohs(addr.sin_port));
+              ntohs(addr.in.sin_port));
 
-        res = connect(s, (const struct sockaddr *)&addr, sizeof(addr));
+        res = connect(s, &addr.sa, sizeof(addr));
 
         CHECK_LT(res, 0);
         if (errno == EINPROGRESS) {
             res = 0;
         }
     } else {
-        res = bind(s, (const struct sockaddr *)&addr, sizeof(addr));
+        res = bind(s, &addr.sa, sizeof(addr));
 
         if (res == 0) {
             if (mode == kModeCreateRTSPServer
@@ -1085,10 +1097,13 @@ status_t ANetworkSession::createClientOrServer(
                 CHECK_EQ(mode, kModeCreateUDPSession);
 
                 if (remoteHost != NULL) {
-                    struct sockaddr_in remoteAddr;
-                    memset(remoteAddr.sin_zero, 0, sizeof(remoteAddr.sin_zero));
-                    remoteAddr.sin_family = AF_INET;
-                    remoteAddr.sin_port = htons(remotePort);
+                    union {
+                        struct sockaddr sa;
+                        struct sockaddr_in in;
+                    } remoteAddr;
+                    memset(remoteAddr.in.sin_zero, 0, sizeof(remoteAddr.in.sin_zero));
+                    remoteAddr.in.sin_family = AF_INET;
+                    remoteAddr.in.sin_port = htons(remotePort);
 
                     struct hostent *ent= gethostbyname(remoteHost);
                     if (ent == NULL) {
@@ -1096,11 +1111,11 @@ status_t ANetworkSession::createClientOrServer(
                         goto bail2;
                     }
 
-                    remoteAddr.sin_addr.s_addr = *(in_addr_t *)ent->h_addr;
+                    remoteAddr.in.sin_addr.s_addr = *(in_addr_t *)ent->h_addr;
 
                     res = connect(
                             s,
-                            (const struct sockaddr *)&remoteAddr,
+                            &remoteAddr.sa,
                             sizeof(remoteAddr));
                 }
             }
@@ -1177,21 +1192,24 @@ status_t ANetworkSession::connectUDPSession(
     const sp<Session> session = mSessions.valueAt(index);
     int s = session->socket();
 
-    struct sockaddr_in remoteAddr;
-    memset(remoteAddr.sin_zero, 0, sizeof(remoteAddr.sin_zero));
-    remoteAddr.sin_family = AF_INET;
-    remoteAddr.sin_port = htons(remotePort);
+    union {
+        struct sockaddr_in in;
+        struct sockaddr sa;
+    } remoteAddr;
+    memset(remoteAddr.in.sin_zero, 0, sizeof(remoteAddr.in.sin_zero));
+    remoteAddr.in.sin_family = AF_INET;
+    remoteAddr.in.sin_port = htons(remotePort);
 
     status_t err = OK;
     struct hostent *ent = gethostbyname(remoteHost);
     if (ent == NULL) {
         err = -h_errno;
     } else {
-        remoteAddr.sin_addr.s_addr = *(in_addr_t *)ent->h_addr;
+        remoteAddr.in.sin_addr.s_addr = *(in_addr_t *)ent->h_addr;
 
         int res = connect(
                 s,
-                (const struct sockaddr *)&remoteAddr,
+                &remoteAddr.sa,
                 sizeof(remoteAddr));
 
         if (res < 0) {
@@ -1333,11 +1351,14 @@ void ANetworkSession::threadLoop() {
 
             if (FD_ISSET(s, &rs)) {
                 if (session->isRTSPServer() || session->isTCPDatagramServer()) {
-                    struct sockaddr_in remoteAddr;
+                    union {
+                        struct sockaddr_in in;
+                        struct sockaddr sa;
+                    } remoteAddr;
                     socklen_t remoteAddrLen = sizeof(remoteAddr);
 
                     int clientSocket = accept(
-                            s, (struct sockaddr *)&remoteAddr, &remoteAddrLen);
+                            s, &remoteAddr.sa, &remoteAddrLen);
 
                     if (clientSocket >= 0) {
                         status_t err = MakeSocketNonBlocking(clientSocket);
@@ -1350,7 +1371,7 @@ void ANetworkSession::threadLoop() {
                             close(clientSocket);
                             clientSocket = -1;
                         } else {
-                            in_addr_t addr = ntohl(remoteAddr.sin_addr.s_addr);
+                            in_addr_t addr = ntohl(remoteAddr.in.sin_addr.s_addr);
 
                             ALOGI("incoming connection from %d.%d.%d.%d:%d "
                                   "(socket %d)",
@@ -1358,7 +1379,7 @@ void ANetworkSession::threadLoop() {
                                   (addr >> 16) & 0xff,
                                   (addr >> 8) & 0xff,
                                   addr & 0xff,
-                                  ntohs(remoteAddr.sin_port),
+                                  ntohs(remoteAddr.in.sin_port),
                                   clientSocket);
 
                             sp<Session> clientSession =

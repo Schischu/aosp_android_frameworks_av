@@ -32,6 +32,8 @@ LOCAL_CFLAGS := \
 
 LOCAL_CFLAGS += -Werror
 
+LOCAL_CFLAGS += -fno-strict-aliasing
+
 include $(BUILD_STATIC_LIBRARY)
 
 ################################################################################

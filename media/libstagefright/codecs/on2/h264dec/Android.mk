@@ -106,6 +106,8 @@ LOCAL_MODULE := libstagefright_soft_h264dec
 
 LOCAL_MODULE_TAGS := optional
 
+LOCAL_CFLAGS += -fno-strict-aliasing
+
 include $(BUILD_SHARED_LIBRARY)
 
 #####################################################################

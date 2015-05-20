@@ -206,9 +206,9 @@ status_t VendorTagDescriptor::createFromParcel(const Parcel* parcel,
         return res;
     }
 
-    size_t sectionCount = 0;
+    int32_t sectionCount = 0;
     if (tagCount > 0) {
-        if ((res = parcel->readInt32(reinterpret_cast<int32_t*>(&sectionCount))) != OK) {
+        if ((res = parcel->readInt32(&sectionCount)) != OK) {
             ALOGE("%s: could not read section count for.", __FUNCTION__);
             return res;
         }
@@ -219,7 +219,7 @@ status_t VendorTagDescriptor::createFromParcel(const Parcel* parcel,
         }
         LOG_ALWAYS_FATAL_IF(desc->mSections.setCapacity(sectionCount) <= 0,
                 "Vector capacity must be positive");
-        for (size_t i = 0; i < sectionCount; ++i) {
+        for (int32_t i = 0; i < sectionCount; ++i) {
             String8 sectionName = parcel->readString8();
             if (sectionName.isEmpty()) {
                 ALOGE("%s: parcel section name was NULL for section %zu.",

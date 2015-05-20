@@ -117,6 +117,7 @@ LOCAL_SHARED_LIBRARIES += \
         libdl
 
 LOCAL_CFLAGS += -Wno-multichar
+LOCAL_CFLAGS += -fno-strict-aliasing
 
 LOCAL_MODULE:= libstagefright
 

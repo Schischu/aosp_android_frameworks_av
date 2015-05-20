@@ -39,6 +39,9 @@ LOCAL_SRC_FILES:=               \
 
 LOCAL_SRC_FILES += StateQueue.cpp
 
+# Effects.cpp
+LOCAL_CFLAGS += -fno-strict-aliasing
+
 LOCAL_C_INCLUDES := \
     $(TOPDIR)frameworks/av/services/audiopolicy \
     $(call include-path-for, audio-effects) \
