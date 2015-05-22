@@ -165,17 +165,6 @@ private:
     int mWidth;
     int mHeight;
 
-    // mCurrentSlot is the buffer slot index of the buffer that is currently
-    // being used by buffer consumer
-    // (e.g. StageFrightRecorder in the case of SurfaceMediaSource or GLTexture
-    // in the case of Surface).
-    // It is initialized to INVALID_BUFFER_SLOT,
-    // indicating that no buffer slot is currently bound to the texture. Note,
-    // however, that a value of INVALID_BUFFER_SLOT does not necessarily mean
-    // that no buffer is bound to the texture. A call to setBufferCount will
-    // reset mCurrentTexture to INVALID_BUFFER_SLOT.
-    int mCurrentSlot;
-
     // mCurrentBuffers is a list of the graphic buffers that are being used by
     // buffer consumer (i.e. the video encoder). It's possible that these
     // buffers are not associated with any buffer slots, so we must track them
