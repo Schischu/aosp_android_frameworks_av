@@ -41,7 +41,6 @@ namespace android {
 SurfaceMediaSource::SurfaceMediaSource(uint32_t bufferWidth, uint32_t bufferHeight) :
     mWidth(bufferWidth),
     mHeight(bufferHeight),
-    mCurrentSlot(BufferQueue::INVALID_BUFFER_SLOT),
     mNumPendingBuffers(0),
     mCurrentTimestamp(0),
     mFrameRate(30),
@@ -287,10 +286,6 @@ status_t SurfaceMediaSource::read(
         mMediaBuffersAvailableCondition.wait(mMutex);
     }
 
-    // Update the current buffer info
-    // TODO: mCurrentSlot can be made a bufferstate since there
-    // can be more than one "current" slots.
-
     BufferItem item;
     // If the recording has started and the queue is empty, then just
     // wait here till the frames come in from the client side
@@ -346,22 +341,23 @@ status_t SurfaceMediaSource::read(
         return ERROR_END_OF_STREAM;
     }
 
-    mCurrentSlot = item.mBuf;
 
-    // First time seeing the buffer?  Added it to the SMS slot
-    if (item.mGraphicBuffer != NULL) {
-        mSlots[item.mBuf].mGraphicBuffer = item.mGraphicBuffer;
+    if(item.mGraphicBuffer == NULL) {
+        ALOGV("Read: SurfaceMediaSource -- item.mGraphicBuffer is null");
+        return ERROR_END_OF_STREAM;
     }
+
+    mSlots[item.mBuf].mGraphicBuffer = item.mGraphicBuffer;
     mSlots[item.mBuf].mFrameNumber = item.mFrameNumber;
 
-    mCurrentBuffers.push_back(mSlots[mCurrentSlot].mGraphicBuffer);
+    mCurrentBuffers.push_back(mSlots[item.mBuf].mGraphicBuffer);
     int64_t prevTimeStamp = mCurrentTimestamp;
     mCurrentTimestamp = item.mTimestamp;
 
     mNumFramesEncoded++;
     // Pass the data to the MediaBuffer. Pass in only the metadata
 
-    passMetadataBuffer(buffer, mSlots[mCurrentSlot].mGraphicBuffer->handle);
+    passMetadataBuffer(buffer, mSlots[item.mBuf].mGraphicBuffer->handle);
 
     (*buffer)->setObserver(this);
     (*buffer)->add_ref();
