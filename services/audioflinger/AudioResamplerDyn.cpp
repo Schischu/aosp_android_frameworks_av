@@ -32,6 +32,7 @@
 #include "AudioResamplerFirOps.h" // USE_NEON and USE_INLINE_ASSEMBLY defined here
 #include "AudioResamplerFirProcess.h"
 #include "AudioResamplerFirProcessNeon.h"
+#include "AudioResamplerFirProcessSse.h"
 #include "AudioResamplerFirGen.h" // requires math.h
 #include "AudioResamplerDyn.h"
 
