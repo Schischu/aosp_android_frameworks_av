@@ -1004,6 +1004,9 @@ status_t AudioRecord::restoreRecord_l(const char *from)
             // FIXME this fails if we have a new AudioFlinger instance
             result = mAudioRecord->start(AudioSystem::SYNC_EVENT_SAME, 0);
         }
+        else {
+            result = BAD_VALUE;
+        }
     }
     if (result != NO_ERROR) {
         ALOGW("restoreRecord_l() failed status %d", result);
