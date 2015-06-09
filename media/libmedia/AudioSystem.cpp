@@ -252,7 +252,10 @@ status_t AudioSystem::getOutputSamplingRate(uint32_t* samplingRate, audio_stream
         return PERMISSION_DENIED;
     }
 
-    return getSamplingRate(output, samplingRate);
+    status_t status;
+    status = getSamplingRate(output, samplingRate);
+    releaseOutput(output, streamType, AUDIO_SESSION_ALLOCATE);
+    return status;
 }
 
 status_t AudioSystem::getSamplingRate(audio_io_handle_t output,
@@ -296,7 +299,10 @@ status_t AudioSystem::getOutputFrameCount(size_t* frameCount, audio_stream_type_
         return PERMISSION_DENIED;
     }
 
-    return getFrameCount(output, frameCount);
+    status_t status;
+    status = getFrameCount(output, frameCount);
+    releaseOutput(output, streamType, AUDIO_SESSION_ALLOCATE);
+    return status;
 }
 
 status_t AudioSystem::getFrameCount(audio_io_handle_t output,
@@ -338,7 +344,10 @@ status_t AudioSystem::getOutputLatency(uint32_t* latency, audio_stream_type_t st
         return PERMISSION_DENIED;
     }
 
-    return getLatency(output, latency);
+    status_t status;
+    status = getLatency(output, latency);
+    releaseOutput(output, streamType, AUDIO_SESSION_ALLOCATE);
+    return status;
 }
 
 status_t AudioSystem::getLatency(audio_io_handle_t output,
