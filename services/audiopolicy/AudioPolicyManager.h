@@ -908,7 +908,8 @@ private:
                 audio_format_t format,
                 audio_channel_mask_t channelMask,
                 audio_output_flags_t flags,
-                const audio_offload_info_t *offloadInfo);
+                const audio_offload_info_t *offloadInfo,
+                bool incrementRefCount);
         // internal function to derive a stream type value from audio attributes
         audio_stream_type_t streamTypefromAttributesInt(const audio_attributes_t *attr);
         // return true if any output is playing anything besides the stream to ignore

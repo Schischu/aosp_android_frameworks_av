@@ -881,7 +881,7 @@ audio_io_handle_t AudioPolicyManager::getOutput(audio_stream_type_t stream,
 
     return getOutputForDevice(device, AUDIO_SESSION_ALLOCATE,
                               stream, samplingRate,format, channelMask,
-                              flags, offloadInfo);
+                              flags, offloadInfo, false);
 }
 
 status_t AudioPolicyManager::getOutputForAttr(const audio_attributes_t *attr,
@@ -971,7 +971,7 @@ status_t AudioPolicyManager::getOutputForAttr(const audio_attributes_t *attr,
     *stream = streamTypefromAttributesInt(&attributes);
     *output = getOutputForDevice(device, session, *stream,
                                  samplingRate, format, channelMask,
-                                 flags, offloadInfo);
+                                 flags, offloadInfo, true);
     if (*output == AUDIO_IO_HANDLE_NONE) {
         return INVALID_OPERATION;
     }
@@ -986,7 +986,8 @@ audio_io_handle_t AudioPolicyManager::getOutputForDevice(
         audio_format_t format,
         audio_channel_mask_t channelMask,
         audio_output_flags_t flags,
-        const audio_offload_info_t *offloadInfo)
+        const audio_offload_info_t *offloadInfo,
+        bool incrementRefCount)
 {
     audio_io_handle_t output = AUDIO_IO_HANDLE_NONE;
     uint32_t latency = 0;
@@ -1085,7 +1086,9 @@ audio_io_handle_t AudioPolicyManager::getOutputForDevice(
                 if ((samplingRate == outputDesc->mSamplingRate) &&
                         (format == outputDesc->mFormat) &&
                         (channelMask == outputDesc->mChannelMask)) {
-                    outputDesc->mDirectOpenCount++;
+                    if (incrementRefCount) {
+                        outputDesc->mDirectOpenCount++;
+                    }
                     ALOGV("getOutput() reusing direct output %d", mOutputs.keyAt(i));
                     return mOutputs.keyAt(i);
                 }
@@ -1137,7 +1140,11 @@ audio_io_handle_t AudioPolicyManager::getOutputForDevice(
         outputDesc->mFormat = config.format;
         outputDesc->mRefCount[stream] = 0;
         outputDesc->mStopTime[stream] = 0;
-        outputDesc->mDirectOpenCount = 1;
+        if (incrementRefCount) {
+            outputDesc->mDirectOpenCount = 1;
+        } else {
+            outputDesc->mDirectOpenCount = 0;
+        }
 
         audio_io_handle_t srcOutput = getOutputForEffect();
         addOutput(output, outputDesc);
