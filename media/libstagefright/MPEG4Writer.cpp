@@ -2520,7 +2520,22 @@ status_t MPEG4Writer::Track::threadEntry() {
         lastDurationUs = 0;  // A single sample's duration
         lastDurationTicks = 0;
     } else {
-        ++sampleCount;  // Count for the last sample
+       // To match sum of stts entries with "duration" in mdhd atom exactly,
+       // we need to consider rounding errors and check the stts value itself
+       // to determine whether we have to add a new stts entry.
+       currDurationTicks =
+           (((lastTimestampUs + lastDurationUs) * mTimeScale + 500000LL) / 1000000LL -
+               (lastTimestampUs * mTimeScale + 500000LL) / 1000000LL);
+
+       if (currDurationTicks != lastDurationTicks) {
+           // When a rounding error occurs,
+           // stts entry should be separated.
+           addOneSttsTableEntry(sampleCount, lastDurationTicks);
+           sampleCount = 1;
+           lastDurationTicks = currDurationTicks;
+       } else {
+           ++sampleCount;  // Count for the last sample
+       }
     }
 
     if (mStszTableEntries->count() <= 2) {
@@ -2947,8 +2962,14 @@ void MPEG4Writer::Track::writeTkhdBox(uint32_t now) {
     mOwner->writeInt32(0);             // reserved
     int64_t trakDurationUs = getDurationUs();
     int32_t mvhdTimeScale = mOwner->getTimeScale();
+    int64_t trackStartTimeOffsetUs = 0;
+    int64_t moovStartTimeUs = mOwner->getStartTimestampUs();
+    if (mStartTimestampUs != moovStartTimeUs) {
+        CHECK(mStartTimestampUs > moovStartTimeUs);
+        trackStartTimeOffsetUs = mStartTimestampUs - moovStartTimeUs;
+    }
     int32_t tkhdDuration =
-        (trakDurationUs * mvhdTimeScale + 5E5) / 1E6;
+        ((trakDurationUs + trackStartTimeOffsetUs) * mvhdTimeScale + 5E5) / 1E6;
     mOwner->writeInt32(tkhdDuration);  // in mvhd timescale
     mOwner->writeInt32(0);             // reserved
     mOwner->writeInt32(0);             // reserved
@@ -3012,7 +3033,13 @@ void MPEG4Writer::Track::writeMdhdBox(uint32_t now) {
     mOwner->writeInt32(now);           // creation time
     mOwner->writeInt32(now);           // modification time
     mOwner->writeInt32(mTimeScale);    // media timescale
-    int32_t mdhdDuration = (trakDurationUs * mTimeScale + 5E5) / 1E6;
+    int64_t trackStartTimeOffsetUs = 0;
+    int64_t moovStartTimeUs = mOwner->getStartTimestampUs();
+    if (mStartTimestampUs != moovStartTimeUs) {
+        CHECK(mStartTimestampUs > moovStartTimeUs);
+        trackStartTimeOffsetUs = mStartTimestampUs - moovStartTimeUs;
+    }
+    int32_t mdhdDuration = ((trakDurationUs + trackStartTimeOffsetUs) * mTimeScale + 5E5) / 1E6;
     mOwner->writeInt32(mdhdDuration);  // use media timescale
     // Language follows the three letter standard ISO-639-2/T
     // 'e', 'n', 'g' for "English", for instance.
