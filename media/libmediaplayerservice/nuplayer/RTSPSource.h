@@ -80,11 +80,6 @@ private:
 
     struct TrackInfo {
         sp<AnotherPacketSource> mSource;
-
-        int32_t mTimeScale;
-        uint32_t mRTPTime;
-        int64_t mNormalPlaytimeUs;
-        bool mNPTMappingValid;
     };
 
     sp<IMediaHTTPService> mHTTPService;
