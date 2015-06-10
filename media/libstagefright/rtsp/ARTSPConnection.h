@@ -73,6 +73,7 @@ private:
     };
 
     static const int64_t kSelectTimeoutUs;
+    static const int64_t kRecvTimeoutS;
 
     static const AString sUserAgent;
 
@@ -86,6 +87,7 @@ private:
     int32_t mConnectionID;
     int32_t mNextCSeq;
     bool mReceiveResponseEventPending;
+    bool mTeardownSent;
 
     KeyedVector<int32_t, sp<AMessage> > mPendingRequests;
 
