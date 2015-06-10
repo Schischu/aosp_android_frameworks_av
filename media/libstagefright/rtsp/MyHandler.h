@@ -972,11 +972,16 @@ struct MyHandler : public AHandler {
 
             case 'accu':
             {
+                size_t trackIndex;
+                CHECK(msg->findSize("track-index", &trackIndex));
+
+                if (trackIndex >= mTracks.size()) {
+                    ALOGV("late packets ignored.");
+                    break;
+                }
+
                 int32_t timeUpdate;
                 if (msg->findInt32("time-update", &timeUpdate) && timeUpdate) {
-                    size_t trackIndex;
-                    CHECK(msg->findSize("track-index", &trackIndex));
-
                     uint32_t rtpTime;
                     uint64_t ntpTime;
                     CHECK(msg->findInt32("rtp-time", (int32_t *)&rtpTime));
@@ -999,14 +1004,6 @@ struct MyHandler : public AHandler {
 
                 ++mNumAccessUnitsReceived;
                 postAccessUnitTimeoutCheck();
-
-                size_t trackIndex;
-                CHECK(msg->findSize("track-index", &trackIndex));
-
-                if (trackIndex >= mTracks.size()) {
-                    ALOGV("late packets ignored.");
-                    break;
-                }
 
                 TrackInfo *track = &mTracks.editItemAt(trackIndex);
 
