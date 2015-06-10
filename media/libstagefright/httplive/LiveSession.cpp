@@ -691,6 +691,12 @@ void LiveSession::onConnect(const sp<AMessage> &msg) {
         return;
     }
 
+    if (mPlaylist->size() == 0) {
+        ALOGE("master playlist did not contain any streams.");
+        postPrepared(ERROR_MALFORMED);
+        return;
+    }
+
     // We trust the content provider to make a reasonable choice of preferred
     // initial bandwidth by listing it first in the variant playlist.
     // At startup we really don't have a good estimate on the available
