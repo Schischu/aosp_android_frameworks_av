@@ -297,6 +297,12 @@ status_t ATSParser::Program::parseProgramMap(ABitReader *br) {
         unsigned streamType = br->getBits(8);
         ALOGV("    stream_type = 0x%02x", streamType);
 
+        // override for H265 support unless specs are
+        // announced
+        if (streamType == 0x24) { //assume H265
+            streamType = 0x27;
+        }
+
         MY_LOGV("    reserved = %u", br->getBits(3));
 
         unsigned elementaryPID = br->getBits(13);
@@ -322,7 +328,17 @@ status_t ATSParser::Program::parseProgramMap(ABitReader *br) {
 
             CHECK_GE(info_bytes_remaining, 2 + descLength);
 
-            br->skipBits(descLength * 8);
+            if (streamType == 0x06 && descLength == 4) {
+                ALOGV("streamType is of private type H222.0, 0x%02x", streamType);
+                // Check if the descriptor is HEVC
+                unsigned descriptor = br->getBits(descLength * 8);
+                if (descriptor == 0x48455643) {
+                   ALOGV("Looks like a HEVC stream");
+                   streamType = 0x27;//Overwrite for now
+                }
+            } else {
+                br->skipBits(descLength * 8);
+            }
 
             info_bytes_remaining -= descLength + 2;
         }
@@ -504,6 +520,12 @@ ATSParser::Stream::Stream(
                     (mProgram->parserFlags() & ALIGNED_VIDEO_DATA)
                         ? ElementaryStreamQueue::kFlag_AlignedData : 0);
             break;
+        case STREAMTYPE_HEVC:
+            mQueue = new ElementaryStreamQueue(
+                    ElementaryStreamQueue::HEVC,
+                    (mProgram->parserFlags() & ALIGNED_VIDEO_DATA)
+                        ? ElementaryStreamQueue::kFlag_AlignedData : 0);
+            break;
         case STREAMTYPE_MPEG2_AUDIO_ADTS:
             mQueue = new ElementaryStreamQueue(ElementaryStreamQueue::AAC);
             break;
@@ -624,6 +646,7 @@ status_t ATSParser::Stream::parse(
 bool ATSParser::Stream::isVideo() const {
     switch (mStreamType) {
         case STREAMTYPE_H264:
+        case STREAMTYPE_HEVC:
         case STREAMTYPE_MPEG1_VIDEO:
         case STREAMTYPE_MPEG2_VIDEO:
         case STREAMTYPE_MPEG4_VIDEO:

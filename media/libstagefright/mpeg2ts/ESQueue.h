@@ -31,6 +31,7 @@ class MetaData;
 struct ElementaryStreamQueue {
     enum Mode {
         H264,
+        HEVC,
         AAC,
         AC3,
         MPEG_AUDIO,
@@ -68,7 +69,7 @@ private:
 
     sp<MetaData> mFormat;
 
-    sp<ABuffer> dequeueAccessUnitH264();
+    sp<ABuffer> dequeueAccessUnitH264orHEVC();
     sp<ABuffer> dequeueAccessUnitAAC();
     sp<ABuffer> dequeueAccessUnitAC3();
     sp<ABuffer> dequeueAccessUnitMPEGAudio();
