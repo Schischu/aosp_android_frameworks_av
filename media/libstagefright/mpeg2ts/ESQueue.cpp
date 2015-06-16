@@ -253,6 +253,7 @@ status_t ElementaryStreamQueue::appendData(
     if (mBuffer == NULL || mBuffer->size() == 0) {
         switch (mMode) {
             case H264:
+            case HEVC:
             case MPEG_VIDEO:
             {
 #if 0
@@ -461,7 +462,8 @@ status_t ElementaryStreamQueue::appendData(
 }
 
 sp<ABuffer> ElementaryStreamQueue::dequeueAccessUnit() {
-    if ((mFlags & kFlag_AlignedData) && mMode == H264) {
+    if ((mFlags & kFlag_AlignedData) &&
+        ((mMode == H264) || (mMode == HEVC))) {
         if (mRangeInfos.empty()) {
             return NULL;
         }
@@ -481,6 +483,11 @@ sp<ABuffer> ElementaryStreamQueue::dequeueAccessUnit() {
 
         if (mFormat == NULL) {
             mFormat = MakeAVCCodecSpecificData(accessUnit);
+            // overwrite HEVC mimetype if the stream is of HEVC type
+            if (mMode == HEVC) {
+                ALOGI("Setting mimetype as MEDIA_MIMETYPE_VIDEO_HEVC");
+                mFormat->setCString(kKeyMIMEType, MEDIA_MIMETYPE_VIDEO_HEVC);
+            }
         }
 
         return accessUnit;
@@ -488,7 +495,8 @@ sp<ABuffer> ElementaryStreamQueue::dequeueAccessUnit() {
 
     switch (mMode) {
         case H264:
-            return dequeueAccessUnitH264();
+        case HEVC:
+            return dequeueAccessUnitH264orHEVC();
         case AAC:
             return dequeueAccessUnitAAC();
         case AC3:
@@ -785,7 +793,7 @@ struct NALPosition {
     size_t nalSize;
 };
 
-sp<ABuffer> ElementaryStreamQueue::dequeueAccessUnitH264() {
+sp<ABuffer> ElementaryStreamQueue::dequeueAccessUnitH264orHEVC() {
     const uint8_t *data = mBuffer->data();
 
     size_t size = mBuffer->size();
@@ -803,24 +811,47 @@ sp<ABuffer> ElementaryStreamQueue::dequeueAccessUnitH264() {
         unsigned nalType = nalStart[0] & 0x1f;
         bool flush = false;
 
-        if (nalType == 1 || nalType == 5) {
-            if (foundSlice) {
-                ABitReader br(nalStart + 1, nalSize);
-                unsigned first_mb_in_slice = parseUE(&br);
+        if (mMode != HEVC) {
+            if (nalType == 1 || nalType == 5) {
+                if (foundSlice) {
+                    ABitReader br(nalStart + 1, nalSize);
+                    unsigned first_mb_in_slice = parseUE(&br);
 
-                if (first_mb_in_slice == 0) {
-                    // This slice starts a new frame.
+                    if (first_mb_in_slice == 0) {
+                        // This slice starts a new frame.
 
-                    flush = true;
+                        flush = true;
+                    }
                 }
+
+                foundSlice = true;
+            } else if ((nalType == 9 || nalType == 7) && foundSlice) {
+                // Access unit delimiter and SPS will be associated with the
+                // next frame.
+
+                flush = true;
             }
+        } else {
+            ABitReader br(nalStart, nalSize);
+            unsigned forbidden_bit = br.getBits(1);
+            unsigned nalType = br.getBits(6);
 
-            foundSlice = true;
-        } else if ((nalType == 9 || nalType == 7) && foundSlice) {
-            // Access unit delimiter and SPS will be associated with the
-            // next frame.
+            if (nalType <= 9 || (nalType >= 16 && nalType <= 21)) {
+                br.skipBits(9);
+                if (foundSlice) {
+                    unsigned first_slice_in_pic = br.getBits(1);
 
-            flush = true;
+                    if (first_slice_in_pic == 1) {
+                        // This slice starts a new frame.
+                        flush = true;
+                    }
+                }
+                foundSlice = true;
+            } else if (foundSlice && (nalType >= 32 && nalType <= 35)) {
+                // Access unit delimiter and SPS will be associated with the
+                // next frame.
+                flush = true;
+            }
         }
 
         if (flush) {
@@ -883,7 +914,16 @@ sp<ABuffer> ElementaryStreamQueue::dequeueAccessUnitH264() {
             accessUnit->meta()->setInt64("timeUs", timeUs);
 
             if (mFormat == NULL) {
-                mFormat = MakeAVCCodecSpecificData(accessUnit);
+                if (mMode != HEVC) {
+                    mFormat = MakeAVCCodecSpecificData(accessUnit);
+                } else {
+                    //mFormat = MakeHEVCCodecSpecificData(accessUnit);  // TODO
+                    mFormat = new MetaData;
+                    ALOGI("Setting mimetype as MEDIA_MIMETYPE_VIDEO_HEVC");
+                    mFormat->setCString(kKeyMIMEType, MEDIA_MIMETYPE_VIDEO_HEVC);
+                    mFormat->setInt32(kKeyWidth, 640);
+                    mFormat->setInt32(kKeyHeight, 480);
+                }
             }
 
             return accessUnit;

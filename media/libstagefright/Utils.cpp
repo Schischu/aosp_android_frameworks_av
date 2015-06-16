@@ -255,7 +255,7 @@ status_t convertMetaDataToMessage(
     } else if (meta->findData(kKeyHVCC, &type, &data, &size)) {
         const uint8_t *ptr = (const uint8_t *)data;
 
-        CHECK(size >= 7);
+        CHECK(size >= 23);
         CHECK_EQ((unsigned)ptr[0], 1u);  // configurationVersion == 1
         uint8_t profile __unused = ptr[1] & 31;
         uint8_t level __unused = ptr[12];

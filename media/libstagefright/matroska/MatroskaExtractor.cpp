@@ -135,6 +135,7 @@ private:
     enum Type {
         AVC,
         AAC,
+        HEVC,
         OTHER
     };
 
@@ -232,6 +233,19 @@ MatroskaSource::MatroskaSource(
         CHECK_GE(avccSize, 5u);
 
         mNALSizeLen = 1 + (avcc[4] & 3);
+        ALOGV("mNALSizeLen = %zu", mNALSizeLen);
+    } else if (!strcasecmp(mime, MEDIA_MIMETYPE_VIDEO_HEVC)) {
+        mType = HEVC;
+
+        uint32_t dummy;
+        const uint8_t *hvcc;
+        size_t hvccSize;
+        CHECK(meta->findData(
+            kKeyHVCC, &dummy, (const void **)&hvcc, &hvccSize));
+
+        CHECK_GE(hvccSize, 22u);
+
+        mNALSizeLen = 1 + (hvcc[21] & 3);
         ALOGV("mNALSizeLen = %zu", mNALSizeLen);
     } else if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_AAC)) {
         mType = AAC;
@@ -580,7 +594,7 @@ status_t MatroskaSource::read(
     MediaBuffer *frame = *mPendingFrames.begin();
     mPendingFrames.erase(mPendingFrames.begin());
 
-    if (mType != AVC) {
+    if (mType != AVC && mType != HEVC) {
         if (targetSampleTimeUs >= 0ll) {
             frame->meta_data()->setInt64(
                     kKeyTargetTime, targetSampleTimeUs);
@@ -944,6 +958,9 @@ void MatroskaExtractor::addTracks() {
                 if (!strcmp("V_MPEG4/ISO/AVC", codecID)) {
                     meta->setCString(kKeyMIMEType, MEDIA_MIMETYPE_VIDEO_AVC);
                     meta->setData(kKeyAVCC, 0, codecPrivate, codecPrivateSize);
+                } else if (!strcmp("V_MPEGH/ISO/HEVC", codecID)) {
+                    meta->setCString(kKeyMIMEType, MEDIA_MIMETYPE_VIDEO_HEVC);
+                    meta->setData(kKeyHVCC, 0, codecPrivate, codecPrivateSize);
                 } else if (!strcmp("V_MPEG4/ISO/ASP", codecID)) {
                     if (codecPrivateSize > 0) {
                         meta->setCString(
