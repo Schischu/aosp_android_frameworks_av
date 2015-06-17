@@ -427,6 +427,41 @@ bool IsIDR(const sp<ABuffer> &buffer) {
     return foundIDR;
 }
 
+bool IsHEVCIRAPFrame(const sp<ABuffer> &accessUnit) {
+    const uint8_t *data = accessUnit->data();
+    size_t size = accessUnit->size();
+
+    const uint8_t *nalStart;
+    size_t nalSize;
+    while (getNextNALUnit(&data, &size, &nalStart, &nalSize, true) == OK) {
+        CHECK_GT(nalSize, 0u);
+
+        unsigned nalUnitType = nalStart[0] / 2;
+
+        /*
+         * 7.4.2.4.3 Order of access units and association to CVSs
+         *
+         * It is a requirement of bitstream conformance that, when present,
+         * the next access unit after an access unit that contains an
+         * end of sequence NAL unit or an end of bitstream NAL unit
+         * shall be an IRAP access unit, which may be an IDR access
+         * unit, a BLA access unit, or a CRA access unit.
+         *
+         * 16 BLA_W_LP
+         * 17 BLA_W_RADL
+         * 18 BLA_N_LP
+         * 19 IDR_W_RADL
+         * 20 IDR_N_LP
+         * 21 CRA_NUT
+         */
+        if (nalUnitType >= 16 && nalUnitType <= 21) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool IsAVCReferenceFrame(const sp<ABuffer> &accessUnit) {
     const uint8_t *data = accessUnit->data();
     size_t size = accessUnit->size();
@@ -447,6 +482,22 @@ bool IsAVCReferenceFrame(const sp<ABuffer> &accessUnit) {
     }
 
     return true;
+}
+
+bool IsSPS(const sp<ABuffer> &accessUnit) {
+    const uint8_t *data = accessUnit->data();
+    size_t size = accessUnit->size();
+
+    const uint8_t *nalStart;
+    size_t nalSize;
+    while (getNextNALUnit(&data, &size, &nalStart, &nalSize, true) == OK) {
+        CHECK_GT(nalSize, 0u);
+
+        unsigned nalType = nalStart[0] & 0x1f;
+        return (nalType == 7);
+    }
+
+    return false;
 }
 
 sp<MetaData> MakeAACCodecSpecificData(

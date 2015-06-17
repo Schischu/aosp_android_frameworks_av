@@ -77,8 +77,10 @@ private:
     int64_t mSkipRenderingUntilMediaTimeUs;
     int64_t mNumFramesTotal;
     int64_t mNumFramesDropped;
+    bool mVideoSkipToIFrame;
     bool mIsAudio;
     bool mIsVideoAVC;
+    bool mIsVideoHEVC;
     bool mIsSecure;
     bool mFormatChangePending;
 

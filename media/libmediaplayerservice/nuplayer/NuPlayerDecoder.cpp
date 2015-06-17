@@ -52,8 +52,10 @@ NuPlayer::Decoder::Decoder(
       mSkipRenderingUntilMediaTimeUs(-1ll),
       mNumFramesTotal(0ll),
       mNumFramesDropped(0ll),
+      mVideoSkipToIFrame(false),
       mIsAudio(true),
       mIsVideoAVC(false),
+      mIsVideoHEVC(false),
       mIsSecure(false),
       mFormatChangePending(false),
       mPaused(true),
@@ -129,6 +131,10 @@ void NuPlayer::Decoder::onConfigure(const sp<AMessage> &format) {
 
     mIsAudio = !strncasecmp("audio/", mime.c_str(), 6);
     mIsVideoAVC = !strcasecmp(MEDIA_MIMETYPE_VIDEO_AVC, mime.c_str());
+    mIsVideoHEVC = !strcasecmp(MEDIA_MIMETYPE_VIDEO_HEVC, mime.c_str());
+    if (mIsVideoAVC || mIsVideoHEVC) {
+        mVideoSkipToIFrame = true;
+    }
 
     sp<Surface> surface = NULL;
     if (mNativeWindow != NULL) {
@@ -236,6 +242,10 @@ void NuPlayer::Decoder::onResume(bool notifyComplete) {
 }
 
 void NuPlayer::Decoder::onFlush(bool notifyComplete) {
+    if (mIsVideoAVC || mIsVideoHEVC) {
+        mVideoSkipToIFrame = true;
+    }
+
     if (mCCDecoder != NULL) {
         mCCDecoder->flush();
     }
@@ -622,15 +632,22 @@ status_t NuPlayer::Decoder::fetchInputData(sp<AMessage> &reply) {
         }
 
         dropAccessUnit = false;
-        if (!mIsAudio
-                && !mIsSecure
-                && mRenderer->getVideoLateByUs() > 100000ll
-                && mIsVideoAVC
-                && !IsAVCReferenceFrame(accessUnit)) {
-            dropAccessUnit = true;
-            ++mNumFramesDropped;
+        if (!mIsAudio && !mIsSecure) {
+            if (mRenderer->getVideoLateByUs() > 100000ll
+                    && ((mIsVideoAVC && !IsAVCReferenceFrame(accessUnit))
+                        || (mIsVideoHEVC && !IsHEVCIRAPFrame(accessUnit)))) {
+                dropAccessUnit = true;
+                ++mNumFramesDropped;
+            } else if (mVideoSkipToIFrame
+                          && ((mIsVideoAVC && !IsIDR(accessUnit) && !IsSPS(accessUnit))
+                              || (mIsVideoHEVC && !IsHEVCIRAPFrame(accessUnit)))) {
+                ALOGV("Dropping non I-frame or SPS access unit after seek");
+                dropAccessUnit = true;
+            }
         }
     } while (dropAccessUnit);
+
+    mVideoSkipToIFrame = false;
 
     // ALOGV("returned a valid buffer of %s data", mIsAudio ? "mIsAudio" : "video");
 #if 0
