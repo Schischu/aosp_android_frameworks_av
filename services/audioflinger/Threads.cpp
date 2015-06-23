@@ -3936,6 +3936,7 @@ AudioFlinger::DirectOutputThread::DirectOutputThread(const sp<AudioFlinger>& aud
     :   PlaybackThread(audioFlinger, output, id, device, DIRECT)
         // mLeftVolFloat, mRightVolFloat
 {
+     mpPreActiveTrack = NULL;
 }
 
 AudioFlinger::DirectOutputThread::DirectOutputThread(const sp<AudioFlinger>& audioFlinger,
@@ -4082,6 +4083,36 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::DirectOutputThread::prep
                 // reset retry count
                 track->mRetryCount = kMaxTrackRetriesDirect;
                 mActiveTrack = t;
+
+                // If active track changed, should drain frame in previous active track, or it has no chance to destroy.
+                if(mpPreActiveTrack && (mpPreActiveTrack != mActiveTrack.get()) && mpPreActiveTrack->isStopping_1()) {
+                    int cycle = 0;
+                    size_t frameReady = mpPreActiveTrack->framesReady();
+                    ALOGI("activeTrack changed, cur %p, pre %p, pre frameReady %d",
+                        mActiveTrack.get(), mpPreActiveTrack, frameReady);
+
+                    while(frameReady) {
+                        //avoid dead loop
+                        cycle++;
+                        if(cycle > 100) {
+                            ALOGW("too much cycle to drain off pre active track");
+                            break;
+                        }
+
+                        AudioBufferProvider::Buffer buffer;
+                        buffer.frameCount = frameReady;
+
+                        mpPreActiveTrack->getNextBuffer(&buffer);
+                        mpPreActiveTrack->releaseBuffer(&buffer);
+
+                        frameReady = mpPreActiveTrack->framesReady();
+                    }
+
+                    ALOGI("after drain pre active track, frameReady %d", mpPreActiveTrack->framesReady());
+                }
+
+                mpPreActiveTrack = mActiveTrack.get();
+
                 mixerStatus = MIXER_TRACKS_READY;
                 if (usesHwAvSync() && mHwPaused) {
                     doHwResume = true;

@@ -928,6 +928,7 @@ protected:
 
     // prepareTracks_l() tells threadLoop_mix() the name of the single active track
     sp<Track>               mActiveTrack;
+    Track*                  mpPreActiveTrack
 public:
     virtual     bool        hasFastMixer() const { return false; }
 };
