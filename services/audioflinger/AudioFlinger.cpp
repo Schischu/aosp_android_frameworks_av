@@ -180,7 +180,8 @@ AudioFlinger::AudioFlinger()
       mIsDeviceTypeKnown(false),
       mGlobalEffectEnableTime(0),
       mPrimaryOutputSampleRate(0)
-{
+{   
+    ALOGV("hsh");
     getpid_cached = getpid();
     char value[PROPERTY_VALUE_MAX];
     bool doLog = (property_get("ro.test_harness", value, "0") > 0) && (atoi(value) == 1);
