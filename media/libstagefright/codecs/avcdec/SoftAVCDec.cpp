@@ -720,7 +720,11 @@ void SoftAVC::onQueueFilled(OMX_U32 portIndex) {
                 bool portWillReset = false;
                 handlePortSettingsChange(&portWillReset, s_dec_op.u4_pic_wd, s_dec_op.u4_pic_ht);
 
-                CHECK_EQ(reInitDecoder(), (status_t)OK);
+                status_t err = reInitDecoder();
+                if (err != OK) {
+                    notify(OMX_EventError, OMX_ErrorUnsupportedSetting, err, NULL);
+                    return;
+                }
 
                 setDecodeArgs(&s_dec_ip, &s_dec_op, inHeader, outHeader, timeStampIx);
 
