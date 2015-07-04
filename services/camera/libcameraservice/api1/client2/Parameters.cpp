@@ -32,6 +32,10 @@
 #include "hardware/camera_common.h"
 #include <media/MediaProfiles.h>
 #include <media/mediarecorder.h>
+#include <gui/ISurfaceComposer.h>
+#include <gui/SurfaceComposerClient.h>
+#include <gui/Surface.h>
+#include <ui/DisplayInfo.h>
 
 namespace android {
 namespace camera2 {
@@ -71,7 +75,23 @@ status_t Parameters::initialize(const CameraMetadata *info, int deviceVersion) {
                             "enc.vid.height.max", VIDEO_ENCODER_H264);
     const Size MAX_VIDEO_SIZE = {maxVideoWidth, maxVideoHeight};
 
-    res = getFilteredSizes(MAX_PREVIEW_SIZE, &availablePreviewSizes);
+    // For the maximum size column, PREVIEW refers to the best size match
+    // to the device's screen resolution, or to 1080p (1920x1080), whichever is smaller.
+    sp<IBinder> display(SurfaceComposerClient::getBuiltInDisplay(
+            ISurfaceComposer::eDisplayIdMain));
+    DisplayInfo display_info;
+    SurfaceComposerClient::getDisplayInfo(display, &display_info);
+    ALOGV("display is %ld x %ld\n", display_info.h, display_info.w);
+    Size max_preview_size;
+    if (display_info.h < MAX_PREVIEW_WIDTH)
+        max_preview_size.width = display_info.h;
+    else
+        max_preview_size.width = MAX_PREVIEW_WIDTH;
+    if (display_info.w < MAX_PREVIEW_HEIGHT)
+        max_preview_size.height = display_info.w;
+    else
+        max_preview_size.height = MAX_PREVIEW_HEIGHT;
+    res = getFilteredSizes(max_preview_size, &availablePreviewSizes);
     if (res != OK) return res;
     res = getFilteredSizes(MAX_VIDEO_SIZE, &availableVideoSizes);
     if (res != OK) return res;
