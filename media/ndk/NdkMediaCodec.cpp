@@ -141,7 +141,7 @@ static void requestActivityNotification(AMediaCodec *codec) {
 
 extern "C" {
 
-static AMediaCodec * createAMediaCodec(const char *name, bool name_is_type, bool encoder) {
+static AMediaCodec * createAMediaCodec(const char *name, bool name_is_type, bool encoder, status_t *err) {
     AMediaCodec *mData = new AMediaCodec();
     mData->mLooper = new ALooper;
     mData->mLooper->setName("NDK MediaCodec_looper");
@@ -150,9 +150,9 @@ static AMediaCodec * createAMediaCodec(const char *name, bool name_is_type, bool
             true,       // canCallJava XXX
             PRIORITY_FOREGROUND);
     if (name_is_type) {
-        mData->mCodec = android::MediaCodec::CreateByType(mData->mLooper, name, encoder);
+        mData->mCodec = android::MediaCodec::CreateByType(mData->mLooper, name, encoder, err);
     } else {
-        mData->mCodec = android::MediaCodec::CreateByComponentName(mData->mLooper, name);
+        mData->mCodec = android::MediaCodec::CreateByComponentName(mData->mLooper, name, err);
     }
     mData->mHandler = new CodecHandler(mData);
     mData->mLooper->registerHandler(mData->mHandler);
@@ -165,17 +165,38 @@ static AMediaCodec * createAMediaCodec(const char *name, bool name_is_type, bool
 
 EXPORT
 AMediaCodec* AMediaCodec_createCodecByName(const char *name) {
-    return createAMediaCodec(name, false, false);
+    status_t err = NO_INIT;
+    AMediaCodec *mData = createAMediaCodec(name, false, false, &err);
+    if (err != OK) {
+        delete mData;
+        return NULL;
+    }
+
+    return mData;
 }
 
 EXPORT
 AMediaCodec* AMediaCodec_createDecoderByType(const char *mime_type) {
-    return createAMediaCodec(mime_type, true, false);
+    status_t err = NO_INIT;
+    AMediaCodec *mData = createAMediaCodec(mime_type, true, false, &err);
+    if (err != OK) {
+      delete mData;
+      return NULL;
+    }
+
+    return mData;
 }
 
 EXPORT
 AMediaCodec* AMediaCodec_createEncoderByType(const char *name) {
-    return createAMediaCodec(name, true, true);
+    status_t err = NO_INIT;
+    AMediaCodec *mData = createAMediaCodec(name, true, true, &err);
+    if(err != OK){
+        delete mData;
+        return NULL;
+    }
+
+    return mData;
 }
 
 EXPORT
