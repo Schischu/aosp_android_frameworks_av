@@ -120,6 +120,10 @@ LOCAL_SHARED_LIBRARIES += \
 
 LOCAL_CFLAGS += -Wno-multichar
 
+ifeq ($(TARGET_IS_64_BIT), true)
+LOCAL_CFLAGS += -DHAVE_OMX_ALIGNMENT
+endif
+
 LOCAL_MODULE:= libstagefright
 
 LOCAL_MODULE_TAGS := optional
