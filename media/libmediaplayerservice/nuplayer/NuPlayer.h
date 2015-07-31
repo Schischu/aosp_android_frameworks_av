@@ -79,6 +79,7 @@ protected:
 public:
     struct NuPlayerStreamListener;
     struct Source;
+    status_t setLooping(bool looping, bool autoloop);
 
 private:
     struct Decoder;
@@ -174,6 +175,9 @@ private:
     bool mResumePending;
 
     int32_t mVideoScalingMode;
+
+    bool mLooping;
+    bool mAutoLoop;
 
     bool mStarted;
 

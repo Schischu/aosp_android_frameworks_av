@@ -30,6 +30,7 @@ struct NuPlayer::Renderer : public AHandler {
     enum Flags {
         FLAG_REAL_TIME = 1,
         FLAG_OFFLOAD_AUDIO = 2,
+        FLAG_LOOPING = 4,
     };
     Renderer(const sp<MediaPlayerBase::AudioSink> &sink,
              const sp<AMessage> &notify,

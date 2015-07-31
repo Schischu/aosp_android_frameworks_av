@@ -461,7 +461,7 @@ status_t NuPlayerDriver::reset() {
 
 status_t NuPlayerDriver::setLooping(int loop) {
     mLooping = loop != 0;
-    return OK;
+    return mPlayer->setLooping(mLooping, mAutoLoop);
 }
 
 player_type NuPlayerDriver::playerType() {

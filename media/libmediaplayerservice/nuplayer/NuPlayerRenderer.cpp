@@ -686,7 +686,9 @@ bool NuPlayer::Renderer::onDrainAudioQueue() {
             // EOS
             int64_t postEOSDelayUs = 0;
             if (mAudioSink->needsTrailingPadding()) {
-                postEOSDelayUs = getPendingAudioPlayoutDurationUs(ALooper::GetNowUs());
+                if (!mFlags & FLAG_LOOPING) {
+                    postEOSDelayUs = getPendingAudioPlayoutDurationUs(ALooper::GetNowUs());
+                }
             }
             notifyEOS(true /* audio */, entry->mFinalResult, postEOSDelayUs);
 

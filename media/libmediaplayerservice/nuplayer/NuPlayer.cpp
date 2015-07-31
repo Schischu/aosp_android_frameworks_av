@@ -180,6 +180,8 @@ NuPlayer::NuPlayer()
       mFlushingVideo(NONE),
       mResumePending(false),
       mVideoScalingMode(NATIVE_WINDOW_SCALING_MODE_SCALE_TO_WINDOW),
+      mLooping(false),
+      mAutoLoop(false),
       mStarted(false),
       mPaused(false),
       mPausedByClient(false) {
@@ -1060,6 +1062,10 @@ void NuPlayer::onStart() {
                          true /* is_streaming */, streamType);
     if (mOffloadAudio) {
         flags |= Renderer::FLAG_OFFLOAD_AUDIO;
+    }
+
+    if (mLooping || mAutoLoop) {
+        flags |= Renderer::FLAG_LOOPING;
     }
 
     sp<AMessage> notify = new AMessage(kWhatRendererNotify, id());
@@ -1957,6 +1963,13 @@ void NuPlayer::sendTimedTextData(const sp<ABuffer> &buffer) {
         notifyListener(MEDIA_TIMED_TEXT, 0, 0);
     }
 }
+
+status_t NuPlayer::setLooping(bool looping, bool autoloop) {
+    mLooping = looping;
+    mAutoLoop = autoloop;
+    return OK;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 sp<AMessage> NuPlayer::Source::getFormat(bool audio) {
