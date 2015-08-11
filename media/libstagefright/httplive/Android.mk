@@ -3,6 +3,7 @@ LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES:=               \
+        HTTPDownloader.cpp      \
         LiveDataSource.cpp      \
         LiveSession.cpp         \
         M3UParser.cpp           \
@@ -14,7 +15,7 @@ LOCAL_C_INCLUDES:= \
 
 LOCAL_CFLAGS += -Werror
 LOCAL_CLANG := true
-LOCAL_SANITIZE := signed-integer-overflow
+LOCAL_SANITIZE := unsigned-integer-overflow, signed-integer-overflow
 
 LOCAL_SHARED_LIBRARIES := \
         libbinder \
