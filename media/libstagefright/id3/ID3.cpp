@@ -532,7 +532,10 @@ void ID3::Iterator::getstring(String8 *id, bool otherdata) const {
         const char16_t *framedata = (const char16_t *) (frameData + 1);
         char16_t *framedatacopy = NULL;
 #if BYTE_ORDER == LITTLE_ENDIAN
-        framedatacopy = new char16_t[len];
+        framedatacopy = new (std::nothrow) char16_t[len];
+        if (framedatacopy == NULL) {
+            return;
+        }
         for (int i = 0; i < len; i++) {
             framedatacopy[i] = bswap_16(framedata[i]);
         }
@@ -550,7 +553,10 @@ void ID3::Iterator::getstring(String8 *id, bool otherdata) const {
         char16_t *framedatacopy = NULL;
         if (*framedata == 0xfffe) {
             // endianness marker doesn't match host endianness, convert
-            framedatacopy = new char16_t[len];
+            framedatacopy = new (std::nothrow) char16_t[len];
+            if (framedatacopy == NULL) {
+                return;
+            }
             for (int i = 0; i < len; i++) {
                 framedatacopy[i] = bswap_16(framedata[i]);
             }
@@ -572,7 +578,10 @@ void ID3::Iterator::getstring(String8 *id, bool otherdata) const {
         }
         if (eightBit) {
             // collapse to 8 bit, then let the media scanner client figure out the real encoding
-            char *frame8 = new char[len];
+            char *frame8 = new (std::nothrow) char[len];
+            if (frame8 == NULL) {
+                return;
+            }
             for (int i = 0; i < len; i++) {
                 frame8[i] = framedata[i];
             }
