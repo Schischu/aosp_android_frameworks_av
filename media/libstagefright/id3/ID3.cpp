@@ -506,6 +506,11 @@ void ID3::Iterator::getstring(String8 *id, bool otherdata) const {
         return;
     }
 
+    // Prevent integer underflow
+    if (mFrameSize <= getHeaderLength()) {
+        return;
+    }
+
     size_t n = mFrameSize - getHeaderLength() - 1;
     if (otherdata) {
         // skip past the encoding, language, and the 0 separator
@@ -592,6 +597,11 @@ const uint8_t *ID3::Iterator::getData(size_t *length) const {
     *length = 0;
 
     if (mFrameData == NULL) {
+        return NULL;
+    }
+
+    // Prevent integer underflow
+    if (mFrameSize <= getHeaderLength()) {
         return NULL;
     }
 
