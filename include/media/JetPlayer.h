@@ -52,6 +52,7 @@ public:
     int closeFile();
     int play();
     int pause();
+    int setVolume(float leftVolume, float rightVolume);
     int queueSegment(int segmentNum, int libNum, int repeatCount, int transpose,
             EAS_U32 muteFlags, EAS_U8 userID);
     int setMuteFlags(EAS_U32 muteFlags, bool sync);

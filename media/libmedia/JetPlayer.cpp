@@ -400,6 +400,22 @@ int JetPlayer::pause()
     return result;
 }
 
+//-------------------------------------------------------------------------------------------------
+int JetPlayer::setVolume(float leftVolume, float rightVolume)
+{
+    ALOGV("setVolume(%f, %f)", leftVolume, rightVolume);
+
+    Mutex::Autolock lock(mMutex);
+    if(mAudioTrack != NULL) {
+        if( mAudioTrack->setVolume(leftVolume, rightVolume) == NO_ERROR) {
+            return EAS_SUCCESS;
+        } else {
+            return EAS_FAILURE;
+        }
+    }
+
+    return EAS_SUCCESS;
+}
 
 //-------------------------------------------------------------------------------------------------
 int JetPlayer::queueSegment(int segmentNum, int libNum, int repeatCount, int transpose,
