@@ -1906,7 +1906,7 @@ uint32_t AudioTrack::updateAndGetPosition_l()
 {
     // This is the sole place to read server consumed frames
     uint32_t newServer = mProxy->getPosition();
-    int32_t delta = newServer - mServer;
+    int32_t delta = (int32_t) newServer - mServer;
     mServer = newServer;
     // TODO There is controversy about whether there can be "negative jitter" in server position.
     //      This should be investigated further, and if possible, it should be addressed.
