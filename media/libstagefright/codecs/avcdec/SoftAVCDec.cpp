@@ -578,6 +578,18 @@ void SoftAVC::onQueueFilled(OMX_U32 portIndex) {
 
             PRINT_TIME("timeTaken=%6d delay=%6d numBytes=%6d", timeTaken, timeDelay,
                    s_dec_op.u4_num_bytes_consumed);
+
+            bool unsupportedResolution =
+                (IVD_STREAM_WIDTH_HEIGHT_NOT_SUPPORTED == (s_dec_op.u4_error_code & 0xFF));
+
+            /* Check for unsupported dimensions */
+            if (unsupportedResolution) {
+                ALOGE("Unsupported resolution : %dx%d", mWidth, mHeight);
+                notify(OMX_EventError, OMX_ErrorUnsupportedSetting, 0, NULL);
+                mSignalledError = true;
+                return;
+            }
+
             if (s_dec_op.u4_frame_decoded_flag && !mFlushNeeded) {
                 mFlushNeeded = true;
             }
