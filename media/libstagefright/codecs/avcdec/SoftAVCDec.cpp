@@ -475,6 +475,13 @@ void SoftAVC::onQueueFilled(OMX_U32 portIndex) {
         return;
     }
 
+    /* Check for unsupported dimensions */
+    if ((mWidth < 16) || (mHeight < 16) || (mWidth > 3840) || mHeight > 2166) {
+        ALOGE("Unsupported resolution : %dx%d", mWidth, mHeight);
+        notify(OMX_EventError, OMX_ErrorUnsupportedSetting, 0, NULL);
+        mSignalledError = true;
+        return;
+    }
     if (NULL == mCodecCtx) {
         if (OK != initDecoder()) {
             return;
