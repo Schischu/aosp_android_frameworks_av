@@ -894,7 +894,7 @@ ssize_t StaticAudioTrackServerProxy::pollPosition()
     if (mObserver.poll(state)) {
         StaticAudioTrackState trystate = mState;
         bool result;
-        const int32_t diffSeq = state.mLoopSequence - state.mPositionSequence;
+        const int32_t diffSeq = (int32_t) state.mLoopSequence - state.mPositionSequence;
 
         if (diffSeq < 0) {
             result = updateStateWithLoop(&trystate, state) == OK &&
