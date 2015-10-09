@@ -170,7 +170,31 @@ bool ARTSPConnection::ParseURL(
         }
     }
 
-    const char *colonPos = strchr(host->c_str(), ':');
+    const char *colonPos = NULL;
+
+    ssize_t bracketstart = host->find("[");
+    ssize_t bracketend = 0;
+    if (bracketstart == 0) {
+        bracketend = host->find("]");
+        if (bracketend > 0) {
+            if (host->find(":", bracketend) != bracketend + 1) {
+                if (bracketend + 1 != (ssize_t)host->size()) {
+                    return false;
+                }
+            } else {
+                colonPos = host->c_str() + bracketend + 1;
+            }
+        } else {
+            return false;
+        }
+    } else if (bracketstart > 0) {
+        return false;
+    } else {
+        colonPos = strrchr(host->c_str(), ':');
+        if (colonPos != strchr(host->c_str(), ':')) {
+            colonPos = NULL;
+        }
+    }
 
     if (colonPos != NULL) {
         unsigned long x;
@@ -179,12 +203,17 @@ bool ARTSPConnection::ParseURL(
         }
 
         *port = x;
+    } else {
+        *port = 554;
+    }
 
+    if (bracketstart == 0) {
+        host->erase(bracketend, host->size() - bracketend);
+        host->erase(0, 1);
+    } else if (colonPos != NULL) {
         size_t colonOffset = colonPos - host->c_str();
         size_t trailing = host->size() - colonOffset;
         host->erase(colonOffset, trailing);
-    } else {
-        *port = 554;
     }
 
     return true;
@@ -252,65 +281,91 @@ void ARTSPConnection::onConnect(const sp<AMessage> &msg) {
         ALOGV("user = '%s', pass = '%s'", mUser.c_str(), mPass.c_str());
     }
 
-    struct hostent *ent = gethostbyname(host.c_str());
-    if (ent == NULL) {
-        ALOGE("Unknown host %s", host.c_str());
+    struct addrinfo hints, *result = NULL;
+    memset (&hints, 0, sizeof (hints));
+    hints.ai_family = PF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
 
+    int err = getaddrinfo(host.c_str(), NULL, &hints, &result);
+    if (err != 0 || result == NULL) {
+        ALOGE("Unknown host, err %d (%s)", err, gai_strerror(err));
         reply->setInt32("result", -ENOENT);
         reply->post();
 
         mState = DISCONNECTED;
+        if (result != NULL) {
+            freeaddrinfo(result);
+        }
         return;
     }
 
-    mSocket = socket(AF_INET, SOCK_STREAM, 0);
+    for (struct addrinfo *res = result; res; res = res->ai_next) {
+        void *ptr;
+        char ipstr[INET6_ADDRSTRLEN];
+        int ipver;
 
-    if (mUIDValid) {
-        HTTPBase::RegisterSocketUserTag(mSocket, mUID,
+        switch (res->ai_family) {
+        case AF_INET:
+            ptr = &((struct sockaddr_in *)res->ai_addr)->sin_addr;
+            ((struct sockaddr_in *)res->ai_addr)->sin_port = htons(port);
+            ipver = 4;
+            break;
+        case AF_INET6:
+            ptr = &((struct sockaddr_in6 *)res->ai_addr)->sin6_addr;
+            ((struct sockaddr_in6 *)res->ai_addr)->sin6_port = htons(port);
+            ipver = 6;
+            break;
+        default:
+            ALOGW("Skipping unknown protocol family %d", res->ai_family);
+            continue;
+        }
+        inet_ntop(res->ai_family, ptr, ipstr, sizeof(ipstr));
+        ALOGV("Connecting to IPv%d: %s", ipver, ipstr);
+
+        mSocket = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+        if (mUIDValid) {
+            HTTPBase::RegisterSocketUserTag(mSocket, mUID,
                                         (uint32_t)*(uint32_t*) "RTSP");
-        HTTPBase::RegisterSocketUserMark(mSocket, mUID);
-    }
+            HTTPBase::RegisterSocketUserMark(mSocket, mUID);
+        }
 
     MakeSocketBlocking(mSocket, false);
 
-    struct sockaddr_in remote;
-    memset(remote.sin_zero, 0, sizeof(remote.sin_zero));
-    remote.sin_family = AF_INET;
-    remote.sin_addr.s_addr = *(in_addr_t *)ent->h_addr;
-    remote.sin_port = htons(port);
-
-    int err = ::connect(
-            mSocket, (const struct sockaddr *)&remote, sizeof(remote));
-
-    reply->setInt32("server-ip", ntohl(remote.sin_addr.s_addr));
-
-    if (err < 0) {
+        err = ::connect(mSocket, res->ai_addr, res->ai_addrlen);
+        if (err == 0) {
+            ALOGV("Connected to %s (%s)", host.c_str(), ipstr);
+            reply->setInt32("result", OK);
+            mState = CONNECTED;
+            mNextCSeq = 1;
+            postReceiveReponseEvent();
+            reply->post();
+            freeaddrinfo(result);
+            return;
+        }
         if (errno == EINPROGRESS) {
+            ALOGV("Connection to %s in progress", ipstr);
             sp<AMessage> msg = new AMessage(kWhatCompleteConnection, this);
             msg->setMessage("reply", reply);
             msg->setInt32("connection-id", mConnectionID);
             msg->post();
+            freeaddrinfo(result);
             return;
         }
-
-        reply->setInt32("result", -errno);
-        mState = DISCONNECTED;
 
         if (mUIDValid) {
             HTTPBase::UnRegisterSocketUserTag(mSocket);
             HTTPBase::UnRegisterSocketUserMark(mSocket);
         }
         close(mSocket);
-        mSocket = -1;
-    } else {
-        reply->setInt32("result", OK);
-        mState = CONNECTED;
-        mNextCSeq = 1;
-
-        postReceiveReponseEvent();
+        ALOGV("Connection err %d, (%s)", errno, strerror(errno));
     }
-
+    ALOGV("Failed to connect to %s", host.c_str());
+    reply->setInt32("result", -errno);
+    mState = DISCONNECTED;
+    mSocket = -1;
     reply->post();
+    freeaddrinfo(result);
 }
 
 void ARTSPConnection::performDisconnect() {
