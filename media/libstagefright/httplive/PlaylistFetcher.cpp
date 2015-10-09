@@ -1030,8 +1030,17 @@ bool PlaylistFetcher::initDownloadState(
     if (mSeqNumber < firstSeqNumberInPlaylist
             || mSeqNumber > lastSeqNumberInPlaylist
             || err != OK) {
-        if ((err != OK || !mPlaylist->isComplete()) && mNumRetries < kMaxNumRetries) {
+        if (err != OK || !mPlaylist->isComplete()) {
             ++mNumRetries;
+
+            if (mNumRetries > kMaxNumRetries && !bufferAvailable()) {
+                ALOGE("Cannot find sequence number %d in playlist "
+                    "(contains %d - %d)", mSeqNumber, firstSeqNumberInPlaylist,
+                    lastSeqNumberInPlaylist);
+
+                notifyError(ERROR_END_OF_STREAM);
+                return false;
+            }
 
             if (mSeqNumber > lastSeqNumberInPlaylist || err != OK) {
                 // make sure we reach this retry logic on refresh failures
@@ -2090,6 +2099,20 @@ void PlaylistFetcher::updateTargetDuration() {
     msg->setInt32("what", kWhatTargetDurationUpdate);
     msg->setInt64("targetDurationUs", mPlaylist->getTargetDuration());
     msg->post();
+}
+
+bool PlaylistFetcher::bufferAvailable() const {
+    status_t result = OK;
+    for (size_t i = 0; i < mPacketSources.size(); ++i) {
+        if ((mStreamTypeMask & mPacketSources.keyAt(i)) == 0) {
+            continue;
+        }
+
+        if (mPacketSources.valueAt(i)->hasBufferAvailable(&result)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 }  // namespace android
