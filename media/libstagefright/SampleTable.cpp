@@ -194,11 +194,11 @@ status_t SampleTable::setChunkOffsetParams(
     mNumChunkOffsets = U32_AT(&header[4]);
 
     if (mChunkOffsetType == kChunkOffsetType32) {
-        if (data_size < 8 + mNumChunkOffsets * 4) {
+      if (((SIZE_MAX / 4) - 8 < mNumSampleToChunkOffsets) || (data_size < 8 + mNumChunkOffsets * 4)) {
             return ERROR_MALFORMED;
         }
     } else {
-        if (data_size < 8 + mNumChunkOffsets * 8) {
+      if (((SIZE_MAX / 8) - 8 < mNumSampleToChunkOffsets) || (data_size < 8 + mNumChunkOffsets * 8)) {
             return ERROR_MALFORMED;
         }
     }
@@ -231,7 +231,7 @@ status_t SampleTable::setSampleToChunkParams(
 
     mNumSampleToChunkOffsets = U32_AT(&header[4]);
 
-    if (data_size < 8 + mNumSampleToChunkOffsets * 12) {
+    if (((SIZE_MAX / 12) - 8 < mNumSampleToChunkOffsets) || (data_size < 8 + mNumSampleToChunkOffsets * 12)) {
         return ERROR_MALFORMED;
     }
 
@@ -386,7 +386,7 @@ status_t SampleTable::setCompositionTimeToSampleParams(
 
     size_t numEntries = U32_AT(&header[4]);
 
-    if (data_size != (numEntries + 1) * 8) {
+    if (((SIZE_MAX / 8) - 1 < numEntries) || (data_size != (numEntries + 1) * 8)) {
         return ERROR_MALFORMED;
     }
 
