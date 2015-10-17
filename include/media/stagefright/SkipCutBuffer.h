@@ -31,7 +31,8 @@ class SkipCutBuffer: public RefBase {
  public:
     // 'skip' is the number of bytes to skip from the beginning
     // 'cut' is the number of bytes to cut from the end
-    SkipCutBuffer(int32_t skip, int32_t cut);
+    // 'num16BitChannels' is the number of channels, which are assumed to be 16 bit wide each
+    SkipCutBuffer(size_t skip, size_t cut, size_t num16Channels);
 
     // Submit one MediaBuffer for skipping and cutting. This may consume all or
     // some of the data in the buffer, or it may add data to it.
