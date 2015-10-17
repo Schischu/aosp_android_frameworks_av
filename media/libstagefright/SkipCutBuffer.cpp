@@ -24,13 +24,15 @@
 
 namespace android {
 
-SkipCutBuffer::SkipCutBuffer(int32_t skip, int32_t cut) {
+SkipCutBuffer::SkipCutBuffer(size_t skip, size_t cut, size_t num16BitChannels) {
 
-    if (skip < 0 || cut < 0 || cut > 64 * 1024) {
-        ALOGW("out of range skip/cut: %d/%d, using passthrough instead", skip, cut);
-        skip = 0;
-        cut = 0;
+    if (skip > 64 * 1024 || cut > 64 * 1024 || num16BitChannels > 64) {
+        ALOGW("out of range skip/cut/channels: %zu/%zu/%zu, using passthrough instead",
+                skip, cut, num16BitChannels);
+        num16BitChannels = 0;
     }
+    skip *= (num16BitChannels * 2);
+    cut *= (num16BitChannels * 2);
 
     mFrontPadding = mSkip = skip;
     mBackPadding = cut;
