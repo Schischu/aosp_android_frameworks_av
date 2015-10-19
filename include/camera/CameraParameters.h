@@ -37,6 +37,23 @@ struct Size {
     }
 };
 
+//+++>
+class DurationTimer {
+public:
+    DurationTimer() {}
+    ~DurationTimer() {}
+    void start();
+    void stop();
+    long long durationUsecs() const;
+    static long long subtractTimevals(const struct timeval* ptv1,
+        const struct timeval* ptv2);
+    static void addToTimeval(struct timeval* ptv, long usec);
+private:
+    struct timeval  mStartWhen;
+    struct timeval  mStopWhen;
+};
+//--->
+
 class CameraParameters
 {
 public:
@@ -52,6 +69,9 @@ public:
     void setFloat(const char *key, float value);
     const char *get(const char *key) const;
     int getInt(const char *key) const;
+    //+++>
+    int getInt64(const char *key) const;
+    //--->
     float getFloat(const char *key) const;
 
     void remove(const char *key);
@@ -682,6 +702,11 @@ public:
     static const char LIGHTFX_LOWLIGHT[];
     // High-dynamic range mode
     static const char LIGHTFX_HDR[];
+
+    //+++>
+    static const char KEY_CITYID[];
+    static const char KEY_WEATHER[];
+    //--->
 
     /**
      * Returns the the supported preview formats as an enum given in graphics.h
