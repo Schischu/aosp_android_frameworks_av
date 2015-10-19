@@ -116,6 +116,33 @@ LOCAL_STATIC_LIBRARIES := \
         libFLAC \
         libmedia_helper \
 
+#+++>
+ifeq ($(BOARD_USE_S3D_SUPPORT), true)
+ifeq ($(BOARD_USES_HWC_SERVICES), true)
+SLSI_DIR := samsung_slsi
+PLATFORM_DIR := $(TARGET_BOARD_PLATFORM)-$(TARGET_SLSI_VARIANT)
+LOCAL_CFLAGS += -DUSE_S3D_SUPPORT -DHWC_SERVICES
+LOCAL_C_INCLUDES += \
+        $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr/include \
+        $(TOP)/hardware/$(SLSI_DIR)/openmax/include/exynos \
+        $(TOP)/hardware/$(SLSI_DIR)/$(PLATFORM_DIR)/libhwcService \
+        $(TOP)/hardware/$(SLSI_DIR)/$(PLATFORM_DIR)/libhwc \
+        $(TOP)/hardware/$(SLSI_DIR)/$(PLATFORM_DIR)/include \
+        $(TOP)/hardware/$(SLSI_DIR)/$(TARGET_SOC)/libhwcmodule \
+        $(TOP)/hardware/$(SLSI_DIR)/$(TARGET_SOC)/include \
+        $(TOP)/hardware/$(SLSI_DIR)/exynos/libexynosutils \
+        $(TOP)/hardware/$(SLSI_DIR)/exynos/include \
+        $(TOP)/hardware/$(SLSI_DIR)/exynos/libhwc
+
+LOCAL_ADDITIONAL_DEPENDENCIES := \
+        $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ/usr
+
+LOCAL_SHARED_LIBRARIES += \
+        libExynosHWCService
+endif
+endif
+#--->
+
 LOCAL_SHARED_LIBRARIES += \
         libstagefright_enc_common \
         libstagefright_avc_common \

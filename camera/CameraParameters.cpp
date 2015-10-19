@@ -24,6 +24,53 @@
 #include <system/graphics.h>
 
 namespace android {
+//+++>
+void DurationTimer::start(void) 
+{
+    gettimeofday(&mStartWhen, NULL);
+}
+
+void DurationTimer::stop(void)
+{
+    gettimeofday(&mStopWhen, NULL);
+}
+
+long long DurationTimer::durationUsecs(void) const
+{
+    return (long) subtractTimevals(&mStopWhen, &mStartWhen);
+}
+
+/*static*/ long long DurationTimer::subtractTimevals(const struct timeval* ptv1,
+    const struct timeval* ptv2)
+{
+    long long stop  = ((long long) ptv1->tv_sec) * 1000000LL +
+                      ((long long) ptv1->tv_usec);
+    long long start = ((long long) ptv2->tv_sec) * 1000000LL +
+                      ((long long) ptv2->tv_usec);
+    return stop - start;
+}
+
+/*static*/ void DurationTimer::addToTimeval(struct timeval* ptv, long usec)
+{
+    if (usec < 0) {
+        ALOG(LOG_WARN, "", "Negative values not supported in addToTimeval\n");
+        return;
+    }
+
+    if (ptv->tv_usec >= 1000000) {
+        ptv->tv_sec += ptv->tv_usec / 1000000;
+        ptv->tv_usec %= 1000000;
+    }
+
+    ptv->tv_usec += usec % 1000000;
+    if (ptv->tv_usec >= 1000000) {
+        ptv->tv_usec -= 1000000;
+        ptv->tv_sec++;
+    }
+    ptv->tv_sec += usec / 1000000;
+}
+//--->
+
 // Parameter keys to communicate between camera application and driver.
 const char CameraParameters::KEY_PREVIEW_SIZE[] = "preview-size";
 const char CameraParameters::KEY_SUPPORTED_PREVIEW_SIZES[] = "preview-size-values";
@@ -173,6 +220,11 @@ const char CameraParameters::FOCUS_MODE_CONTINUOUS_PICTURE[] = "continuous-pictu
 const char CameraParameters::LIGHTFX_LOWLIGHT[] = "low-light";
 const char CameraParameters::LIGHTFX_HDR[] = "high-dynamic-range";
 
+//+++ TABS
+const char CameraParameters::KEY_CITYID[] = "cityid";
+const char CameraParameters::KEY_WEATHER[] = "weather";
+//=== TABS
+
 CameraParameters::CameraParameters()
                 : mMap()
 {
@@ -280,6 +332,13 @@ int CameraParameters::getInt(const char *key) const
         return -1;
     return strtol(v, 0, 0);
 }
+
+//+++>
+int CameraParameters::getInt64(const char *key) const
+{
+    return -1;
+}
+//--->
 
 float CameraParameters::getFloat(const char *key) const
 {
@@ -533,5 +592,12 @@ int CameraParameters::previewFormatToEnum(const char* format) {
 bool CameraParameters::isEmpty() const {
     return mMap.isEmpty();
 }
+
+//+++>
+extern "C" {
+    void acquire_dvfs_lock(void) { }
+    void release_dvfs_lock(void) { }
+}
+//--->
 
 }; // namespace android
