@@ -15,7 +15,7 @@
  */
 
 #define LOG_TAG "AudioPolicyEffects"
-//#define LOG_NDEBUG 0
+#define LOG_NDEBUG 0
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -332,7 +332,11 @@ void AudioPolicyEffects::EffectVector::setProcessorEnabled(bool enabled)
 /*static*/ audio_source_t AudioPolicyEffects::inputSourceNameToEnum(const char *name)
 {
     int i;
-    for (i = AUDIO_SOURCE_MIC; i < AUDIO_SOURCE_CNT; i++) {
+    for (i = AUDIO_SOURCE_MIC; i <= AUDIO_SOURCE_CNT; i++) {
+        if (kInputSourceNames[i - AUDIO_SOURCE_MIC] == NULL) {
+          i = AUDIO_SOURCE_CNT;
+          break;
+        }
         if (strcmp(name, kInputSourceNames[i - AUDIO_SOURCE_MIC]) == 0) {
             ALOGV("inputSourceNameToEnum found source %s %d", name, i);
             break;
@@ -600,6 +604,7 @@ status_t AudioPolicyEffects::loadInputEffectConfigurations(cnode *root,
     }
     node = node->first_child;
     while (node) {
+        ALOGW("loadInputSources() input source %s", node->name);
         audio_source_t source = inputSourceNameToEnum(node->name);
         if (source == AUDIO_SOURCE_CNT) {
             ALOGW("loadInputSources() invalid input source %s", node->name);
@@ -692,10 +697,14 @@ status_t AudioPolicyEffects::loadAudioEffectConfig(const char *path)
     config_load(root, data);
 
     Vector <EffectDesc *> effects;
+    ALOGV("loadEffects()");
     loadEffects(root, effects);
+    ALOGV("loadInputEffectConfigurations()");
     loadInputEffectConfigurations(root, effects);
+    ALOGV("loadStreamEffectConfigurations()");
     loadStreamEffectConfigurations(root, effects);
 
+    ALOGV("del()");
     for (size_t i = 0; i < effects.size(); i++) {
         delete effects[i];
     }
