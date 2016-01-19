@@ -223,6 +223,12 @@ const char CameraParameters::LIGHTFX_HDR[] = "high-dynamic-range";
 //+++ TABS
 const char CameraParameters::KEY_CITYID[] = "cityid";
 const char CameraParameters::KEY_WEATHER[] = "weather";
+
+const char CameraParameters::ISO_AUTO[] = "auto";
+const char CameraParameters::ISO_100[] = "ISO100";
+const char CameraParameters::ISO_200[] = "ISO200";
+const char CameraParameters::ISO_400[] = "ISO400";
+const char CameraParameters::ISO_800[] = "ISO800";
 //=== TABS
 
 CameraParameters::CameraParameters()

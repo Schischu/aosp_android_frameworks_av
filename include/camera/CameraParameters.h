@@ -706,6 +706,11 @@ public:
     //+++>
     static const char KEY_CITYID[];
     static const char KEY_WEATHER[];
+    static const char ISO_AUTO[];
+    static const char ISO_100[];
+    static const char ISO_200[];
+    static const char ISO_400[];
+    static const char ISO_800[];
     //--->
 
     /**
