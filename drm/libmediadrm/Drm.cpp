@@ -237,6 +237,7 @@ void Drm::findFactoryForScheme(const uint8_t uuid[16]) {
 
         if (pluginPath.getPathExtension() == ".so") {
 
+            ALOGE("Testing lib %s\n", pluginPath.string());
             if (loadLibraryForScheme(pluginPath, uuid)) {
                 mUUIDToLibraryPathMap.add(uuidVector, pluginPath);
                 mInitCheck = OK;
@@ -248,7 +249,10 @@ void Drm::findFactoryForScheme(const uint8_t uuid[16]) {
 
     closedir(pDir);
 
-    ALOGE("Failed to find drm plugin");
+    ALOGE("Failed to find drm plugin (%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X)", 
+      uuid[0], uuid[1], uuid[2], uuid[3], uuid[4], uuid[5], uuid[6], uuid[7], 
+      uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15]);
+
     mInitCheck = ERROR_UNSUPPORTED;
 }
 
@@ -261,12 +265,16 @@ bool Drm::loadLibraryForScheme(const String8 &path, const uint8_t uuid[16]) {
     } else {
         index = mLibraryPathToOpenLibraryMap.add(path, NULL);
     }
+    ALOGE("index %d\n", index);
 
     if (!mLibrary.get()) {
+        ALOGE("!mLibrary.get()");
         mLibrary = new SharedLibrary(path);
         if (!*mLibrary) {
+            ALOGE("new SharedLibrary failed\n");
             return false;
         }
+        ALOGE("index %d\n", index);
 
         mLibraryPathToOpenLibraryMap.replaceValueAt(index, mLibrary);
     }
@@ -276,10 +284,12 @@ bool Drm::loadLibraryForScheme(const String8 &path, const uint8_t uuid[16]) {
     CreateDrmFactoryFunc createDrmFactory =
         (CreateDrmFactoryFunc)mLibrary->lookup("createDrmFactory");
 
+
     if (createDrmFactory == NULL ||
         (mFactory = createDrmFactory()) == NULL ||
         !mFactory->isCryptoSchemeSupported(uuid)) {
         closeFactory();
+        ALOGE("createDrmFactory failed\n");
         return false;
     }
     return true;
