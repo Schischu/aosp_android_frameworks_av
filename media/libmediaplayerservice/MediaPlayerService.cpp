@@ -1894,13 +1894,8 @@ void MediaPlayerService::AudioOutput::pause()
 void MediaPlayerService::AudioOutput::close()
 {
     ALOGV("close");
-    sp<AudioTrack> track;
-    {
-        Mutex::Autolock lock(mLock);
-        track = mTrack;
-        close_l(); // clears mTrack
-    }
-    // destruction of the track occurs outside of mutex.
+    Mutex::Autolock lock(mLock);
+    close_l();
 }
 
 void MediaPlayerService::AudioOutput::setVolume(float left, float right)

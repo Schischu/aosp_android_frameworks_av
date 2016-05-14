@@ -229,7 +229,11 @@ std::list<FrameRenderTracker::Info> SoftwareRenderer::render(
 
     void *dst;
     CHECK_EQ(0, mapper.lock(
+//+++
                 buf->handle, static_cast<int>(GRALLOC_USAGE_SW_WRITE_OFTEN), bounds, &dst));
+//===
+//                buf->handle, GRALLOC_USAGE_SW_WRITE_OFTEN, bounds, &dst));
+//---
 
     // TODO move the other conversions also into ColorConverter, and
     // fix cropping issues (when mCropLeft/Top != 0 or mWidth != mCropWidth)

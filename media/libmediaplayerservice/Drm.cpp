@@ -288,7 +288,6 @@ bool Drm::loadLibraryForScheme(const String8 &path, const uint8_t uuid[16]) {
     CreateDrmFactoryFunc createDrmFactory =
         (CreateDrmFactoryFunc)mLibrary->lookup("createDrmFactory");
 
-
     if (createDrmFactory == NULL ||
         (mFactory = createDrmFactory()) == NULL ||
         !mFactory->isCryptoSchemeSupported(uuid)) {

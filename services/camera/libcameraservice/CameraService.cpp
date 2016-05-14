@@ -153,7 +153,6 @@ void CameraService::onFirstRef()
         ALOGE("Could not load camera HAL module: %d (%s)", err, strerror(-err));
         logServiceError("Could not load camera HAL module", err);
         mNumberOfCameras = 0;
-        mNumberOfNormalCameras = 0;
         return;
     }
 
