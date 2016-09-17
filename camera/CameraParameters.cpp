@@ -340,7 +340,7 @@ int CameraParameters::getInt(const char *key) const
 }
 
 //+++>
-int CameraParameters::getInt64(const char *key) const
+int CameraParameters::getInt64(const char *key __attribute__ ((unused))) const
 {
     return -1;
 }
