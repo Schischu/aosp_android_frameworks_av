@@ -534,35 +534,6 @@ status_t SampleTable::setSyncSampleParams(off64_t data_offset, size_t data_size)
         ALOGV("Table of sync samples is empty or has only a single entry!");
     }
 
-<<<<<<< HEAD
-    uint64_t allocSize = (uint64_t)mNumSyncSamples * sizeof(uint32_t);
-    if (allocSize > kMaxTotalSize) {
-        ALOGE("Sync sample table size too large.");
-        return ERROR_OUT_OF_RANGE;
-    }
-
-    mTotalSize += allocSize;
-    if (mTotalSize > kMaxTotalSize) {
-        ALOGE("Sync sample table size would make sample table too large.\n"
-              "    Requested sync sample table size = %llu\n"
-              "    Eventual sample table size >= %llu\n"
-              "    Allowed sample table size = %llu\n",
-              (unsigned long long)allocSize,
-              (unsigned long long)mTotalSize,
-              (unsigned long long)kMaxTotalSize);
-        return ERROR_OUT_OF_RANGE;
-    }
-
-    mSyncSamples = new (std::nothrow) uint32_t[mNumSyncSamples];
-    if (!mSyncSamples) {
-        ALOGE("Cannot allocate sync sample table with %llu entries.",
-                (unsigned long long)mNumSyncSamples);
-        return ERROR_OUT_OF_RANGE;
-    }
-
-    if (mDataSource->readAt(mSyncSampleOffset + 8, mSyncSamples,
-            (size_t)allocSize) != (ssize_t)allocSize) {
-=======
     uint64_t allocSize = (uint64_t)numSyncSamples * sizeof(uint32_t);
     if (allocSize > kMaxTotalSize) {
         ALOGE("Sync sample table size too large.");
@@ -592,7 +563,6 @@ status_t SampleTable::setSyncSampleParams(off64_t data_offset, size_t data_size)
             (size_t)allocSize) != (ssize_t)allocSize) {
         delete mSyncSamples;
         mSyncSamples = NULL;
->>>>>>> 563160621698a05157716c602c78660c594e1a95
         return ERROR_IO;
     }
 
